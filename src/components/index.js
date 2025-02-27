@@ -5,6 +5,7 @@ import Login from "./Login";
 import SignUp from "./SignUp";
 import ProtectedRoute from "./ProtectedRoute";
 import Friends from "./Friends";
+import Map from "./Map";
 
 export{
     App,
@@ -13,5 +14,6 @@ export{
     Login,
     SignUp,
     ProtectedRoute,
-    Friends
+    Friends,
+    Map
 }

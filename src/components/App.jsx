@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends } from './index.js';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -156,7 +156,7 @@ function App() {
 
 
   const DrawerList = (
-    <Box sx={{ width: 250, height: '100vh', bgcolor: '#0B0B12', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
+    <Box sx={{width: 250, height: '100vh', bgcolor: '#0B0B12', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
         <ListItemButton><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
@@ -207,10 +207,10 @@ function App() {
 
       <FRequestsDialog></FRequestsDialog>
       <Box sx={{zIndex: '-1',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%',position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
-      <Container sx={{zIndex: '5000000'}}>
+      <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>
 
       {user ? 
-      <Box position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', background: '#0B0B12', borderBottom: '1px solid gray'} : {}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
@@ -294,6 +294,7 @@ function App() {
           <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
           <Route path='/stats' element={<ProtectedRoute><Stats/></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Friends/></ProtectedRoute>}/>
+          <Route path='/map' element={<ProtectedRoute><Map/></ProtectedRoute>}/>
         </Routes>
 
         {user ? 
@@ -306,7 +307,7 @@ function App() {
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'friends'} label={'Freunde'} icon={<GroupIcon />} />
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'tracker'} label={'Tracker'} icon={<HomeIcon />} />
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'stats'} label={'Stats'} icon={<BarChartIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'Karte'} label={'karte'} icon={<LocationOnIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'map'} label={'Karte'} icon={<LocationOnIcon />} />
           </BottomNavigation> 
         </Box> :
         <></>}

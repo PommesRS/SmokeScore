@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {Container, Box, Button, Typography} from '@mui/material'
 import Stack from '@mui/material/Stack';
 import { useUserAuth } from '../context/userAuthConfig';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion, GeoPoint } from "@firebase/firestore";
 import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
@@ -35,9 +35,9 @@ function Counter() {
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
       positionOptions: {
-          enableHighAccuracy: false,
+          enableHighAccuracy: true,
       },
-      userDecisionTimeout: 5000,
+      userDecisionTimeout: 2000,
   });
 
 
@@ -61,7 +61,7 @@ function Counter() {
   function location() {
     try {
       console.log(coords)
-      setLocation(coords.latitude)
+      setLocation(coords.latitude, coords.longitude)
     } catch (error) {
       console.log(error)
     }
@@ -73,11 +73,16 @@ function Counter() {
   const incrementCounter = async () => {
     const docRef = await doc(db, "Users", uID)
 
+    location()
+
+    const geopoint = new GeoPoint(coords.latitude, coords.longitude)
+
     await updateDoc(docRef, {
-      counter: increment(1)
+      counter: increment(1),
+      geoLocations: arrayUnion(geopoint)
     })
 
-    location()
+    
 
     var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
     startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
@@ -129,7 +134,7 @@ function Counter() {
                 {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
                 <Typography sx={{fontWeight: 'light', fontSize: '15pt'}}>insgesamt</Typography>
             </Stack>
-          <Button sx={{ fontWeight: '900', fontSize: '40pt', border: 'none', height: '6vh', width: '50vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}>+</Button>
+          <Button sx={{ fontWeight: '6 00', fontSize: '40pt', border: 'none', height: '6vh', width: '50vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}>+</Button>
         </Stack>
       </Box>
       

@@ -20,9 +20,6 @@ const theme = createTheme({
     primary: {
       main: '#8979FF',
       contrastText: '#fff'
-    },
-    background: {
-      main: '#0B0B12' 
     }
   },
   components: {
