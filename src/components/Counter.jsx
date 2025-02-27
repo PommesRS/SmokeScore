@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {Container, Box, Button, Typography} from '@mui/material'
 import Stack from '@mui/material/Stack';
 import { useUserAuth } from '../context/userAuthConfig';
@@ -31,13 +31,14 @@ export function TextGradient({children}) {
 function Counter() {
   const [count, setCount] = useState(0)
   const [isExploding, setIsExploding] = useState(0)
-  const [geolocation, setLocation] = useState(null)
+  const [geolocation, setLocation] = useState([])
+  const [bGetCoords, setBGetCoords] = useState(true)
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
       positionOptions: {
           enableHighAccuracy: true,
       },
-      userDecisionTimeout: 2000,
+      userDecisionTimeout: 5000,
   });
 
 
@@ -60,8 +61,9 @@ function Counter() {
 
   function location() {
     try {
-      console.log(coords)
-      setLocation(coords.latitude, coords.longitude)
+      setLocation([coords.latitude, coords.longitude])
+      console.log(geolocation)
+      setBGetCoords(false)
     } catch (error) {
       console.log(error)
     }
@@ -69,17 +71,19 @@ function Counter() {
 
 
   initiateCounter();
+  
+  useEffect(() => {
+    location()
+  }, [coords])
 
   const incrementCounter = async () => {
     const docRef = await doc(db, "Users", uID)
 
-    location()
-
-    const geopoint = new GeoPoint(coords.latitude, coords.longitude)
+    const geopoint = new GeoPoint(geolocation[0], geolocation[1])
 
     await updateDoc(docRef, {
       counter: increment(1),
-      geoLocations: arrayUnion(geopoint)
+      geoLocations: arrayUnion(await geopoint)
     })
 
     
