@@ -21,6 +21,7 @@
     "@mui/material": "^6.4.5",
     "@mui/styled-engine-sc": "^6.4.3",
     "@mui/x-charts": "^7.27.0",
+    "@turf/turf": "^7.2.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.2.0",
     "leaflet": "^1.9.4",

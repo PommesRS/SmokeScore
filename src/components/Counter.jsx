@@ -10,6 +10,7 @@ import Confetti from 'react-confetti-boom';
 import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
 import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
+import { point, buffer, bbox } from '@turf/turf';
 
 export function TextGradient({children}) {
     return (
@@ -77,16 +78,51 @@ function Counter() {
   }, [coords])
 
   const incrementCounter = async () => {
-    const docRef = await doc(db, "Users", uID)
-
+    const docRef = doc(db, "Users", uID)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
 
-    await updateDoc(docRef, {
-      counter: increment(1),
-      geoLocations: arrayUnion(await geopoint)
-    })
+    const o = point([52.547504, 13.071575])
+    var buffer2 = buffer(o, 80, {units: 'meters'});
+    var bbox2 = bbox(buffer2);
+    console.log(bbox2)
 
-    
+    const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
+    console.log(geoLocationsSnapshot)
+    if (geoLocationsSnapshot.length < 1) {
+      incrementAndNewGeopoint()
+    } else {
+      geoLocationsSnapshot.forEach((element, i) => {
+        const lat = element.point._lat
+        const lng = element.point._long
+        console.log(i, lat, lng)
+        if (bbox2[2] < lat < bbox2[0] && bbox2[3] < lng < bbox2[1]) {
+          incrementAndUpdateGeopoint(i)
+          console.log('within')
+        }else{
+          console.log('geopoint')
+        }
+      });
+    }
+
+    async function incrementAndNewGeopoint(params) {
+      await updateDoc(docRef, {
+        counter: increment(1),
+        geoLocations: arrayUnion({
+                        amount: 1,
+                        point : geopoint
+                      })
+      })
+    }
+
+    async function incrementAndUpdateGeopoint(index) {
+      geoLocationsSnapshot[index].amount += 1
+      console.log(geoLocationsSnapshot)
+      await updateDoc(docRef, {
+        counter: increment(1),
+        geoLocations: geoLocationsSnapshot
+      })
+    }
+
 
     var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
     startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')

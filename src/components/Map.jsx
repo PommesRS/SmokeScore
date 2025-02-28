@@ -6,6 +6,7 @@ import { Box } from '@mui/material';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
 import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
+import { point, buffer, bbox } from '@turf/turf';
 
 const Map = () => {
     const mapContainer = useRef(null);
@@ -35,11 +36,23 @@ const Map = () => {
         const g = (await getDoc(docRef)).data().geoLocations
         g.forEach(loc => {
             new maptilersdk.Marker({color: "#FF0000"})
-            .setLngLat([loc._long,loc._lat])
+            .setLngLat([loc.point._long,loc.point._lat])
             .addTo(map.current);
         });
 
+        const o = point([52.547504, 13.071575])
+        var buffer2 = buffer(o, 80, {units: 'meters'});
+        var bbox2 = bbox(buffer2);
+        //console.log(bbox2)
+
+
+        new maptilersdk.Marker({color: "#FF"})
+        .setLngLat([bbox2[1], bbox2[0]])
+        .addTo(map.current);
         
+        new maptilersdk.Marker({color: "#FFF"})
+        .setLngLat([bbox2[3],bbox2[2]])
+        .addTo(map.current);
       }
 
       return (
