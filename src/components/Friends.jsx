@@ -253,8 +253,8 @@ const Friends = () => {
           </Stack>
           <Stack>
             <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'}>
-              <WhatshotIcon sx={{fontSize: '90pt'}}/>
-              <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '130pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>5</Typography>
+              <WhatshotIcon sx={{fontSize: '70pt'}}/>
+              <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '90pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>NaN</Typography>
             </Stack>
             <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '30pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
           </Stack>

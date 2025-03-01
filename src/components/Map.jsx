@@ -82,7 +82,7 @@ const Map = (props) => {
       var el = document.createElement('img');
       elDiv.appendChild(el)
       el.className = 'marker';
-      el.src = './public/pin.svg';
+      el.src = 'pin.svg';
       el.style.width = '40px';
       el.style.height = '40px';
       el.style.translate= '0px -50%'
