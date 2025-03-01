@@ -2,13 +2,27 @@ import React, { useState, useEffect } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Typography, Stack
 } from '@mui/material'
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import SearchIcon from '@mui/icons-material/Search';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
 import { db } from '../firebase.js';
 import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
+import {
+  LinePlot,
+  MarkPlot,
+  lineElementClasses,
+  markElementClasses,
+  AreaPlot,
+  MarkElement
+} from '@mui/x-charts/LineChart';
+import { LineChart } from '@mui/x-charts/LineChart';
+import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
 
 
 const Friends = () => {
@@ -17,8 +31,10 @@ const Friends = () => {
   const [errorMessage, setErrorMessage] = useState('No User Found')
   const [searchResult, setSearchResult] = useState([])
   const [reload, setReload] = useState(false)
+  const [ownStats, setOwnSats] = useState([])
   const { user } = useUserAuth();
   const uID = user.uid;
+  const [friendIndex, setFriendIndex] = useState(0)
 
   const handleSearch = async (e) => {
     var searchInput = e.target.value
@@ -119,6 +135,19 @@ const Friends = () => {
     setSearchResult([])
   };
 
+  async function getOwnStats() {
+    var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
+    startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
+    var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
+    endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
+
+    const uid = user.uid
+    const docRef = doc(db, 'Users', uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
+    const ownWeekStats = (await getDoc(docRef)).data()
+    console.log(ownWeekStats.days)
+    setOwnSats(ownWeekStats.days)
+  }
+
   async function getFriendsIDs() {
     const uid = user.uid
     const docRef = doc(db, "Users", uid)
@@ -130,13 +159,23 @@ const Friends = () => {
     var cacheFriends = new Array();
 
     await Promise.all(friendArr.map(async (friend) => {
+      var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
+      startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
+      var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
+      endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
+      //console.log(startOfCurrentWeek + '-' + endOfCurrentWeek)
+      
       const uid = friend
       const docRef = doc(db, "Users", uid)
-      cacheFriends.push([friend, (await getDoc(docRef)).data().displayName])
+      const weekStatsRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
+
+      const friendName = (await getDoc(docRef)).data().displayName
+      const weekStats = (await getDoc(weekStatsRef)).data()
+      cacheFriends.push([friend, friendName, weekStats])
     }))
 
     setFriends(cacheFriends)
-    console.log()
+    console.log(cacheFriends)
 
     // friendArr.forEach(async (friend) => {
     //   const uid = friend
@@ -146,8 +185,23 @@ const Friends = () => {
     // })
   }
 
+  const handleFriendSwitch = (direction) => {
+    if (direction == 'up') {
+      if (friendIndex < friends.length - 1 ) {
+        setFriendIndex(friendIndex + 1)
+        console.log(friendIndex)
+      }
+    } else if (direction == 'down') {
+      if (friendIndex > 0) {
+        setFriendIndex(friendIndex - 1)
+        console.log(friendIndex)
+      }
+    }
+  }
+
   useEffect(() => {
     setFriends([])
+    getOwnStats()
     getFriendsIDs().then((result) => {
       getFriendsFull(result)
     })
@@ -166,8 +220,8 @@ const Friends = () => {
           </IconButton>
       </Box>
 
-      <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
-      <TableContainer component={Paper} sx={{ backgroundColor: '#171726'}} elevation={2}>
+      {/* <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+      <TableContainer component={Paper} sx={{ backgroundColor: '#171726'}} elevation={0}>
         <Table aria-label="simple table">
           <TableHead>
             <TableRow sx={{'& .MuiTableCell-root': {color: '#fff'}}}>
@@ -188,8 +242,138 @@ const Friends = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      </Box>
+      </Box> */}
+      
+      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+        <Stack height={'70vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={4}>
+          <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
+            <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
+            <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
+            <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
+          </Stack>
+          <Stack>
+            <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'}>
+              <WhatshotIcon sx={{fontSize: '90pt'}}/>
+              <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '130pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>5</Typography>
+            </Stack>
+            <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '30pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
+          </Stack>
+          {friends.length > 0 ?
+            <LineChart
+              grid={{ horizontal: false }}
+              series={[
+                  {
+                    id:'anus',
+                    label: 'Du',
+                    data: ownStats,
+                    area: true,
+                    color: '',
+                  },
+                  {
+                    label: friends[friendIndex][1],
+                    data: friends[friendIndex][2].days,
+                    area: true,
+                  }
+                  ]}
+              slotProps={{
+                legend: {
+                  hidden: 'true'
+                }
+              }}
+              margin={{
+                  top: 10,
+                  bottom: 20,
+                  }}
+              yAxis={[
+                {
+                    colorMap:
+                    {
+                      id: 'anus',
+                      type: 'continuous',
+                      min: 0,
+                      max: 11,
+                      color: ['rgba(137,121,255,0)', 'rgba(137,121,255,0.5)'],
+                    }
+                },
+              ]}
+              xAxis={[
+                  {
+                      scaleType: 'band',
+                      data: [
+                          'Mo',
+                          'Di',
+                          'Mi',
+                          'Do',
+                          'Fr',
+                          'Sa',
+                          'So'
+                      ]
+                  },
+              ]}
+              sx={{
 
+                  borderRadius: 4,
+                  py: 0,
+                  //change left yAxis label styles
+                  "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
+                      strokeWidth: 0.4,
+                      fill:"#ffff"
+                  },
+                  // change all labels fontFamily shown on both xAxis and yAxis
+                  "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
+                  fontFamily: "Roboto",
+                  },
+                  // change bottom label styles
+                  "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
+                      strokeWidth:"0.5",
+                      fill:"#ffff",
+                  },
+                  // bottomAxis Line Styles
+                  "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
+                  stroke:"#ffff",
+                  strokeWidth:0
+                  },
+                  // leftAxis Line Styles
+                  "& .MuiChartsAxis-left .MuiChartsAxis-line":{
+                  stroke:"#22",
+                  strokeWidth: 0
+                  },
+                  "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
+                  stroke:"#ffff",
+                  strokeWidth: 0
+                  },
+                  "& .MuiChartsAxis-left .MuiChartsAxis-tick":{
+                  stroke:"#ffff",
+                  strokeWidth: 0
+                  },
+                  "& .MuiChartsAxis-root .MuiChartsAxis-line": {
+                      stroke: '#222',
+                      strokeWidth: 0
+                  },
+                  "& .MuiChartsAxis-directionX": {
+                      stroke: '#fff',
+                      strokeWidth: 1
+                  },
+                  "& .MuiChartsAxisHighlight-root": {
+                      stroke: '#fff',
+                  },
+                  [`& .${lineElementClasses.root}`]: {
+                      stroke: '#8979FF',
+                      strokeWidth: 2,
+                  },
+                  [`& .${markElementClasses.root}`]: {
+                  stroke: '#8979FF',
+                  scale: '0.6',
+                  fill: 'transparent',
+                  strokeWidth: 2,
+                  }
+              }}
+            />
+          :
+          'Loading'
+        }
+        </Stack>
+      </Box>
     </>
 )
 }

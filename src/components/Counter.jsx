@@ -81,7 +81,7 @@ function Counter() {
     const docRef = doc(db, "Users", uID)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
 
-    const o = point([52.547504, 13.071575])
+    const o = point(geolocation)
     var buffer2 = buffer(o, 80, {units: 'meters'});
     var bbox2 = bbox(buffer2);
     console.log(bbox2)
@@ -91,17 +91,23 @@ function Counter() {
     if (geoLocationsSnapshot.length < 1) {
       incrementAndNewGeopoint()
     } else {
+      var bCreateNew = true
       geoLocationsSnapshot.forEach((element, i) => {
         const lat = element.point._lat
         const lng = element.point._long
         console.log(i, lat, lng)
-        if (bbox2[2] < lat < bbox2[0] && bbox2[3] < lng < bbox2[1]) {
+        if (bbox2[2] > lat && lat > bbox2[0] && bbox2[3] > lng && lng > bbox2[1]) {
           incrementAndUpdateGeopoint(i)
           console.log('within')
-        }else{
-          console.log('geopoint')
+          bCreateNew = false
+          return
         }
       });
+      if (bCreateNew) {
+        console.log('new')
+        incrementAndNewGeopoint()
+        bCreateNew = false
+      }
     }
 
     async function incrementAndNewGeopoint(params) {

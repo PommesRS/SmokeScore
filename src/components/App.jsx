@@ -158,10 +158,10 @@ function App() {
   const DrawerList = (
     <Box sx={{width: 250, height: '100vh', bgcolor: '#0B0B12', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
-        <ListItemButton><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/friends`); setValue('friends');}}><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/tracker`); setValue('tracker');}}><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color="primary"><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
         
       </List>
