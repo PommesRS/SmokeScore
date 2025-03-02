@@ -8,7 +8,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MenuIcon from '@mui/icons-material/Menu';
-import {Container, Box, Button, Typography } from '@mui/material';
+import {Container, Box, Button, Typography, Stack } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Drawer from '@mui/material/Drawer';
@@ -30,7 +30,7 @@ import Logout from '@mui/icons-material/Logout';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
-import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -73,6 +73,7 @@ function App() {
   } 
 
   useEffect(() => {
+    
     getFRequests()
   }, [user])
 
@@ -119,18 +120,22 @@ function App() {
   function FRequestsDialog ({children}) {
   if (user) {
     return (
-      <Dialog sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
-        <DialogTitle textAlign={'center'}>Freundschaftsanfragen</DialogTitle>
-        <List  sx={{ p: 0 }}>
+      <Dialog slotProps={{paper: {sx: {background: '#0B0B12'}}}} sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
+        <DialogTitle textAlign={'center'} color='#fff'>Freundschaftsanfragen</DialogTitle>
+        <List sx={{ p: 0 }} justifyContent={'center'}>
           {fRequestsNames ? fRequestsNames.map((friend) => (
             <ListItem sx={{px: 4}} key={friend}>
-                <ListItemText sx={{"& .MuiListItemText-primary": {color: '#8979FF'}, px:2}} primary={friend}/>
-                <ListItemButton onClick={() => handleRequestAccept(friend)}>
-                  <ListItemText slotProps={{'data-role': 'role'}} primary='Annehmen'/>
-                </ListItemButton>
-                <ListItemButton display= {'flex'} alignItems='center'>
-                  <ListItemText primary='Ablehnen'/>
-                </ListItemButton>
+              <Stack>
+                <ListItemText sx={{"& .MuiListItemText-primary": {color: '#8979FF'}, textAlign: 'center'}} primary={friend}/>
+                <Stack direction={'row'}>
+                  <ListItemButton onClick={() => handleRequestAccept(friend)}>
+                    <ListItemText slotProps={{'data-role': 'role'}} sx={{color: '#fff', textAlign:'center'}} primary='Annehmen'/>
+                  </ListItemButton>
+                  <ListItemButton display= {'flex'}  alignItems='center'>
+                    <ListItemText sx={{color: '#fff', textAlign:'center'}} primary='Ablehnen'/>
+                  </ListItemButton>
+                </Stack>
+              </Stack>
             </ListItem>
           )) : <></>}
         </List>

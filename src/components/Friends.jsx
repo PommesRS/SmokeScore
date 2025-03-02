@@ -3,7 +3,7 @@ import {
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Typography, Stack
+  Typography, Stack, Snackbar, Alert
 } from '@mui/material'
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,6 +28,7 @@ import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
 const Friends = () => {
   const [friends, setFriends] = useState([])
   const [openFAdd, setOpenFAdd] = useState(false);
+  const [alertState, setAlertState] = useState(false)
   const [errorMessage, setErrorMessage] = useState('No User Found')
   const [searchResult, setSearchResult] = useState([])
   const [reload, setReload] = useState(false)
@@ -75,7 +76,12 @@ const Friends = () => {
     await updateDoc(docRef, {
       FriendRequests: arrayUnion(uID)
     })
-
+    fAddDialogClose()
+    setAlertState(true)
+  }
+  
+  const handleCloseAlert = () => {
+    setAlertState(false)
   }
   
  function SearchResult() {
@@ -219,6 +225,16 @@ const Friends = () => {
             <PersonAddAlt1Icon fontSize='large'/>
           </IconButton>
       </Box>
+      <Snackbar
+        anchorOrigin={{vertical: 'top', horizontal:'center'}}
+        autoHideDuration={3000}
+        open={alertState}
+        onClose={handleCloseAlert}
+      >
+        <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
+          Freund erfolgreich Angefragt!
+        </Alert>
+      </Snackbar>
 
       {/* <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
       <TableContainer component={Paper} sx={{ backgroundColor: '#171726'}} elevation={0}>
@@ -256,7 +272,7 @@ const Friends = () => {
               <WhatshotIcon sx={{fontSize: '70pt'}}/>
               <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '90pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>NaN</Typography>
             </Stack>
-            <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '30pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
+            <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '20pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
           </Stack>
           {friends.length > 0 ?
             <LineChart
