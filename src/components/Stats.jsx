@@ -14,13 +14,15 @@ import {
 import { db } from '../firebase';
 import { doc, getDoc } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
-import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getYear } from 'date-fns'
 
 
 
 const Stats = () => {
     const [weeklyData, setWeeklyData] = useState([])
+    const [monthlyData, setMonthlyData] = useState([])
     const [initiate, setInitiate] = useState(true)
+    const [initiateMonth, setInitiateMonth] = useState(true)
     const { user } = useUserAuth()
 
 
@@ -37,8 +39,19 @@ const Stats = () => {
         setWeeklyData((await getDoc(docRef)).data().days)
     }
 
+    async function getMonthlyData() {
+        const uid = user.uid
+        setInitiateMonth(false)
+
+        var year = getYear(new Date())
+        const docRef = doc(db, "Users", uid, 'monthly', `${year}`)
+        setMonthlyData((await getDoc(docRef)).data().months)
+
+    }
+
     useEffect(() => {
         getWeeklyData()
+        getMonthlyData()
     }, [user])
 
   return (
@@ -49,7 +62,12 @@ const Stats = () => {
 
                 <LineChart
                     grid={{ horizontal: false }}
-                    series={[{data: [2, 9, 12, 11, 6, 4, 5, 12, 11, 6, 10], area: true},]}
+                    series={[{
+                        data: monthlyData,
+                        area: true,
+                        color: '#fff',
+                        }
+                    ]}
                     margin={{
                         top: 10,
                         bottom: 20,
@@ -60,7 +78,7 @@ const Stats = () => {
                             {
                                 type: 'continuous',
                                 min: 0,
-                                max: 22,
+                                max: 30,
                                 color: ['rgba(137,121,255,0)', 'rgba(137,121,255,0.5)'],
                             }
                         },
@@ -73,6 +91,7 @@ const Stats = () => {
                                 'Feb',
                                 'Mär',
                                 'Apr',
+                                'Mai',
                                 'Jun',
                                 'Jul',
                                 'Aug',

@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
 import Confetti from 'react-confetti-boom';
-import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth } from 'date-fns'
 import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
@@ -34,6 +34,7 @@ function Counter() {
   const [isExploding, setIsExploding] = useState(0)
   const [geolocation, setLocation] = useState([])
   const [bGetCoords, setBGetCoords] = useState(true)
+  const [loading, setLoading] = useState(true)
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
       positionOptions: {
@@ -63,6 +64,7 @@ function Counter() {
   function location() {
     try {
       setLocation([coords.latitude, coords.longitude])
+      setLoading(false)
       console.log(geolocation)
       setBGetCoords(false)
     } catch (error) {
@@ -75,6 +77,7 @@ function Counter() {
   
   useEffect(() => {
     location()
+    
   }, [coords])
 
   const incrementCounter = async () => {
@@ -118,6 +121,7 @@ function Counter() {
                         point : geopoint
                       })
       })
+      incrementMonthStat()
     }
 
     async function incrementAndUpdateGeopoint(index) {
@@ -127,6 +131,30 @@ function Counter() {
         counter: increment(1),
         geoLocations: geoLocationsSnapshot
       })
+      incrementMonthStat()
+    }
+
+    async function incrementMonthStat(params) {
+
+      var year = getYear(new Date())
+      const monthDocRef = doc(db, "Users", uID, 'monthly', `${year}`)
+      const monthsData = (await getDoc(monthDocRef)).data()
+      
+      if(!monthsData){
+        var monthArray = [0,0,0,0,0,0,0,0,0,0,0,0]
+        monthArray[getMonth(new Date())] += 1
+        console.log(monthArray)
+
+        await setDoc(monthDocRef, {
+          months: monthArray
+        })
+      }else{
+        var localMonthArray = monthsData.months
+        localMonthArray[getMonth(new Date())] += 1
+        await updateDoc(monthDocRef, {
+          months: localMonthArray
+        })
+      }
     }
 
 
@@ -147,11 +175,13 @@ function Counter() {
         days : daysArr
       })
 
-    }else(
+    }else{
+      var daysArr2 = [0,0,0,0,0,0,0]
+      daysArr2[getDay(new Date())] += 1
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
-        days : [0,0,0,0,0,0,0]
+        days : daysArr2
       })
-    )
+    }
 
 
     
@@ -180,7 +210,7 @@ function Counter() {
                 {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
                 <Typography sx={{fontWeight: 'light', fontSize: '15pt'}}>insgesamt</Typography>
             </Stack>
-          <Button sx={{ fontWeight: '6 00', fontSize: '40pt', border: 'none', height: '6vh', width: '50vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}>+</Button>
+          <Button loading={loading} sx={{ fontWeight: '6 00', fontSize: '40pt', border: 'none', height: '6vh', width: '50vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}>+</Button>
         </Stack>
       </Box>
       
