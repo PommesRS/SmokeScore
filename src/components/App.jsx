@@ -116,6 +116,36 @@ function App() {
       console.log(error)
     }
   }
+  
+  const handleRequestDeny = async (friend) => {
+    try {
+      uID = await user.uid;
+      const docRef = await doc(db, "Users", uID)
+      //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
+      await updateDoc(docRef, {
+        Friends: arrayRemove(friend)
+      })
+
+      console.log(fRequestsNames.indexOf(friend))
+      fRequestsNames.splice(fRequestsNames.indexOf(friend))
+
+      setFRequests(fRequests - 1)
+      setReload(true)
+    } catch (error) {
+      console.log(error)
+    }
+    
+    try {
+      const docRef = await doc(db, "Users", friend)
+      //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
+      await updateDoc(docRef, {
+        Friends: arrayUnion(uID)
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
 
   function FRequestsDialog ({children}) {
   if (user) {
@@ -131,7 +161,7 @@ function App() {
                   <ListItemButton onClick={() => handleRequestAccept(friend)}>
                     <ListItemText slotProps={{'data-role': 'role'}} sx={{color: '#fff', textAlign:'center'}} primary='Annehmen'/>
                   </ListItemButton>
-                  <ListItemButton display= {'flex'}  alignItems='center'>
+                  <ListItemButton display= {'flex'}  alignItems='center' onClick={() => handleRequestDeny(friend)}>
                     <ListItemText sx={{color: '#fff', textAlign:'center'}} primary='Ablehnen'/>
                   </ListItemButton>
                 </Stack>

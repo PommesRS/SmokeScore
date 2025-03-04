@@ -53,9 +53,11 @@ const Friends = () => {
           return
         }else{
           setErrorMessage('User Found')
+          setSearchResult([])
           querySnapshot.forEach((doc) => {
-            searchResult.push([doc.id, doc.data()])
-            //console.log(searchResult)
+            setSearchResult(oldArray => [...oldArray, [doc.id, doc.data()]])
+            //searchResult.push([doc.id, doc.data()])
+            console.log(searchResult)
           })
           setReload(true)
 
