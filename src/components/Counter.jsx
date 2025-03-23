@@ -65,7 +65,6 @@ function Counter() {
     try {
       setLocation([coords.latitude, coords.longitude])
       setLoading(false)
-      console.log(geolocation)
       setBGetCoords(false)
     } catch (error) {
       console.log(error)
@@ -166,14 +165,15 @@ function Counter() {
       const daysDoc = await getDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek))
       var daysArr = await daysDoc.data().days
       console.log(daysArr)
-      daysArr[getDay(new Date()) - 1] = daysArr[getDay(new Date()) - 1] + 1
+      daysArr[getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1] += 1
+      console.log(getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1)
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
         days : daysArr
       })
 
     }else{
       var daysArr2 = [0,0,0,0,0,0,0]
-      daysArr2[getDay(new Date()) - 1 ] += 1
+      daysArr2[getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1] += 1
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
         days : daysArr2
       })
