@@ -35,8 +35,14 @@ const Stats = () => {
         startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
         var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
         endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
-        const docRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
-        setWeeklyData((await getDoc(docRef)).data().days)
+        
+        try {
+            const docRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
+            setWeeklyData((await getDoc(docRef)).data().days)
+        } catch (error) {
+            return
+        }
+        
     }
 
     async function getMonthlyData() {
@@ -44,8 +50,13 @@ const Stats = () => {
         setInitiateMonth(false)
 
         var year = getYear(new Date())
-        const docRef = doc(db, "Users", uid, 'monthly', `${year}`)
-        setMonthlyData((await getDoc(docRef)).data().months)
+        
+        try {
+            const docRef = doc(db, "Users", uid, 'monthly', `${year}`)
+            setMonthlyData((await getDoc(docRef)).data().months)
+        } catch (error) {
+            return
+        }
 
     }
 
@@ -72,6 +83,13 @@ const Stats = () => {
                         top: 10,
                         bottom: 20,
                         }}
+                    slotProps={{
+                        noDataOverlay: {
+                            sx: {
+                                fill: '#fff'
+                            }
+                        }
+                    }}
                     yAxis={[
                         {
                             colorMap:
@@ -146,6 +164,9 @@ const Stats = () => {
                         ".MuiChartsToolTip-root": {
                             fill: '#ff',
                         },
+                        ".noDataOverlay": {
+                            fill: '#fff'
+                        },
                         [`& .${lineElementClasses.root}`]: {
                             stroke: '#8979FF',
                             strokeWidth: 2,
@@ -173,6 +194,13 @@ const Stats = () => {
                     top: 10,
                     bottom: 20,
                     }}
+                slotProps={{
+                    noDataOverlay: {
+                        sx: {
+                            fill: '#fff'
+                        }
+                    }
+                }}
                 yAxis={[
                     {
                         colorMap:

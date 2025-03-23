@@ -27,7 +27,8 @@ export function UserAuthContextProvider({ children }) {
         counter: 0,
         displayName: Name,
         Friends: [],
-        FriendRequests: []
+        FriendRequests: [],
+        geoLocations: []
       })
       return await updateProfile(result.user, {
         displayName: Name

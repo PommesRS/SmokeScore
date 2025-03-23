@@ -87,10 +87,8 @@ function Counter() {
     const o = point(geolocation)
     var buffer2 = buffer(o, 80, {units: 'meters'});
     var bbox2 = bbox(buffer2);
-    console.log(bbox2)
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
-    console.log(geoLocationsSnapshot)
     if (geoLocationsSnapshot.length < 1) {
       incrementAndNewGeopoint()
     } else {
@@ -98,10 +96,8 @@ function Counter() {
       geoLocationsSnapshot.forEach((element, i) => {
         const lat = element.point._lat
         const lng = element.point._long
-        console.log(i, lat, lng)
         if (bbox2[2] > lat && lat > bbox2[0] && bbox2[3] > lng && lng > bbox2[1]) {
           incrementAndUpdateGeopoint(i)
-          console.log('within')
           bCreateNew = false
           return
         }
@@ -162,7 +158,6 @@ function Counter() {
     startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
     var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
     endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
-    console.log(startOfCurrentWeek + '-' + endOfCurrentWeek)
 
     const weeklydocRef = doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
     const weeklyDoc = await getDoc(weeklydocRef)
@@ -170,6 +165,7 @@ function Counter() {
     if(weeklyDoc.exists()){
       const daysDoc = await getDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek))
       var daysArr = await daysDoc.data().days
+      console.log(daysArr)
       daysArr[getDay(new Date()) - 1] = daysArr[getDay(new Date()) - 1] + 1
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
         days : daysArr
@@ -177,7 +173,7 @@ function Counter() {
 
     }else{
       var daysArr2 = [0,0,0,0,0,0,0]
-      daysArr2[getDay(new Date())] += 1
+      daysArr2[getDay(new Date()) - 1 ] += 1
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
         days : daysArr2
       })

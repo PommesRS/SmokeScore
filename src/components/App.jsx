@@ -330,6 +330,13 @@ function App() {
           <Route path='/stats' element={<ProtectedRoute><Stats/></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Friends/></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Map/></ProtectedRoute>}/>
+
+          {/* 404 Fallback Route */}
+          <Route path="*" element={
+            <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+              <Typography variant='h3' textAlign={'center'}>404 <br/> Seite nicht Gefunden</Typography>
+            </Box>
+            }/>
         </Routes>
 
         {user ? 
