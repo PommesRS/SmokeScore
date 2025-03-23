@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
 import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/material';
+import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
 import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
@@ -55,13 +56,15 @@ const Map = (props) => {
   const falkensee = { lng: 13.091315, lat: 52.560042 };
   const zoom = 12;
   maptilersdk.config.apiKey = '4G5717HLSk8wemu4bJUR';
+  var mapStyle = '59d38153-6ea3-464a-b3c9-2e869c449863'
 
   useEffect(() => {
       if (map.current) return; // stops map from intializing more than once
 
       map.current = new maptilersdk.Map({
         container: mapContainer.current,
-        style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+        //style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+        style: mapStyle,
         center: [falkensee.lng, falkensee.lat],
         zoom: zoom,
         navigationControl: false
@@ -82,36 +85,36 @@ const Map = (props) => {
       const uid = user.uid
       const docRef = doc(db, "Users", uid)
       return (await getDoc(docRef)).data().Friends
-    }
+  }
   
-    async function getFriendsFull(friendArr) {
-  
-      var cacheFriends = new Array();
-  
-      await Promise.all(friendArr.map(async (friend) => {
-        const uid = friend
-        const docRef = doc(db, "Users", uid)
-  
-        const friendName = (await getDoc(docRef)).data().displayName
-        cacheFriends.push([friend, friendName])
-      }))
-  
-      setFriends(cacheFriends)
-      console.log(cacheFriends)
-    }
+  async function getFriendsFull(friendArr) {
 
-    const handleFriendSwitch = (direction) => {
-      if (direction == 'up') {
-        if (friendIndex < friends.length - 1 ) {
-          console.log(friendIndex)
-          setFriendIndex(friendIndex + 1)
-        }
-      } else if (direction == 'down') {
-        if (friendIndex > 0) {
-          setFriendIndex(friendIndex - 1)
-        }
+    var cacheFriends = new Array();
+
+    await Promise.all(friendArr.map(async (friend) => {
+      const uid = friend
+      const docRef = doc(db, "Users", uid)
+
+      const friendName = (await getDoc(docRef)).data().displayName
+      cacheFriends.push([friend, friendName])
+    }))
+
+    setFriends(cacheFriends)
+    console.log(cacheFriends)
+  }
+
+  const handleFriendSwitch = (direction) => {
+    if (direction == 'up') {
+      if (friendIndex < friends.length - 1 ) {
+        console.log(friendIndex)
+        setFriendIndex(friendIndex + 1)
+      }
+    } else if (direction == 'down') {
+      if (friendIndex > 0) {
+        setFriendIndex(friendIndex - 1)
       }
     }
+  }
 
   async function getMarkers() {
     const docRef = await doc(db, "Users", user.uid)
@@ -216,7 +219,17 @@ const Map = (props) => {
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen);
   };
-  
+
+  const handleMapStyleSwitch = () => {
+    if (mapStyle === '59d38153-6ea3-464a-b3c9-2e869c449863') {
+      map.current.setStyle(maptilersdk.MapStyle.SATELLITE)
+      mapStyle = 'satellite'
+    } else {
+      map.current.setStyle('59d38153-6ea3-464a-b3c9-2e869c449863')
+      mapStyle = '59d38153-6ea3-464a-b3c9-2e869c449863'
+      
+    }
+  }
 
       return (
         <>
@@ -227,6 +240,11 @@ const Map = (props) => {
               }</Typography>
               <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
              </Stack>
+             <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
+                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: '#8979FF'}} color='inherit' aria-label="addFriend">
+                  <ModeOfTravelIcon  fontSize='large'/>
+                </IconButton>
+              </Box>
             <Box sx={{zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%',position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 01), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
                 <div ref={mapContainer} className="map-wrapper" />

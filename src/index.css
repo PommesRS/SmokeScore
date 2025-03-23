@@ -8,6 +8,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  background-color: hsl(240, 23%, 6%);
+  color: white;
+}
+
 *{
   font-family: 'Poppins';
 }
