@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import {Container, Box, Button, Typography} from '@mui/material'
+import UndoIcon from '@mui/icons-material/Undo';
+import AddIcon from '@mui/icons-material/Add';
 import Stack from '@mui/material/Stack';
 import { useUserAuth } from '../context/userAuthConfig';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion, GeoPoint } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion, GeoPoint, Timestamp } from "@firebase/firestore";
 import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
@@ -35,6 +37,8 @@ function Counter() {
   const [geolocation, setLocation] = useState([])
   const [bGetCoords, setBGetCoords] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [doesLatestCigExist, setDoesLatestCigExist] = useState(true)
+  //const [latestCigs, setLatestCigs] = useState([])
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
       positionOptions: {
@@ -43,6 +47,7 @@ function Counter() {
       userDecisionTimeout: 5000,
   });
 
+  var latestCigsLocal = []
 
   const { user } = useUserAuth();
 
@@ -61,6 +66,19 @@ function Counter() {
     }
   }
 
+  const getLatestCigs = async () => {
+    const docRef = doc(db, "Users", uID)
+    latestCigsLocal = (await getDoc(docRef)).data().latestCigs
+
+    console.log(latestCigsLocal)
+
+    if (latestCigsLocal.length > 0) {
+      setDoesLatestCigExist(true)
+    } else {
+      setDoesLatestCigExist(false)
+    }
+  }
+
   function location() {
     try {
       setLocation([coords.latitude, coords.longitude])
@@ -73,6 +91,8 @@ function Counter() {
 
 
   initiateCounter();
+  getLatestCigs()
+  //console.log(latestCigs)
   
   useEffect(() => {
     location()
@@ -82,10 +102,11 @@ function Counter() {
   const incrementCounter = async () => {
     const docRef = doc(db, "Users", uID)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
-
+    console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
     var buffer2 = buffer(o, 80, {units: 'meters'});
     var bbox2 = bbox(buffer2);
+    const cigUID = generateUUID()
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
     if (geoLocationsSnapshot.length < 1) {
@@ -107,15 +128,46 @@ function Counter() {
         bCreateNew = false
       }
     }
+    
+
+    function generateUUID() { // Public Domain/MIT
+      var d = new Date().getTime();//Timestamp
+      var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+      return 'xxxxxxxx-xxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16;//random number between 0 and 16
+          if(d > 0){//Use timestamp until depleted
+              r = (d + r)%16 | 0;
+              d = Math.floor(d/16);
+          } else {//Use microseconds since page-load if supported
+              r = (d2 + r)%16 | 0;
+              d2 = Math.floor(d2/16);
+          }
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    }
+
+    async function addToHistory(cigID) {
+      await updateDoc(docRef, {
+        latestCigs: arrayUnion({
+                        geoLocation : geopoint,
+                        id: cigID,
+                        timestamp: Timestamp.fromDate(new Date())
+                      })
+      })
+    }
+
+    
 
     async function incrementAndNewGeopoint(params) {
       await updateDoc(docRef, {
         counter: increment(1),
         geoLocations: arrayUnion({
                         amount: 1,
-                        point : geopoint
+                        point : geopoint,
+                        id: cigUID
                       })
       })
+      addToHistory(cigUID)
       incrementMonthStat()
     }
 
@@ -126,6 +178,7 @@ function Counter() {
         counter: increment(1),
         geoLocations: geoLocationsSnapshot
       })
+      addToHistory(geoLocationsSnapshot[index].id)
       incrementMonthStat()
     }
 
@@ -189,7 +242,32 @@ function Counter() {
         setIsExploding(false)
       }, 5000);
     }
-    
+    getLatestCigs()
+  }
+
+  const handleUndoCig = async () => {
+    const docRef = doc(db, "Users", uID)
+
+    const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
+    var geoLocIndex = null
+    geoLocationsSnapshot.forEach((element, i) => {
+      if (latestCigsLocal[0].id === element.id){
+        geoLocIndex = i
+      }
+    })
+
+    geoLocationsSnapshot[geoLocIndex].amount += -1
+    setCount(count - 1)
+    await updateDoc(docRef, {
+      counter: increment(-1),
+      geoLocations: geoLocationsSnapshot
+    })
+    console.log(latestCigsLocal)
+    latestCigsLocal.shift()
+    console.log(latestCigsLocal)
+    await updateDoc(docRef, {
+      latestCigs: latestCigsLocal
+    })
   }
   
 
@@ -198,15 +276,18 @@ function Counter() {
 
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
-            <TextGradient>SmokeScore</TextGradient>
-            <Stack  alignItems={'center'} justifyContent={'center'}>
-                <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
-                <Typography>{geolocation ? geolocation : 'anus'}</Typography>
-                {isExploding ? <Confetti/> : <></>}
-                {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
-                <Typography sx={{fontWeight: 'light', fontSize: '15pt'}}>insgesamt</Typography>
-            </Stack>
-          <Button loading={loading} sx={{ fontWeight: '6 00', fontSize: '40pt', border: 'none', height: '6vh', width: '50vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}>+</Button>
+          <TextGradient>SmokeScore</TextGradient>
+          <Stack  alignItems={'center'} justifyContent={'center'}>
+              <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
+              <Typography>{geolocation ? geolocation : 'anus'}</Typography>
+              {isExploding ? <Confetti/> : <></>}
+              {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
+              <Typography sx={{fontWeight: 'light', fontSize: '15pt'}}>insgesamt</Typography>
+          </Stack>
+          <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
+            <Button loading={loading} sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}><AddIcon fontSize='large'/></Button>
+            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
+          </Stack>
         </Stack>
       </Box>
       
