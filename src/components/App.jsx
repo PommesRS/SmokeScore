@@ -29,7 +29,8 @@ import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { db } from '../firebase.js';
+import { db, generateToken, messaging } from '../firebase.js';
+import { onMessage } from 'firebase/messaging';
 import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
 
 export function ListItemCustom ({children, text}) {
@@ -70,10 +71,16 @@ function App() {
         console.log(error)
       }
     }
-  } 
+  }
 
   useEffect(() => {
-    
+    generateToken()
+    onMessage( messaging, (payload) => {
+      console.log(payload)
+    })
+  }, [])
+
+  useEffect(() => {
     getFRequests()
   }, [user])
 
@@ -176,6 +183,7 @@ function App() {
   }
     
   }
+
   
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen);
@@ -359,4 +367,4 @@ function App() {
   )
 }
 
-export default App
+export default App;

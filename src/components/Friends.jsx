@@ -289,7 +289,7 @@ const Friends = () => {
                   },
                   {
                     label: friends[friendIndex][1],
-                    data: friends[friendIndex][2].days,
+                    data: friends[friendIndex][2] ? friends[friendIndex][2].days : [0,0,0,0,0,0,0],
                     area: true,
                   }
                   ]}
