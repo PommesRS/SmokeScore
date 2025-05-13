@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map } from './index.js';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -18,6 +18,7 @@ import Divider from '@mui/material/Divider';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import SettingsIcon from '@mui/icons-material/Settings';
 import ListItemText from '@mui/material/ListItemText';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Menu from '@mui/material/Menu';
@@ -25,13 +26,13 @@ import MenuItem from '@mui/material/MenuItem';
 import Avatar from '@mui/material/Avatar';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import PeopleIcon from '@mui/icons-material/People';
-import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db, generateToken, messaging } from '../firebase.js';
-import { onMessage } from 'firebase/messaging';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
+import { onMessage, getToken } from 'firebase/messaging';
+import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
+import { PushNotifications } from '@capacitor/push-notifications';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -74,14 +75,62 @@ function App() {
   }
 
   useEffect(() => {
+    
     generateToken()
     onMessage( messaging, (payload) => {
       console.log(payload)
     })
+    
+    PushNotifications.requestPermissions().then(result => {
+      if (result.receive === 'granted') {
+        PushNotifications.register();
+      } else {
+        console.warn('Keine Berechtigung für Push-Benachrichtigungen');
+      }
+    });
+
+    // Erfolgreich registriert
+    PushNotifications.addListener('registration', token => {
+      console.log('Registriert mit Token:', token.value);
+      // → Token an deinen Server senden
+    });
+
+    // Fehler bei der Registrierung
+    PushNotifications.addListener('registrationError', err => {
+      console.error('Registrierungsfehler:', err);
+    });
+
+    // Push empfangen (App im Vordergrund)
+    PushNotifications.addListener('pushNotificationReceived', notification => {
+      console.log('Push erhalten:', notification);
+    });
+
+    // Benutzer klickt auf Notification
+    PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+      console.log('Benutzeraktion:', notification);
+      // z. B. Navigation auslösen
+    });
   }, [])
+
+  const saveFCMToken = async () => {
+    const token = await getToken(messaging, {xapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
+    uID = await user.uid
+
+    if (!user) {
+    console.warn("Kein eingeloggter Benutzer");
+    return;
+  }
+
+  const tokenRef = doc(db, 'Users', uID);
+  await updateDoc(tokenRef, {
+    fcmToken: token
+  });
+
+  }
 
   useEffect(() => {
     getFRequests()
+    saveFCMToken()
   }, [user])
 
   const fRequestDialogOpen = () => {
@@ -210,16 +259,8 @@ function App() {
       </List>
       <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
       <List>
-      {['Über Uns', 'Einstellungen'].map((text, i) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {i % 2 === 0 ? <AccountCircleIcon sx={{color: 'white'}} /> : <BarChartIcon sx={{color: 'white'}} />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        <ListItemButton onClick={() => {navigate(`/about`); setValue('about');}}><ListItemCustom text={{text: 'Karte'}}><AccountCircleIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/settings`); setValue('settings');}}><ListItemCustom text={{text: 'Einstellungen'}}><SettingsIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
       </List>
     </Box>
   );
@@ -314,7 +355,7 @@ function App() {
           </MenuItem>
           <MenuItem onClick={handleClose}>
             <ListItemIcon>
-              <Settings sx={{color: 'white'}} fontSize="small" />
+              <SettingsIcon sx={{color: 'white'}} fontSize="small" />
             </ListItemIcon>
             Settings
           </MenuItem>
@@ -338,6 +379,8 @@ function App() {
           <Route path='/stats' element={<ProtectedRoute><Stats/></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Friends/></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Map/></ProtectedRoute>}/>
+          <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
+          <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

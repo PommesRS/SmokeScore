@@ -129,6 +129,26 @@ function Counter() {
       }
     }
     
+    
+    const friendsRef = doc(db, "Users", uID)
+    const friendIDArr = (await getDoc(friendsRef)).data().Friends
+    friendIDArr.map(async (friendId) => {
+      const FriendFCMRef = doc(db, 'Users', friendId)
+      const Token = (await getDoc(FriendFCMRef)).data().fcmToken
+      fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            token: Token,
+            title: 'Neue Kippe 🚬',
+            body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : ''
+        }),
+        })
+        .then(res => res.json())
+        .then(console.log)
+        .catch(console.error);
+    })
+    
 
     function generateUUID() { // Public Domain/MIT
       var d = new Date().getTime();//Timestamp
