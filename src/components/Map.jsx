@@ -55,7 +55,7 @@ const Map = (props) => {
   const { user } = useUserAuth();
   const falkensee = { lng: 13.091315, lat: 52.560042 };
   const zoom = 12;
-  maptilersdk.config.apiKey = '4G5717HLSk8wemu4bJUR';
+  maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
   var mapStyle = '59d38153-6ea3-464a-b3c9-2e869c449863'
 
   useEffect(() => {

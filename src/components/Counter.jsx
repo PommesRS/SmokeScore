@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {Container, Box, Button, Typography} from '@mui/material'
 import UndoIcon from '@mui/icons-material/Undo';
 import AddIcon from '@mui/icons-material/Add';
+import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import Stack from '@mui/material/Stack';
 import { useUserAuth } from '../context/userAuthConfig';
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion, GeoPoint, Timestamp } from "@firebase/firestore";
@@ -13,6 +14,7 @@ import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth } from 'date-
 import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
+import * as maptilersdk from '@maptiler/sdk';
 
 export function TextGradient({children}) {
     return (
@@ -35,17 +37,20 @@ function Counter() {
   const [count, setCount] = useState(0)
   const [isExploding, setIsExploding] = useState(0)
   const [geolocation, setLocation] = useState([])
+  const [nearbyStreet, setNearbyStreet] = useState([])
   const [bGetCoords, setBGetCoords] = useState(true)
   const [loading, setLoading] = useState(true)
   const [doesLatestCigExist, setDoesLatestCigExist] = useState(true)
   //const [latestCigs, setLatestCigs] = useState([])
-  const { coords, isGeolocationAvailable, isGeolocationEnabled } =
+  const {coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
       positionOptions: {
           enableHighAccuracy: true,
       },
       userDecisionTimeout: 5000,
   });
+
+  maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
   var latestCigsLocal = []
 
@@ -70,8 +75,6 @@ function Counter() {
     const docRef = doc(db, "Users", uID)
     latestCigsLocal = (await getDoc(docRef)).data().latestCigs
 
-    console.log(latestCigsLocal)
-
     if (latestCigsLocal.length > 0) {
       setDoesLatestCigExist(true)
     } else {
@@ -79,9 +82,11 @@ function Counter() {
     }
   }
 
-  function location() {
+  async function location() {
     try {
-      setLocation([coords.latitude, coords.longitude])
+      const results = await maptilersdk.geocoding.reverse([coords.longitude, coords.latitude]);
+      setNearbyStreet(results.features[0].text)
+      setLocation([coords.latitude, coords.longitude,])
       setLoading(false)
       setBGetCoords(false)
     } catch (error) {
@@ -102,11 +107,11 @@ function Counter() {
   const incrementCounter = async () => {
     const docRef = doc(db, "Users", uID)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
-    console.log(Timestamp.fromDate(new Date()))
+    //console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
     var buffer2 = buffer(o, 80, {units: 'meters'});
     var bbox2 = bbox(buffer2);
-    const cigUID = generateUUID()
+    var cigUID = generateUUID()
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
     if (geoLocationsSnapshot.length < 1) {
@@ -167,12 +172,43 @@ function Counter() {
     }
 
     async function addToHistory(cigID) {
+      const history = (await getDoc(docRef)).data().latestCigs
+      console.log(history.length)
+
+      if (history.length == 5) {
+          history.pop()
+          const newHistory = [{
+            geoLocation : geopoint,
+            id: cigID,
+            timestamp: Timestamp.fromDate(new Date())}].concat(history)
+          console.log(newHistory)
+          await updateDoc(docRef, {
+            latestCigs: newHistory
+          })
+      }else if (history.length == 0) {
+        
+        const newHistory = [{
+        geoLocation : geopoint,
+        id: cigID,
+        timestamp: Timestamp.fromDate(new Date())}]
+        await updateDoc(docRef, {
+          latestCigs: newHistory
+        })
+      }
+
+      const newHistory = [{
+        geoLocation : geopoint,
+        id: cigID,
+        timestamp: Timestamp.fromDate(new Date())}].concat(history)
+
+      console.log(newHistory)
       await updateDoc(docRef, {
-        latestCigs: arrayUnion({
-                        geoLocation : geopoint,
-                        id: cigID,
-                        timestamp: Timestamp.fromDate(new Date())
-                      })
+        // latestCigs: arrayUnion({
+        //                 geoLocation : geopoint,
+        //                 id: cigID,
+        //                 timestamp: Timestamp.fromDate(new Date())
+        //               })
+        latestCigs: newHistory
       })
     }
 
@@ -193,7 +229,6 @@ function Counter() {
 
     async function incrementAndUpdateGeopoint(index) {
       geoLocationsSnapshot[index].amount += 1
-      console.log(geoLocationsSnapshot)
       await updateDoc(docRef, {
         counter: increment(1),
         geoLocations: geoLocationsSnapshot
@@ -237,9 +272,8 @@ function Counter() {
     if(weeklyDoc.exists()){
       const daysDoc = await getDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek))
       var daysArr = await daysDoc.data().days
-      console.log(daysArr)
       daysArr[getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1] += 1
-      console.log(getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1)
+      //console.log(getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1)
       await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
         days : daysArr
       })
@@ -270,21 +304,52 @@ function Counter() {
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
     var geoLocIndex = null
+
+    console.log(latestCigsLocal[0].timestamp)
+    
+
     geoLocationsSnapshot.forEach((element, i) => {
       if (latestCigsLocal[0].id === element.id){
         geoLocIndex = i
       }
     })
 
-    geoLocationsSnapshot[geoLocIndex].amount += -1
+    if(geoLocationsSnapshot[geoLocIndex].amount > 1) {
+      geoLocationsSnapshot[geoLocIndex].amount += -1
+    }else if (geoLocationsSnapshot[geoLocIndex].amount == 1) {
+      geoLocationsSnapshot.splice(geoLocIndex, 1)
+    }
+
+    var year = getYear(Date(latestCigsLocal[0].timestamp))
+    const monthDocRef = doc(db, "Users", uID, 'monthly', `${year}`)
+    const monthsData = (await getDoc(monthDocRef)).data().months
+    const month = getMonth(Date(latestCigsLocal[0].timestamp))
+    monthsData[month] = monthsData[month] - 1
+    //console.log(monthsData)
+    await updateDoc(monthDocRef, {
+      months: monthsData
+    })
+
+    var startOfCurrentWeek = startOfWeek(Date(latestCigsLocal[0].timestamp), {weekStartsOn: 1})
+    startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
+    var endOfCurrentWeek = endOfWeek(Date(latestCigsLocal[0].timestamp), {weekStartsOn: 1})
+    endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
+
+    const weeklydocRef = doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
+    const weeklyDoc = await getDoc(weeklydocRef)
+    const daysArr = weeklyDoc.data().days
+    daysArr[getDay(new Date()) == 0 ? 6 : getDay(new Date()) - 1] -= 1
+    await setDoc(doc(db, 'Users', uID, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek), {
+        days : daysArr
+    })
+
+
     setCount(count - 1)
     await updateDoc(docRef, {
       counter: increment(-1),
       geoLocations: geoLocationsSnapshot
     })
-    console.log(latestCigsLocal)
     latestCigsLocal.shift()
-    console.log(latestCigsLocal)
     await updateDoc(docRef, {
       latestCigs: latestCigsLocal
     })
@@ -299,10 +364,9 @@ function Counter() {
           <TextGradient>SmokeScore</TextGradient>
           <Stack  alignItems={'center'} justifyContent={'center'}>
               <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
-              <Typography>{geolocation ? geolocation : 'anus'}</Typography>
+              <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
               {isExploding ? <Confetti/> : <></>}
               {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
-              <Typography sx={{fontWeight: 'light', fontSize: '15pt'}}>insgesamt</Typography>
           </Stack>
           <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
             <Button loading={loading} sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}><AddIcon fontSize='large'/></Button>

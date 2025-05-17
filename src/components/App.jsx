@@ -92,7 +92,19 @@ function App() {
     // Erfolgreich registriert
     PushNotifications.addListener('registration', token => {
       console.log('Registriert mit Token:', token.value);
-      // → Token an deinen Server senden
+      async () => {
+        let uID = await user.uid
+
+        if (!user) {
+          console.warn("Kein eingeloggter Benutzer");
+          return;
+        }
+
+        const tokenRef = doc(db, 'Users', uID);
+          await updateDoc(tokenRef, {
+          fcmToken: token.value
+        });
+      }
     });
 
     // Fehler bei der Registrierung
@@ -129,6 +141,7 @@ function App() {
   }
 
   useEffect(() => {
+    navigate(`/tracker`)
     getFRequests()
     saveFCMToken()
   }, [user])
@@ -294,7 +307,7 @@ function App() {
       <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', background: '#0B0B12', borderBottom: '1px solid gray'} : {}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', background: '#0B0B12', borderBottom: '1px solid gray'} : {zIndex: '4', background: '#0B0B12'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
@@ -353,7 +366,7 @@ function App() {
             </ListItemIcon>
             Add another account
           </MenuItem>
-          <MenuItem onClick={handleClose}>
+          <MenuItem onClick={() => {navigate(`/settings`); setValue('settings')}}>
             <ListItemIcon>
               <SettingsIcon sx={{color: 'white'}} fontSize="small" />
             </ListItemIcon>
