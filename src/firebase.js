@@ -17,12 +17,5 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const messaging = getMessaging(app);
-export const generateToken = async () => {
-  const permission = await Notification.requestPermission();
-  console.log(permission)
-  if (permission === 'granted') {
-    console.log(await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'}))
-  }
-}
 
 export default app;

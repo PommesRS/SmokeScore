@@ -90,7 +90,7 @@ function Counter() {
       setLoading(false)
       setBGetCoords(false)
     } catch (error) {
-      console.log(error)
+      
     }
   }
 

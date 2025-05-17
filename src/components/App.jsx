@@ -29,10 +29,11 @@ import PeopleIcon from '@mui/icons-material/People';
 import Logout from '@mui/icons-material/Logout';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { db, generateToken, messaging } from '../firebase.js';
+import { db, messaging } from '../firebase.js';
 import { onMessage, getToken } from 'firebase/messaging';
 import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -69,64 +70,72 @@ function App() {
         setFRequests((await getDoc(docRef)).data().FriendRequests.length)
         setGetRequestNames(false)
       } catch (error) {
-        console.log(error)
+        
       }
     }
   }
 
   useEffect(() => {
     
-    generateToken()
     onMessage( messaging, (payload) => {
       console.log(payload)
     })
-    
-    PushNotifications.requestPermissions().then(result => {
-      if (result.receive === 'granted') {
-        PushNotifications.register();
-      } else {
-        console.warn('Keine Berechtigung für Push-Benachrichtigungen');
-      }
-    });
 
-    // Erfolgreich registriert
-    PushNotifications.addListener('registration', token => {
-      console.log('Registriert mit Token:', token.value);
-      async () => {
-        let uID = await user.uid
-
-        if (!user) {
-          console.warn("Kein eingeloggter Benutzer");
-          return;
+    if (Capacitor.isPluginAvailable('PushNotifications')) {
+      PushNotifications.requestPermissions().then(result => {
+        if (result.receive === 'granted') {
+          PushNotifications.register();
+        } else {
+          console.warn('Keine Berechtigung für Push-Benachrichtigungen');
         }
+      });
 
-        const tokenRef = doc(db, 'Users', uID);
-          await updateDoc(tokenRef, {
-          fcmToken: token.value
-        });
-      }
-    });
+      // Erfolgreich registriert
+      PushNotifications.addListener('registration', token => {
+        console.log('Registriert mit Token:', token.value);
+        async () => {
+          let uID = await user.uid
 
-    // Fehler bei der Registrierung
-    PushNotifications.addListener('registrationError', err => {
-      console.error('Registrierungsfehler:', err);
-    });
+          if (!user) {
+            console.warn("Kein eingeloggter Benutzer");
+            return;
+          }
 
-    // Push empfangen (App im Vordergrund)
-    PushNotifications.addListener('pushNotificationReceived', notification => {
-      console.log('Push erhalten:', notification);
-    });
+          const tokenRef = doc(db, 'Users', uID);
+            await updateDoc(tokenRef, {
+            fcmToken: token.value
+          });
+        }
+      });
 
-    // Benutzer klickt auf Notification
-    PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-      console.log('Benutzeraktion:', notification);
-      // z. B. Navigation auslösen
-    });
+      // Fehler bei der Registrierung
+      PushNotifications.addListener('registrationError', err => {
+        console.error('Registrierungsfehler:', err);
+      });
+
+      // Push empfangen (App im Vordergrund)
+      PushNotifications.addListener('pushNotificationReceived', notification => {
+        console.log('Push erhalten:', notification);
+      });
+
+      // Benutzer klickt auf Notification
+      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+        console.log('Benutzeraktion:', notification);
+        // z. B. Navigation auslösen
+      });
+    }
+    
+    
   }, [])
 
   const saveFCMToken = async () => {
-    const token = await getToken(messaging, {xapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
-    uID = await user.uid
+    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
+
+    try {
+      uID = await user.uid
+    } catch (error) {
+      
+    }
 
     if (!user) {
     console.warn("Kein eingeloggter Benutzer");

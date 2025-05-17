@@ -9,6 +9,7 @@ import '@fontsource/roboto/700.css';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { HashRouter } from 'react-router-dom';
 import { UserAuthContextProvider } from './context/userAuthConfig';
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 
 const theme = createTheme({
   typography: {
@@ -44,3 +45,5 @@ createRoot(document.getElementById('root')).render(
     </ThemeProvider>
   </StrictMode>,
 )
+
+serviceWorkerRegistration.register();
