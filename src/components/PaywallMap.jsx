@@ -14,6 +14,7 @@ import { grey } from '@mui/material/colors';
 import CssBaseline from '@mui/material/CssBaseline';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import PaywallRender from './PaywallRender.jsx';
 
 var friendMarkers = []
 
@@ -44,7 +45,7 @@ const StyledBox = styled('div')(({ theme }) => ({
   backgroundColor: '#0B0B12',
 }));
 
-const Map = (props) => {
+const PaywallMap = (props) => {
   const { window } = props;
   const [open, setOpen] = useState(false);
   const [friends, setFriends] = useState([])
@@ -233,20 +234,9 @@ const Map = (props) => {
 
       return (
         <>
-            <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
-              <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
-              <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
-              friends.length > 0 ? friends[friendIndex][1] : 'no friends'
-              }</Typography>
-              <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
-             </Stack>
-             <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
-                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: '#8979FF'}} color='inherit' aria-label="addFriend">
-                  <ModeOfTravelIcon  fontSize='large'/>
-                </IconButton>
-              </Box>
             <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 01), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+                <PaywallRender/>
                 <div ref={mapContainer} className="map-wrapper" />
             </Box>
             <SwipeableDrawer
@@ -278,7 +268,7 @@ const Map = (props) => {
                 <Stack paddingTop={3} gap={2}>
                   
                   <Typography color='#fff'>{drawerProps.lat} // {drawerProps.lng}</Typography>
-                  <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
+                  <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort wurden bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
                 </Stack>
                 
               </StyledBox>
@@ -287,4 +277,4 @@ const Map = (props) => {
       );
 }
 
-export default Map
+export default PaywallMap

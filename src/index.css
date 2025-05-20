@@ -1,6 +1,12 @@
 :root {
+  --bg-color: hsl(256, 58%, 6%);
+  --text-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%);
+  /* --button-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%); */
+  --button-gradient: linear-gradient(153deg,rgb(65, 8, 92) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%);
+  --main-color: rgba(170,20,240,1);
   color: white;
-  background-color: hsl(240, 23%, 6%);
+  color: rgba(77, 11, 107, 0.2);
+  background-color: var(--bg-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -9,7 +15,7 @@
 }
 
 body {
-  background-color: hsl(240, 23%, 6%);
+  background-color: var(--bg-color);
   color: white;
 }
 

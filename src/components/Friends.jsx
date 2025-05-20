@@ -223,7 +223,7 @@ const Friends = () => {
     <>
       <FAddDialog></FAddDialog>
       <Box position={'absolute'} bottom={80} right={20}>
-          <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: '#8979FF'}} color='inherit' aria-label="addFriend">
+          <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
             <PersonAddAlt1Icon fontSize='large'/>
           </IconButton>
       </Box>
@@ -281,11 +281,10 @@ const Friends = () => {
               grid={{ horizontal: false }}
               series={[
                   {
-                    id:'anus',
+                    id:'',
                     label: 'Du',
                     data: ownStats,
                     area: true,
-                    color: '',
                   },
                   {
                     label: friends[friendIndex][1],
@@ -306,11 +305,11 @@ const Friends = () => {
                 {
                     colorMap:
                     {
-                      id: 'anus',
+                      id: '',
                       type: 'continuous',
                       min: 0,
-                      max: 11,
-                      color: ['rgba(137,121,255,0)', 'rgba(137,121,255,0.5)'],
+                      max: 3,
+                      color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
                     }
                 },
               ]}
@@ -376,11 +375,11 @@ const Friends = () => {
                       stroke: '#fff',
                   },
                   [`& .${lineElementClasses.root}`]: {
-                      stroke: '#8979FF',
+                      stroke: 'var(--main-color)',
                       strokeWidth: 2,
                   },
                   [`& .${markElementClasses.root}`]: {
-                  stroke: '#8979FF',
+                  stroke: 'var(--main-color)',
                   scale: '0.6',
                   fill: 'transparent',
                   strokeWidth: 2,

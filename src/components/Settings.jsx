@@ -7,7 +7,7 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc } from "@firebase/firestore";
 import { db } from '../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
 
@@ -149,7 +149,7 @@ const Settings = () => {
             <br />
             <button onClick={saveFCMToken} style={{color: 'white'}}>Dieses Gerät als Benachrichtungsgerät festlegen</button> */}
             <List sx={{ width: '100%'}}>
-                <ListItemButton onClick={sendNotification}>
+                <ListItemButton onClick={/*sendNotification*/ arsch}>
                     <ListItemAvatar>
                     <Avatar>
                         <NotificationsActiveIcon />

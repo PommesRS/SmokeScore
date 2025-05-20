@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About } from './index.js';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Paywall, PaywallStats } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -228,7 +228,7 @@ function App() {
   function FRequestsDialog ({children}) {
   if (user) {
     return (
-      <Dialog slotProps={{paper: {sx: {background: '#0B0B12'}}}} sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
+      <Dialog slotProps={{paper: {sx: {background: 'var(--bg-color)'}}}} sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
         <DialogTitle textAlign={'center'} color='#fff'>Freundschaftsanfragen</DialogTitle>
         <List sx={{ p: 0 }} justifyContent={'center'}>
           {fRequestsNames ? fRequestsNames.map((friend) => (
@@ -270,7 +270,7 @@ function App() {
 
 
   const DrawerList = (
-    <Box sx={{width: 250, height: '100vh', bgcolor: '#0B0B12', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
+    <Box sx={{width: 250, height: '100vh', bgcolor: 'var(--bg-color)', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
         <ListItemButton onClick={() => {navigate(`/friends`); setValue('friends');}}><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/tracker`); setValue('tracker');}}><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
@@ -316,7 +316,7 @@ function App() {
       <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', background: '#0B0B12', borderBottom: '1px solid gray'} : {zIndex: '4', background: '#0B0B12'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', background: 'var(--bg-color)', borderBottom: '1px solid gray'} : {zIndex: '4' }} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
@@ -350,12 +350,12 @@ function App() {
                   right: 14,
                   width: 10,
                   height: 10,
-                  bgcolor: '#0B0B12',
+                  bgcolor: 'var(--bg-color)',
                   transform: 'translateY(-50%) rotate(45deg)',
                   zIndex: 0,
                 },
                 '& .MuiList-root': {
-                  bgcolor: '#0B0B12',
+                  bgcolor: 'var(--bg-color)',
                   color: 'white'
                 },
               },
@@ -398,9 +398,9 @@ function App() {
 
 
           <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
-          <Route path='/stats' element={<ProtectedRoute><Stats/></ProtectedRoute>}/>
-          <Route path='/friends' element={<ProtectedRoute><Friends/></ProtectedRoute>}/>
-          <Route path='/map' element={<ProtectedRoute><Map/></ProtectedRoute>}/>
+          <Route path='/stats' element={<ProtectedRoute><Paywall><Stats displayName={'Stats'}/></Paywall></ProtectedRoute>}/>
+          <Route path='/friends' element={<ProtectedRoute><Paywall><Friends displayName={'Friends'}/></Paywall></ProtectedRoute>}/>
+          <Route path='/map' element={<ProtectedRoute><Paywall><Map displayName={'Map'}/></Paywall></ProtectedRoute>}/>
           <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
 
@@ -413,9 +413,9 @@ function App() {
         </Routes>
 
         {user ? 
-        <Box sx={{ position:'fixed', bottom: '0', left: '0', right: '0', borderTop: '1px solid rgba(155,155,155,0.5)'}}>
+        <Box sx={{position:'fixed', bottom: '0', left: '0', right: '0', borderTop: '1px solid rgba(155,155,155,0.5)', zIndex: '2'}}>
           <BottomNavigation
-            sx={{background: '#0B0B12', color: '#767676'}}
+            sx={{background: 'var(--bg-color)', color: '#767676'}}
             value={value}
             onChange={handleChange}
             display={'flex'} justify-content={'space-between'}>

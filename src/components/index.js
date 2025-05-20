@@ -7,7 +7,12 @@ import ProtectedRoute from "./ProtectedRoute";
 import Friends from "./Friends";
 import Map from "./Map";
 import Settings from "./Settings";
-import About from "./About"
+import About from "./About";
+import Paywall from "./Paywall"
+import PaywallStats from "./PaywallStats";
+import PaywallRender from "./PaywallRender";
+import PaywallFriends from "./PaywallFriends";
+import PaywallMap from "./PaywallMap";
 
 export{
     App,
@@ -19,5 +24,10 @@ export{
     Friends,
     Map,
     Settings,
-    About
+    About,
+    Paywall,
+    PaywallStats,
+    PaywallRender,
+    PaywallFriends,
+    PaywallMap
 }

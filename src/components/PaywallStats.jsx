@@ -1,82 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { LineChart } from '@mui/x-charts/LineChart';
-import {Container, Box, Button, Typography} from '@mui/material'
+import {Box, Button, Typography} from '@mui/material'
 import Stack from '@mui/material/Stack';
-import { ResponsiveChartContainer } from '@mui/x-charts';
-import {
-    LinePlot,
-    MarkPlot,
-    lineElementClasses,
-    markElementClasses,
-    AreaPlot,
-    MarkElement
-  } from '@mui/x-charts/LineChart';
-import { db } from '../firebase';
-import { doc, getDoc } from "@firebase/firestore";
-import { useUserAuth } from '../context/userAuthConfig';
-import { startOfWeek, endOfWeek, format, getYear } from 'date-fns'
+import { lineElementClasses, markElementClasses,} from '@mui/x-charts/LineChart';
+import { PaywallRender } from './index.js'
 
 
 
-const Stats = () => {
-    const [weeklyData, setWeeklyData] = useState([])
-    const [monthlyData, setMonthlyData] = useState([])
-    const [initiate, setInitiate] = useState(true)
-    const [initiateMonth, setInitiateMonth] = useState(true)
-    const { user } = useUserAuth()
-
-
-    //const weeklyData = [2, 0, 12, 11, 6, 4, 5]
-    async function getWeeklyData() {
-        const uid = user.uid
-        setInitiate(false)
-
-        var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
-        startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
-        var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
-        endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
-        
-        try {
-            const docRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
-            setWeeklyData((await getDoc(docRef)).data().days)            
-        } catch (error) {
-            console.log(error)
-
-            return
-        }
-        
-    }
-
-    async function getMonthlyData() {
-        const uid = user.uid
-        setInitiateMonth(false)
-
-        var year = getYear(new Date())
-        
-        try {
-            const docRef = doc(db, "Users", uid, 'monthly', `${year}`)
-            setMonthlyData((await getDoc(docRef)).data().months)
-        } catch (error) {
-            return
-        }
-
-    }
-
-    useEffect(() => {
-        getWeeklyData()
-        getMonthlyData()
-    }, [user])
+const PaywallStats = () => {
 
   return (
      <>
         <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+            <PaywallRender />
             <Stack height={'70vh'} width={'inherit'} px={2} alignItems={'center'} justifyContent={'space-between'} gap={'5vh'}>
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
+            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '5px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
 
                 <LineChart
                     grid={{ horizontal: false }}
                     series={[{
-                        data: monthlyData,
+                        data: [15,50,20,48,65,87,85,18,56,54,78,67],
                         area: true,
                         color: '#fff',
                         }
@@ -98,8 +41,8 @@ const Stats = () => {
                             {
                                 type: 'continuous',
                                 min: 0,
-                                max: Math.max(...monthlyData),
-                                color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
+                                max: 30,
+                                color: ['rgba(137,121,255,0)', 'rgba(137,121,255,0.5)'],
                             }
                         },
                         ]}
@@ -123,7 +66,7 @@ const Stats = () => {
                         },
                     ]}
                     sx={[{
-                        background: 'transparent',
+                        background: '#171726',
                         borderRadius: 4,
                         //change left yAxis label styles
                         "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
@@ -170,11 +113,11 @@ const Stats = () => {
                             fill: '#fff'
                         },
                         [`& .${lineElementClasses.root}`]: {
-                            stroke: 'rgba(170,20,240,1)',
+                            stroke: '#8979FF',
                             strokeWidth: 2,
                         },
                         [`& .${markElementClasses.root}`]: {
-                        stroke: 'rgba(170,20,240,1)',
+                        stroke: '#8979FF',
                         scale: '0.6',
                         fill: 'transparent',
                         strokeWidth: 2,
@@ -182,12 +125,12 @@ const Stats = () => {
                     }]}
                 />
  
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Wöchentlich</Typography>
+            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '5px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Wöchentlich</Typography>
             <LineChart
                 grid={{ horizontal: false }}
                 series={[
                     {
-                        data: weeklyData,
+                        data: [5,6,7,1,9,5,6],
                         area: true,
                         color: '#fff',
                     },
@@ -209,8 +152,8 @@ const Stats = () => {
                         {
                             type: 'continuous',
                             min: 0,
-                            max: Math.max(...weeklyData),
-                            color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
+                            max: 10,
+                            color: ['rgba(137,121,255,0)', 'rgba(137,121,255,0.5)'],
                         }
                     },
                     ]}
@@ -229,7 +172,7 @@ const Stats = () => {
                     },
                 ]}
                 sx={{
-                    background: 'transparent',
+                    background: '#171726',
                     borderRadius: 4,
                     py: 0,
                     //change left yAxis label styles
@@ -276,11 +219,11 @@ const Stats = () => {
                         stroke: '#fff',
                     },
                     [`& .${lineElementClasses.root}`]: {
-                        stroke: 'rgba(170,20,240,1)',
+                        stroke: '#8979FF',
                         strokeWidth: 2,
                     },
                     [`& .${markElementClasses.root}`]: {
-                    stroke: 'rgba(170,20,240,1)',
+                    stroke: '#8979FF',
                     scale: '0.6',
                     fill: 'transparent',
                     strokeWidth: 2,
@@ -294,4 +237,4 @@ const Stats = () => {
   )
 }
 
-export default Stats
+export default PaywallStats
