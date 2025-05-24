@@ -19,12 +19,10 @@ const ProtectedRoute = ({ children }) => {
             setPermission(status)
             setLoading(false)
             console.log('loading end')
-            console.log(status)
         }else{
             setPermission(false)
             setLoading(false)
             console.log('loading end')
-            console.log(status)
         }
         
     }
@@ -40,7 +38,6 @@ const ProtectedRoute = ({ children }) => {
         if (permission) {
             return children;
         }else {
-            console.log(children.props.displayName)
             if (children.props.displayName === 'Stats') {
                 console.log('StatsSeite mit Paywall')
                 return <PaywallStats/>

@@ -7,7 +7,7 @@ import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/materi
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
-import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
+import { collection, getCountFromServer, doc, getDoc, orderBy} from "@firebase/firestore";
 import { point, buffer, bbox } from '@turf/turf';
 import { styled } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
@@ -119,6 +119,10 @@ const Map = (props) => {
   async function getMarkers() {
     const docRef = await doc(db, "Users", user.uid)
     const g = (await getDoc(docRef)).data().geoLocations
+    console.log(g)
+    g.sort((a,b) => {
+      return b.amount - a.amount
+    })
     
 
     g.forEach((loc, index) => {
@@ -146,23 +150,6 @@ const Map = (props) => {
       .addTo(map.current)
 
     });
-
-    //console.log(bbox2)
-
-    
-    // Draw Debug Bounding Box
-    /*
-    const o = point([52.547504, 13.071575])
-    var buffer2 = buffer(o, 80, {units: 'meters'});
-    var bbox2 = bbox(buffer2);
-    new maptilersdk.Marker({color: "#FF"})
-    .setLngLat([bbox2[1], bbox2[0]])
-    .addTo(map.current);
-
-    new maptilersdk.Marker({color: "#FFF"})
-    .setLngLat([bbox2[3],bbox2[2]])
-    .addTo(map.current); 
-    */
   }
 
   useEffect(() => {
@@ -233,15 +220,15 @@ const Map = (props) => {
 
       return (
         <>
-            <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
-              <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
+            <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
+              <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowBackIosIcon/></IconButton>
               <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
               friends.length > 0 ? friends[friendIndex][1] : 'no friends'
               }</Typography>
-              <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
+              <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
              </Stack>
              <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
-                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: '#8979FF'}} color='inherit' aria-label="addFriend">
+                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
                   <ModeOfTravelIcon  fontSize='large'/>
                 </IconButton>
               </Box>

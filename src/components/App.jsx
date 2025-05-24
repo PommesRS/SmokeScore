@@ -316,13 +316,13 @@ function App() {
       <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', background: 'var(--bg-color)', borderBottom: '1px solid gray'} : {zIndex: '4' }} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', background: 'var(--bg-color)', borderBottom: '1px solid gray'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
           {DrawerList}
         </Drawer>
-        <Button onClick={handleClick} sx={user ? {color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}><AccountCircleIcon/></Button>
+        <Button onClick={handleClick} sx={user ? { zIndex: '10',color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}><AccountCircleIcon/></Button>
         <Menu
           anchorEl={anchorEl}
           id="account-menu"

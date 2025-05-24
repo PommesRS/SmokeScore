@@ -371,7 +371,7 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
-          <Stack  alignItems={'center'} justifyContent={'center'}>
+          <Stack fontWeight={700}  alignItems={'center'} justifyContent={'center'}>
               <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
               {isExploding ? <Confetti/> : <></>}

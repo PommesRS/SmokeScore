@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Typography, Stack, Snackbar, Alert
 } from '@mui/material'
+import './map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -23,7 +25,17 @@ import {
 } from '@mui/x-charts/LineChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
+import * as maptilersdk from '@maptiler/sdk';
+import "@maptiler/sdk/dist/maptiler-sdk.css";
 
+
+export const CustomTag = ({value}) => {
+  return (
+    <Typography flexGrow={1} textAlign={'center'} border={'2px solid var(--accent-color)'} position={'relative'} borderRadius={'53px'} px={3}>
+      {value}
+    </Typography>
+  )
+}
 
 const Friends = () => {
   const [friends, setFriends] = useState([])
@@ -36,6 +48,9 @@ const Friends = () => {
   const { user } = useUserAuth();
   const uID = user.uid;
   const [friendIndex, setFriendIndex] = useState(0)
+  const map = useRef(null)
+  const mapContainer = useRef(null)
+  maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
   const handleSearch = async (e) => {
     var searchInput = e.target.value
@@ -152,7 +167,6 @@ const Friends = () => {
     const uid = user.uid
     const docRef = doc(db, 'Users', uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
     const ownWeekStats = (await getDoc(docRef)).data()
-    console.log(ownWeekStats.days)
     setOwnSats(ownWeekStats.days)
   }
 
@@ -179,11 +193,35 @@ const Friends = () => {
 
       const friendName = (await getDoc(docRef)).data().displayName
       const weekStats = (await getDoc(weekStatsRef)).data()
-      cacheFriends.push([friend, friendName, weekStats])
+      const totalAmount = (await getDoc(docRef)).data().counter
+      const tags = (await getDoc(docRef)).data().tags
+      const locations = (await getDoc(docRef)).data().geoLocations
+      locations.sort((a,b) => {
+        return b.amount - a.amount
+      })
+
+      const street =  await maptilersdk.geocoding.reverse([locations[0].point._long, locations[0].point._lat]);
+      console.log(street)
+      locations[0].street = street.features[0].text
+
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags])
     }))
 
     setFriends(cacheFriends)
-    console.log(cacheFriends)
+
+    const mapCoords = cacheFriends[friendIndex][3]
+
+    if(!map.current){
+    
+    map.current = new maptilersdk.Map({
+      container: mapContainer.current,
+      style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+      //style: mapStyle,
+      center: [mapCoords.point._long, mapCoords.point._lat],
+      zoom: 12,
+      navigationControl: false
+    });
+  }
 
     // friendArr.forEach(async (friend) => {
     //   const uid = friend
@@ -192,6 +230,18 @@ const Friends = () => {
 
     // })
   }
+
+  useEffect(() => {
+
+    if (friends.length == 0) {
+      return
+    }
+
+    const mapCoords = friends[friendIndex][3]
+    map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
+
+    console.log(friends)
+  }, [friendIndex])
 
   const handleFriendSwitch = (direction) => {
     if (direction == 'up') {
@@ -222,7 +272,7 @@ const Friends = () => {
   return (
     <>
       <FAddDialog></FAddDialog>
-      <Box position={'absolute'} bottom={80} right={20}>
+      <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
           <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
             <PersonAddAlt1Icon fontSize='large'/>
           </IconButton>
@@ -262,7 +312,7 @@ const Friends = () => {
       </TableContainer>
       </Box> */}
       
-      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
         <Stack height={'70vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={4}>
           <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
             <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
@@ -329,9 +379,13 @@ const Friends = () => {
               ]}
               sx={{
 
+                  pointerEvents: 'all',
                   borderRadius: 4,
                   py: 0,
                   //change left yAxis label styles
+                  "& .MuiAreaElement-root":{
+                      pointerEvents: 'all'
+                  },
                   "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
                       strokeWidth: 0.4,
                       fill:"#ffff"
@@ -390,6 +444,91 @@ const Friends = () => {
           'Loading'
         }
         </Stack>
+
+      </Box>
+      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
+        <Box height={'75%'} width={'100%'} position={'relative'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'} sx={{
+            background: 'var(--button-gradient)', 
+            borderRadius: '52px', 
+            boxShadow: '5px 5px 10px 0px rgba(0, 0, 0, 1)',
+            '&::before': {
+              content : '" "',
+              position: 'absolute',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '30%',
+              maxWidth: '200px',
+              height: '15px',
+              background: 'var(--bg-color)',
+              zIndex: '1',
+              borderRadius: '25px',
+            },
+            '&::after': {
+              content : '" "',
+              position: 'absolute',
+              top: '10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '20px',
+              maxWidth: '200px',
+              height: '20px',
+              background: 'var(--bg-color)',
+              zIndex: '1',
+              borderRadius: '19px',
+            }
+          }}>
+          <Stack spacing={5} paddingY={7} position={'relative'} height={'100%'} width={'inherit'} direction={'column'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'} sx={{justifyContent: 'space-between'}}>
+            <Stack useFlexGap spacing={2} direction={'row'} width={'90%'} justifyContent={'center'} alignItems={'center'} sx={{ flexWrap: 'wrap', pt: '30px'}}>
+              {friends.length == 0 ? 'loading' : friends[friendIndex][5] ? 
+                <>
+                  <CustomTag value={friends[friendIndex][5].tobacco}></CustomTag>
+                  <CustomTag value={friends[friendIndex][5].cigType}></CustomTag>
+                </> : <></>
+              }
+            </Stack>
+
+            <Stack direction={'column'} justifyContent={'center'} alignItems={'center'} sx={{justifyContent: 'space-between'}}>
+              <Typography textAlign={'center'} fontWeight={800} lineHeight={'80%'} fontSize={'100pt'} sx={{textShadow: '6px 6px 4px rgba(0, 0, 0, 0.25)'}}>{friends.length != 0 ? friends[friendIndex][4] : 'loading'}</Typography>
+              <Typography display={'flex'} textAlign={'center'}>Kippen insgesamt geraucht</Typography>
+            </Stack>
+            
+            <Box height={'10rem'} width= {'90%'} display={'flex'} position={'relative'} borderRadius={'27px'} alignItems="center" justifyContent="center" marginBottom={'20px'} sx={
+              { '&::after': {
+                content : '" "',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                boxShadow: 'inset 0px -60px 10.3px -6px rgba(137, 121, 255, 0.2)',
+                zIndex: '1',
+                borderRadius: '25px',
+              }, '&::before': {
+                content : '" Beliebteste Location "',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: 'auto',
+                zIndex: '1',
+                transform: 'translateY(-50%) translateX(20px)',
+                fontSize: '15pt',
+                textShadow: '4px 4px 4px #000'
+              },
+              boxShadow: '4px 6px 4px rgba(0, 0, 0, 0.52)'
+            }
+              }>
+              <div ref={mapContainer} className='map-wrapper' style={{borderRadius: '27px'}}/>
+              <img src="pin.svg" width={20} alt="pin" style={{position: 'absolute', transform: 'translateY(-50%)'}}/>
+              <Stack direction={'row'} position={'absolute'} width={'90%'} sx={{justifyContent: 'space-between'}} bottom={'12%'} zIndex={2}>
+                <Typography display={'flex'} alignItems={'center'}><PersonPinCircleIcon/>{friends.length != 0 ? friends[friendIndex][3].street : 'loading...'}</Typography>
+                <Typography textAlign={'right'}>{friends.length != 0 ? friends[friendIndex][3].amount : 'loading...'}</Typography>
+              </Stack>
+            </Box>
+
+          </Stack>
+        </Box>
       </Box>
     </>
 )

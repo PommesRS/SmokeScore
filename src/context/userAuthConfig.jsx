@@ -30,7 +30,8 @@ export function UserAuthContextProvider({ children }) {
         FriendRequests: [],
         geoLocations: [],
         latestCigs: [],
-        hasPremium: false
+        hasPremium: false,
+        tags: {}
       })
       return await updateProfile(result.user, {
         displayName: Name
