@@ -7,20 +7,12 @@ import { PaywallRender } from './index.js'
 
 
 
-<<<<<<< HEAD
 const PaywallStats = ({user}) => {
-=======
-const PaywallStats = () => {
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
 
   return (
      <>
         <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
-<<<<<<< HEAD
             <PaywallRender user={user}/>
-=======
-            <PaywallRender />
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
             <Stack height={'70vh'} width={'inherit'} px={2} alignItems={'center'} justifyContent={'space-between'} gap={'5vh'}>
             <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '5px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
 

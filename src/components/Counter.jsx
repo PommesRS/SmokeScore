@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {Container, Box, Button, Typography, Table, TableBody, 
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
-  List, Dialog, Input, FormControl,
+  List, Dialog, Input, FormControl, IconButton,
   MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, 
 } from '@mui/material'
 import dayjs from 'dayjs';
@@ -10,6 +10,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateField } from '@mui/x-date-pickers/DateField';
 import UndoIcon from '@mui/icons-material/Undo';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import Stack from '@mui/material/Stack';
 import { useUserAuth } from '../context/userAuthConfig';
@@ -29,6 +30,7 @@ import { red } from '@mui/material/colors';
 
 export function TextGradient({children}) {
     return (
+
       <Typography 
         sx={{fontSize: '40pt', 
             fontWeight: 'bold', 
@@ -42,7 +44,6 @@ export function TextGradient({children}) {
       </Typography>
     );
   }
-  
 
 function Counter() {
   const [count, setCount] = useState(0)
@@ -66,6 +67,7 @@ function Counter() {
   const [rowsPerPage, setRowsPerPage] = useState(5); // Einträge pro Seite
   const [openPAdd, setOpenPAdd] = useState(false);
   const [product, setProduct] = useState('Tabak');
+  const [anus, setAnus] = useState(1);
 
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
@@ -384,7 +386,6 @@ function Counter() {
       latestCigs: latestCigsLocal
     })
 
-<<<<<<< HEAD
   }
 
   /* Ausgaben */
@@ -402,13 +403,11 @@ function Counter() {
     const historyRef = doc(db, 'Users', uID)
     const historyDoc = await getDoc(historyRef)
     const history = historyDoc.data().spendingHistory
-    console.log(history)
     
     setHistoryArr(history)
 
     var sum = 0;
     history.forEach(row => {
-      console.log(format(toDate(row.date.toDate()), 'dd.MM.yyyy'))
       sum += row.price
     })
 
@@ -416,11 +415,11 @@ function Counter() {
 
   }
 
-  const addToSpendingHistory = () => {
-    //var newArr = historyArr.push({name: 'anus', price: 1.55, date: {seconds: 12345, nanoseconds: 12345}})
-    setHistoryArr([...historyArr, {name: 'anus', price: 1.5, date: Timestamp.fromDate(new Date())}])
-    calculateTotalSpendAmount(1.55)
-  }
+  // const addToSpendingHistory = () => {
+  //   //var newArr = historyArr.push({name: 'anus', price: 1.55, date: {seconds: 12345, nanoseconds: 12345}})
+  //   setHistoryArr([...historyArr, {name: 'anus', price: 1.5, date: Timestamp.fromDate(new Date())}])
+  //   calculateTotalSpendAmount(1.55)
+  // }
 
     const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -519,11 +518,22 @@ function Counter() {
     pAddDialogClose();
   };
 
+  const deleteEntry = (index) => {
+    historyArr.splice(page * 5 + index, 1)
+    setAnus(anus + 1)
+
+    const docRef = doc(db, "Users", uID)
+    appendToHistory(docRef)
+    async function appendToHistory(docRef) {
+      await updateDoc(docRef, {
+        spendingHistory: historyArr,
+      })
+    }
+  }
+
   const handleChange = (event) => {
     setProduct(event.target.value || '');
     console.log(event.target.value)
-=======
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
   }
 
   return (
@@ -553,32 +563,34 @@ function Counter() {
         { historyArr.length > 0 ? 
 
         
-        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0}}>
+        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0, marginBottom: 10}}>
           <Table sx={{ Width: 650}} aria-label="simple table">
             <TableHead>
               <TableRow>
                 <TableCell>Produkt</TableCell>
                 <TableCell align="right">Datum</TableCell>
                 <TableCell align="right">Preis</TableCell>
+                <TableCell align="right">Löschen</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell align='center' colSpan={3}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
+                <TableCell key={anus} align='center' colSpan={4}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
               </TableRow>
-                {historyArr.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-                  <TableRow key={row.index}>
+                {historyArr?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
+                  <TableRow key={index} >
                     <TableCell component="th" scope="row">
                       {row.name}
                     </TableCell>
                     <TableCell align="right">{row.date?.toDate().toLocaleDateString("de-DE")}</TableCell>
                     <TableCell align="right">{row.price}&nbsp;€</TableCell>
+                    <TableCell align="right"><IconButton onClick={() => {deleteEntry(index)}}><DeleteIcon/></IconButton></TableCell>
                   </TableRow>
                 ))}
             </TableBody>
           </Table>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[5, 10]}
             component="div"
             count={historyArr.length} // alle Einträge
             rowsPerPage={rowsPerPage}
@@ -611,7 +623,7 @@ function Counter() {
           <Table aria-label="simple table">
             <TableBody>
               <TableRow>
-                <TableCell align='center' colSpan={3}><Button loading={loading} sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {addToSpendingHistory()}}><AddIcon fontSize='large'/></Button></TableCell>
+                <TableCell align='center' colSpan={3}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
               </TableRow>
               <TableRow>
                 <TableCell sx={{borderBottom: 'none'}}></TableCell>

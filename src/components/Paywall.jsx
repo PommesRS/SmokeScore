@@ -40,19 +40,11 @@ const ProtectedRoute = ({ children }) => {
         }else {
             if (children.props.displayName === 'Stats') {
                 console.log('StatsSeite mit Paywall')
-<<<<<<< HEAD
                 return <PaywallStats user={user}/>
             } else if (children.props.displayName === 'Friends'){
                 return <PaywallFriends user={user}/>
             } else if (children.props.displayName === 'Map'){
                 return <PaywallMap user={user}/>
-=======
-                return <PaywallStats/>
-            } else if (children.props.displayName === 'Friends'){
-                return <PaywallFriends/>
-            } else if (children.props.displayName === 'Map'){
-                return <PaywallMap />
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
             }
             
         }

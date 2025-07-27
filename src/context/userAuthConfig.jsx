@@ -30,10 +30,7 @@ export function UserAuthContextProvider({ children }) {
         FriendRequests: [],
         geoLocations: [],
         latestCigs: [],
-<<<<<<< HEAD
         spendingHistory: [],
-=======
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
         hasPremium: false,
         tags: {}
       })

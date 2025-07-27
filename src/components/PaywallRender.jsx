@@ -1,5 +1,4 @@
 import React from 'react'
-<<<<<<< HEAD
 import {Box, Paper, Typography, Button} from '@mui/material'
 
 const PaywallRender = ({user}) => {
@@ -24,18 +23,6 @@ const PaywallRender = ({user}) => {
             customer-email={user.email}
             client-reference-id={uid}
           ></stripe-buy-button>
-=======
-import {Box, Button, Typography} from '@mui/material'
-
-const PaywallRender = () => {
-
-    
-  return (
-    <Box display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center"  sx={{zIndex: '1', height: '100vh', width: '100%',position: 'absolute', background: 'rgba(256, 256, 256, 0.7)', backdropFilter: "blur(4px)"}}>
-        <Typography textAlign={'center'} color='black'>Gewinne Einsicht mit <br /> SmokeScore Premium</Typography>
-        <br />
-        <Button variant='contained'>Jetzt Upgraden</Button>
->>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
     </Box>
   )
 }
