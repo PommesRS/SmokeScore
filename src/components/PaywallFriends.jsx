@@ -18,7 +18,11 @@ import { LineChart } from '@mui/x-charts/LineChart';
 
 
 
+<<<<<<< HEAD
 const PaywallFriends = ({user}) => {
+=======
+const PaywallFriends = () => {
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
   return (
     <>
     
@@ -30,7 +34,11 @@ const PaywallFriends = ({user}) => {
 
       
       <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+<<<<<<< HEAD
         <PaywallRender user={user}/>
+=======
+        <PaywallRender/>
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
         <Stack height={'70vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={4}>
           <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
             <IconButton onClick={() => {}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>

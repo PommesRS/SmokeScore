@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
+<<<<<<< HEAD
 import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Paywall, PaywallStats, PaywallRender } from './index.js';
+=======
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Paywall, PaywallStats } from './index.js';
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -332,8 +336,12 @@ function App() {
         <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
           {DrawerList}
         </Drawer>
+<<<<<<< HEAD
         <Button onClick={handleClick} sx={user ? { zIndex: '10',color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}> <AccountCircleIcon/> </Button>
         
+=======
+        <Button onClick={handleClick} sx={user ? { zIndex: '10',color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}><AccountCircleIcon/></Button>
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
         <Menu
           anchorEl={anchorEl}
           id="account-menu"

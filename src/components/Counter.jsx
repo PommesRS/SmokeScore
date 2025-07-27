@@ -384,6 +384,7 @@ function Counter() {
       latestCigs: latestCigsLocal
     })
 
+<<<<<<< HEAD
   }
 
   /* Ausgaben */
@@ -521,6 +522,8 @@ function Counter() {
   const handleChange = (event) => {
     setProduct(event.target.value || '');
     console.log(event.target.value)
+=======
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
   }
 
   return (

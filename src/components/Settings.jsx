@@ -9,7 +9,10 @@ import WorkIcon from '@mui/icons-material/Work';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import EditIcon from '@mui/icons-material/Edit';
+<<<<<<< HEAD
 import SellIcon from '@mui/icons-material/Sell';
+=======
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
@@ -273,6 +276,7 @@ const Settings = () => {
                     <ListItemText primary="Profil Anpassen" />
                 </ListItemButton>
             <Divider />
+<<<<<<< HEAD
                 <ListItemButton href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
                     <ListItemAvatar>
                     <Avatar>
@@ -282,6 +286,8 @@ const Settings = () => {
                     <ListItemText primary="Abonnement Optionen" secondary='Zum Kundenportal' />
                 </ListItemButton>
             <Divider />
+=======
+>>>>>>> b38927722a79c6504459df6df3ee11d1bf3d2d5c
                 <ListItemButton onClick={handleClickOpen}>
                     <ListItemAvatar>
                     <Avatar>
