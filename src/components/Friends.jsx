@@ -151,7 +151,6 @@ const Friends = () => {
   
   const fAddDialogOpen = () => {
     setOpenFAdd(true);
-    
   };
   
   const fAddDialogClose = () => {
@@ -217,19 +216,6 @@ const Friends = () => {
   
     const mapCoords = cacheFriends[friendIndex][3]
 
-
-    if(!map.current){
-    
-    map.current = new maptilersdk.Map({
-      container: mapContainer.current,
-      style: '59d38153-6ea3-464a-b3c9-2e869c449863',
-      //style: mapStyle,
-      center: [mapCoords.point._long, mapCoords.point._lat],
-      zoom: 12,
-      navigationControl: false
-    });
-  }
-
     // friendArr.forEach(async (friend) => {
     //   const uid = friend
     //   const docRef = doc(db, "Users", uid)
@@ -245,9 +231,22 @@ const Friends = () => {
     }
 
     const mapCoords = friends[friendIndex][3]
-    map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
+    console.log(map.current)
+    if (map.current) {
+      map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
+    }
 
     console.log(friends)
+
+    map.current = new maptilersdk.Map({
+      container: mapContainer.current,
+      style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+      //style: mapStyle,
+      center: [mapCoords.point._long, mapCoords.point._lat],
+      zoom: 12,
+      navigationControl: false
+    });
+
   }, [friendIndex])
 
   const handleFriendSwitch = (direction) => {
@@ -270,6 +269,7 @@ const Friends = () => {
     getFriendsIDs().then((result) => {
       getFriendsFull(result)
     })
+  
   }, [user])
 
   /*

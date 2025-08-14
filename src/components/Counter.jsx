@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import {Container, Box, Button, Typography} from '@mui/material'
+import {Container, Box, Button, Typography, Table, TableBody, 
+  TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
+  List, Dialog, Input, FormControl,
+  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, 
+} from '@mui/material'
+import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateField } from '@mui/x-date-pickers/DateField';
 import UndoIcon from '@mui/icons-material/Undo';
 import AddIcon from '@mui/icons-material/Add';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
@@ -10,11 +18,14 @@ import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
 import Confetti from 'react-confetti-boom';
-import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate } from 'date-fns'
 import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
 import * as maptilersdk from '@maptiler/sdk';
+import { red } from '@mui/material/colors';
+
+
 
 export function TextGradient({children}) {
     return (
@@ -49,6 +60,13 @@ function Counter() {
       },
       userDecisionTimeout: 5000,
   });
+  const [totalAmountSpend, setTotalAmountSpend] = useState(0)
+  const [historyArr, setHistoryArr] = useState([])
+  const [page, setPage] = useState(0); // aktuelle Seite
+  const [rowsPerPage, setRowsPerPage] = useState(5); // Einträge pro Seite
+  const [openPAdd, setOpenPAdd] = useState(false);
+  const [product, setProduct] = useState('Tabak');
+
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -103,6 +121,10 @@ function Counter() {
     location()
     
   }, [coords])
+
+  useEffect(() => {
+    getSpendingHistory()
+  }, [])
 
   const incrementCounter = async () => {
     const docRef = doc(db, "Users", uID)
@@ -363,11 +385,151 @@ function Counter() {
     })
 
   }
-  
+
+  /* Ausgaben */
+
+  function calculateTotalSpendAmount(price) {
+    // var sum = 0
+    // historyArr.forEach(row => {
+    //   sum += row.price
+    // })
+
+    setTotalAmountSpend((Math.floor(( totalAmountSpend + price )*1000))/1000)
+  }
+
+  const getSpendingHistory = async () => {
+    const historyRef = doc(db, 'Users', uID)
+    const historyDoc = await getDoc(historyRef)
+    const history = historyDoc.data().spendingHistory
+    console.log(history)
+    
+    setHistoryArr(history)
+
+    var sum = 0;
+    history.forEach(row => {
+      console.log(format(toDate(row.date.toDate()), 'dd.MM.yyyy'))
+      sum += row.price
+    })
+
+    setTotalAmountSpend(sum)
+
+  }
+
+  const addToSpendingHistory = () => {
+    //var newArr = historyArr.push({name: 'anus', price: 1.55, date: {seconds: 12345, nanoseconds: 12345}})
+    setHistoryArr([...historyArr, {name: 'anus', price: 1.5, date: Timestamp.fromDate(new Date())}])
+    calculateTotalSpendAmount(1.55)
+  }
+
+    const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  function AddPurchase({children}) {
+    return (
+      <Dialog open={openPAdd} onClose={pAddDialogClose} sx={{backdropFilter: "blur(2px)", '& .MuiDialog-paper': { width: '80%', maxHeight: 435, background: '#0B0B12', borderRadius: '5px' }}}>
+        <DialogTitle>Kauf eintragen</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Wähle unten die Art des Produktes aus für das du den Preis eintragen möchtest. Trage anschleßend den Preis ein und drücke auf 'Eintragen'.
+          </DialogContentText>
+          <br />
+          <form noValidate onSubmit={handleSubmit} id="subscription-form">
+            <FormControl 
+              fullWidth
+              sx={{marginBottom: 3}}
+            >
+              <InputLabel id="name">Produktart</InputLabel>
+              <Select
+                labelId="name"
+                id="name"
+                value={product}
+                label="Produktart"
+                sx={{color: 'white'}}
+                onChange={handleChange}
+                name="product"
+              >
+                <MenuItem value={'Tabak'}>Tabak</MenuItem>
+                <MenuItem value={'Filter'}>Filter</MenuItem>
+                <MenuItem value={'Papes'}>Papes</MenuItem>
+                <MenuItem value={'Schachtel'}>Schachtel</MenuItem>
+              </Select>
+
+            </FormControl>
+            <FormControl fullWidth >
+
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateField
+                  onError={console.log('arnus')}
+                  label="Preis"
+                  format="YY,YY€"
+                  defaultValue={dayjs('2000-01-01')}
+                  id="name"
+                  name="email"
+                  error={false}
+                  sx={{"& .MuiDateField-root":{
+                      color: 'blue'
+                  },}}
+                /> 
+              </LocalizationProvider>
+            </FormControl>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={pAddDialogClose}>Abbrechen</Button>
+          <Button type="submit" form="subscription-form">
+            Eintragen
+          </Button>
+        </DialogActions>
+      </Dialog>
+    )
+  }
+
+  const pAddDialogOpen = () => {
+    setOpenPAdd(true);
+  };
+
+  const pAddDialogClose = () => {
+    setOpenPAdd(false);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const formJson = Object.fromEntries(formData.entries());
+    const price = Number(formJson.email.slice(0,5).replace(',', '.'));
+    const product = formJson.product;
+    console.log(price, product);
+
+    const docRef = doc(db, "Users", uID)
+    historyArr.unshift({name: product, price: price, date: Timestamp.fromDate(new Date())})
+    console.log(historyArr)
+
+    calculateTotalSpendAmount(price)
+    appendToHistory(docRef)
+
+    async function appendToHistory(docRef) {
+      await updateDoc(docRef, {
+        spendingHistory: historyArr,
+      })
+    }
+
+    pAddDialogClose();
+  };
+
+  const handleChange = (event) => {
+    setProduct(event.target.value || '');
+    console.log(event.target.value)
+  }
 
   return (
     <>
-
+      <AddPurchase></AddPurchase>
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
@@ -382,6 +544,120 @@ function Counter() {
             <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
           </Stack>
         </Stack>
+      </Box>
+
+      {/* Ausgabentracker */}
+
+      <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+        <Typography variant='h2'>Kaufhistorie</Typography>
+        <br />
+        { historyArr ? 
+
+        
+        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0}}>
+          <Table sx={{ Width: 650}} aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Produkt</TableCell>
+                <TableCell align="right">Datum</TableCell>
+                <TableCell align="right">Preis</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell align='center' colSpan={3}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
+              </TableRow>
+                {historyArr.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
+                  <TableRow key={row.index}>
+                    <TableCell component="th" scope="row">
+                      {row.name}
+                    </TableCell>
+                    <TableCell align="right">{row.date?.toDate().toLocaleDateString("de-DE")}</TableCell>
+                    <TableCell align="right">{row.price}&nbsp;€</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={historyArr.length} // alle Einträge
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Zeilen pro Seite"
+          />
+
+           <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              p: 2,
+              background: "rgba(0,0,0,0.1)",
+              borderTop: "1px solid rgba(255,255,255,0.1)"
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+              Insgesamt Ausgeben:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+              {totalAmountSpend} €
+            </Typography>
+          </Box>
+        </TableContainer> 
+        : 
+        
+        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0}}>
+          <Table aria-label="simple table">
+            <TableBody>
+              <TableRow>
+                <TableCell align='center' colSpan={3}><Button loading={loading} sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {addToSpendingHistory()}}><AddIcon fontSize='large'/></Button></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colSpan={3} sx={{borderBottom: 'none'}} align='center'>Du hast noch keine Kaufhistorie. Erstelle noch heute deinen ersten eintrag!</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+                <TableCell sx={{borderBottom: 'none'}}></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={0} // alle Einträge
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Zeilen pro Seite"
+          />
+
+           <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              p: 2,
+              background: "rgba(0,0,0,0.1)",
+              borderTop: "1px solid rgba(255,255,255,0.1)"
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+              Insgesamt Ausgeben:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+              0 €
+            </Typography>
+          </Box>
+        </TableContainer> 
+}   
       </Box>
       
     </>
