@@ -14,7 +14,7 @@ dist-ssr
 
 *.env
 
-functions
+functions/index.js
 
 firebase-messaging-sw.js
 functions/index.js
