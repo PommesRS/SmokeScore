@@ -12,8 +12,12 @@
 .map-wrapper .maplibregl-ctrl-bottom-right {
   display: none;
 }
+.map-wrapper button.maplibregl-ctrl-geolocate {
+  display: none;
+}
 
 .map-wrapper .maplibregl-ctrl-bottom-left {
   display: none;
   color: rgba(11, 11, 18, 0.233);
+
 }

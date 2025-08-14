@@ -21,7 +21,7 @@ export function TextGradient({children}) {
       <Typography 
         sx={{fontSize: '40pt', 
             fontWeight: 'bold', 
-            backgroundImage: `linear-gradient( 180deg, #8979FF, #79FFD9)`,
+            backgroundImage: 'var(--text-gradient)',
             backgroundSize: "100%",
             backgroundRepeat: "repeat",
             backgroundClip: "text",
@@ -305,7 +305,7 @@ function Counter() {
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
     var geoLocIndex = null
 
-    console.log(latestCigsLocal[0].timestamp)
+    console.log(latestCigsLocal[0])
     
 
     geoLocationsSnapshot.forEach((element, i) => {
@@ -343,16 +343,25 @@ function Counter() {
         days : daysArr
     })
 
+    console.log(latestCigsLocal)
 
     setCount(count - 1)
     await updateDoc(docRef, {
       counter: increment(-1),
       geoLocations: geoLocationsSnapshot
     })
+    
     latestCigsLocal.shift()
+    if (latestCigsLocal.length > 0) {
+      setDoesLatestCigExist(true)
+    } else {
+      setDoesLatestCigExist(false)
+    }
+    
     await updateDoc(docRef, {
       latestCigs: latestCigsLocal
     })
+
   }
   
 
@@ -362,15 +371,15 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
-          <Stack  alignItems={'center'} justifyContent={'center'}>
+          <Stack fontWeight={700}  alignItems={'center'} justifyContent={'center'}>
               <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
               {isExploding ? <Confetti/> : <></>}
               {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
           </Stack>
           <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
-            <Button loading={loading} sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}><AddIcon fontSize='large'/></Button>
-            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'linear-gradient(180deg, rgba(137,121,255,1) 0%, rgba(126,111,234,1) 20%, rgba(0,0,0,0) 90%)'}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
+            <Button loading={loading} sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}><AddIcon fontSize='large'/></Button>
+            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
           </Stack>
         </Stack>
       </Box>

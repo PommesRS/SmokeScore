@@ -1,6 +1,14 @@
 :root {
+  --bg-color: #0b0618; 
+  --text-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%);
+  /* --button-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%); */
+  --button-gradient: linear-gradient(153deg,rgb(65, 8, 92) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%);
+  --card-gradient: linear-gradient(130deg,rgb(88, 32, 114) 0%, rgb(88, 32, 114) 30%, rgb(152, 58, 196) 50%, rgb(88, 32, 114) 65%, rgb(88, 32, 114) 100%);
+  --main-color: #aa14f0;
+  --accent-color: #79FFE4;
   color: white;
-  background-color: hsl(240, 23%, 6%);
+  color: rgba(77, 11, 107, 0.2);
+  background-color: var(--bg-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -9,7 +17,7 @@
 }
 
 body {
-  background-color: hsl(240, 23%, 6%);
+  background-color: var(--bg-color);
   color: white;
 }
 

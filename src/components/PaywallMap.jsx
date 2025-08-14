@@ -7,13 +7,14 @@ import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/materi
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
-import { collection, getCountFromServer, doc, getDoc, orderBy} from "@firebase/firestore";
+import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
 import { point, buffer, bbox } from '@turf/turf';
 import { styled } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import CssBaseline from '@mui/material/CssBaseline';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import PaywallRender from './PaywallRender.jsx';
 
 var friendMarkers = []
 
@@ -44,7 +45,7 @@ const StyledBox = styled('div')(({ theme }) => ({
   backgroundColor: '#0B0B12',
 }));
 
-const Map = (props) => {
+const PaywallMap = (props) => {
   const { window } = props;
   const [open, setOpen] = useState(false);
   const [friends, setFriends] = useState([])
@@ -119,10 +120,6 @@ const Map = (props) => {
   async function getMarkers() {
     const docRef = await doc(db, "Users", user.uid)
     const g = (await getDoc(docRef)).data().geoLocations
-    console.log(g)
-    g.sort((a,b) => {
-      return b.amount - a.amount
-    })
     
 
     g.forEach((loc, index) => {
@@ -150,6 +147,23 @@ const Map = (props) => {
       .addTo(map.current)
 
     });
+
+    //console.log(bbox2)
+
+    
+    // Draw Debug Bounding Box
+    /*
+    const o = point([52.547504, 13.071575])
+    var buffer2 = buffer(o, 80, {units: 'meters'});
+    var bbox2 = bbox(buffer2);
+    new maptilersdk.Marker({color: "#FF"})
+    .setLngLat([bbox2[1], bbox2[0]])
+    .addTo(map.current);
+
+    new maptilersdk.Marker({color: "#FFF"})
+    .setLngLat([bbox2[3],bbox2[2]])
+    .addTo(map.current); 
+    */
   }
 
   useEffect(() => {
@@ -220,20 +234,9 @@ const Map = (props) => {
 
       return (
         <>
-            <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
-              <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowBackIosIcon/></IconButton>
-              <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
-              friends.length > 0 ? friends[friendIndex][1] : 'no friends'
-              }</Typography>
-              <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
-             </Stack>
-             <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
-                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
-                  <ModeOfTravelIcon  fontSize='large'/>
-                </IconButton>
-              </Box>
             <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 01), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+                <PaywallRender user={user}/>
                 <div ref={mapContainer} className="map-wrapper" />
             </Box>
             <SwipeableDrawer
@@ -265,7 +268,7 @@ const Map = (props) => {
                 <Stack paddingTop={3} gap={2}>
                   
                   <Typography color='#fff'>{drawerProps.lat} // {drawerProps.lng}</Typography>
-                  <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
+                  <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort wurden bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
                 </Stack>
                 
               </StyledBox>
@@ -274,4 +277,4 @@ const Map = (props) => {
       );
 }
 
-export default Map
+export default PaywallMap

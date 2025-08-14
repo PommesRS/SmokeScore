@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import {Box, List, ListItem, ListItemButton, Avatar, ListItemAvatar, ListItemText, Divider, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material'
+import {
+    Box, List, ListItem, ListItemButton, Avatar, ListItemAvatar, ListItemText, Divider, Dialog, 
+    DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Select, FormControl, InputLabel, TextField,
+    Alert, Snackbar
+} from '@mui/material'
 import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import EditIcon from '@mui/icons-material/Edit';
+import SellIcon from '@mui/icons-material/Sell';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc } from "@firebase/firestore";
 import { db } from '../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
 
@@ -18,9 +24,17 @@ const Settings = () => {
       let TokenGlobal
     // const [token, setToken] = useState();
     
-    // useEffect(() => {
-    //     setToken(getToken(messaging, {xapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'}))
-    // }, [])
+    useEffect(() => {
+        initProfileData()
+    }, [user])
+
+    const initProfileData = async () => {
+        const docRef = doc(db, 'Users', user.uid)
+        const data = (await getDoc(docRef)).data().tags
+        if(!data) return
+        setCigType(data.cigType)
+        setTobacco(data.tobacco)
+    }
 
     function sendNotification(){
         fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
@@ -48,7 +62,7 @@ const Settings = () => {
         const tokenRef = doc(db, 'Users', uID);
             await updateDoc(tokenRef, {
             fcmToken: TokenGlobal
-            });
+        });
     }
 
     const getAndroidPermission = () => {
@@ -102,15 +116,56 @@ const Settings = () => {
         });
     }
 
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = useState(false);
+    const [openCustomization, setCustomizationOpen] = useState(false);
+    const [cigType, setCigType] = useState('');
+    const [tobacco, setTobacco] = useState('');
+    const [alertState, setAlertState] = useState(false)
+    
 
     const handleClickOpen = () => {
         setOpen(true);
     };
 
+    const handleCustomizationOpen = () => {
+        setCustomizationOpen(true);
+    };
+
     const handleClose = () => {
         setOpen(false);
+        setCustomizationOpen(false);
+        initProfileData()
     };
+
+    const handleChange = (event) => {
+        setCigType(event.target.value || '');
+        console.log(event.target.value)
+    }
+
+    const handleTextInput = (event) => {
+        setTobacco(event.target.value)
+    }
+
+    const handleTagSave = async () => {
+        const docRef = doc(db, 'Users', user.uid)
+        try {
+            await updateDoc(docRef, {
+                tags: {
+                    cigType: cigType,
+                    tobacco: tobacco
+                }
+            })
+            setAlertState(true)
+            handleClose()
+        } catch (error) {
+            
+        }
+        
+    }
+
+    const handleCloseAlert = () => {
+        setAlertState(false)
+    }
     
     return (
         <Box paddingTop={8} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="top">
@@ -134,28 +189,97 @@ const Settings = () => {
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
                         Wenn du auf zustimmen drückst werden alle Daten die an dein Account gebunden sind gelöscht. Diese Daten sind: Tracker, Standorte, Freunde. Dein Account bleibt weiter bestehen. 
-                        
-                        
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>Abbrechen</Button>
-                    <Button onClick={handleClose}>Zustimmen</Button>
+                    <Button onClick={saveFCMToken}>Zustimmen</Button>
                 </DialogActions> 
             </Dialog>
+
+            <Dialog
+                slotProps={
+                    {paper: 
+                        {sx: 
+                            {background: '#0B0B12'}
+                        }
+                    }
+                }
+                sx={
+                    {backdropFilter: "blur(2px)"}
+                }
+                open={openCustomization}
+                onClose={handleClose}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{'Hier kannst du dein Profil anpassen. Die Informationen werden deinen Freunden auf der "Freunde" Seite angezeigt.'}</DialogTitle>
+                <DialogContent>
+                    <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
+                        <InputLabel htmlFor="demo-dialog-native">Zigaretten Typ wählen</InputLabel>
+                        <Select
+                            native
+                            autoWidth
+                            value={cigType}
+                            onChange={handleChange}
+                            
+                        >
+                            <option aria-label="None" value="" />
+                            <option value={'gedreht'}>Selbst gedrehte Zigarette</option>
+                            <option value={'fertig'}>Fertige Zigarette</option>
+                        </Select>
+                    </FormControl>
+                    <br />
+                    <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
+                        <TextField value={tobacco} onChange={handleTextInput} id="standard-basic" label="Tabak Sorte wählen" variant="standard" />
+                    </FormControl>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {handleClose()}}>Abbrechen</Button>
+                    <Button onClick={() => {handleTagSave()}}>Speichern</Button>
+                </DialogActions> 
+            </Dialog>
+            <Snackbar
+                anchorOrigin={{vertical: 'top', horizontal:'center'}}
+                autoHideDuration={3000}
+                open={alertState}
+                onClose={handleCloseAlert}
+            >
+                <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
+                    Einstellungen gespeichert!
+                </Alert>
+            </Snackbar>
             {/* <button onClick={sendNotification} style={{color: 'white'}}>Nachricht senden</button>
             <br />
             <button onClick={getAndroidPermission} style={{color: 'white'}}>Berechtigung für Nachrichten anfragen</button>
             <br />
             <button onClick={saveFCMToken} style={{color: 'white'}}>Dieses Gerät als Benachrichtungsgerät festlegen</button> */}
             <List sx={{ width: '100%'}}>
-                <ListItemButton onClick={sendNotification}>
+                <ListItemButton onClick={'/*sendNotification*/'}>
                     <ListItemAvatar>
                     <Avatar>
                         <NotificationsActiveIcon />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Benachrichtigungen" />
+                </ListItemButton>
+            <Divider />
+                <ListItemButton onClick={handleCustomizationOpen}>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <EditIcon />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Profil Anpassen" />
+                </ListItemButton>
+            <Divider />
+                <ListItemButton href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <SellIcon />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Abonnement Optionen" secondary='Zum Kundenportal' />
                 </ListItemButton>
             <Divider />
                 <ListItemButton onClick={handleClickOpen}>

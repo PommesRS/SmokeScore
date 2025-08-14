@@ -20,7 +20,7 @@ const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#8979FF',
+      main: 'rgba(170,20,240,1)',
       contrastText: '#fff'
     }
   },
