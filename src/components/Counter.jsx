@@ -465,16 +465,12 @@ function Counter() {
 
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateField
-                  onError={console.log('arnus')}
                   label="Preis"
                   format="YY,YY€"
                   defaultValue={dayjs('2000-01-01')}
                   id="name"
                   name="email"
                   error={false}
-                  sx={{"& .MuiDateField-root":{
-                      color: 'blue'
-                  },}}
                 /> 
               </LocalizationProvider>
             </FormControl>
@@ -551,7 +547,7 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Typography variant='h2'>Kaufhistorie</Typography>
         <br />
-        { historyArr ? 
+        { historyArr.length > 0 ? 
 
         
         <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0}}>
