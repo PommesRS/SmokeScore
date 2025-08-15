@@ -570,7 +570,7 @@ function Counter() {
                 <TableCell>Produkt</TableCell>
                 <TableCell align="right">Datum</TableCell>
                 <TableCell align="right">Preis</TableCell>
-                <TableCell align="right">Löschen</TableCell>
+                <TableCell align="right"></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
