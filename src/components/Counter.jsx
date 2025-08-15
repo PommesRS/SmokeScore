@@ -520,7 +520,7 @@ function Counter() {
 
   const deleteEntry = (index) => {
     historyArr.splice(page * 5 + index, 1)
-    setAnus(anus + 1)
+    //setAnus(anus + 1)
 
     const docRef = doc(db, "Users", uID)
     appendToHistory(docRef)
@@ -529,6 +529,14 @@ function Counter() {
         spendingHistory: historyArr,
       })
     }
+
+    var sum = 0;
+    historyArr.forEach(row => {
+      sum += row.price
+    })
+
+    setTotalAmountSpend(sum)
+
   }
 
   const handleChange = (event) => {
@@ -558,7 +566,7 @@ function Counter() {
       {/* Ausgabentracker */}
 
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
-        <Typography variant='h2'>Kaufhistorie</Typography>
+        <Typography variant='h2' fontWeight={500}>Kaufhistorie</Typography>
         <br />
         { historyArr.length > 0 ? 
 
@@ -575,7 +583,7 @@ function Counter() {
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell key={anus} align='center' colSpan={4}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
+                <TableCell key={'addRow'} align='center' colSpan={4}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
               </TableRow>
                 {historyArr?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                   <TableRow key={index} >
@@ -632,11 +640,6 @@ function Counter() {
               </TableRow>
               <TableRow>
                 <TableCell colSpan={3} sx={{borderBottom: 'none'}} align='center'>Du hast noch keine Kaufhistorie. Erstelle noch heute deinen ersten eintrag!</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
               </TableRow>
             </TableBody>
           </Table>
