@@ -40,11 +40,12 @@ exports.sendPushToToken = functions.https.onRequest((req, res) => {
 
     try {
       const message = {
-        notification: { title, body },
+        data: { title, body },
+        //notification: { title, body },
         token: token,
       };
 
-      console.log("📤 Sende Push an Token:", token);
+      console.log("📤 Sende Push an: ", token);
       const response = await admin.messaging().send(message);
       console.log("✅ Push erfolgreich:", response);
 

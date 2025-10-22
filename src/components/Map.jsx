@@ -262,7 +262,7 @@ const Map = (props) => {
   const jumpToLoc = () => {
     getMarkers(true)
     if (map.current) {
-      map.current.jumpTo({ center: [coords.longitude, coords.latitude]})
+      map.current.flyTo({ center: [coords.longitude, coords.latitude], zoom: 16, speed: 2})
     }
   }
 
@@ -277,10 +277,10 @@ const Map = (props) => {
              </Stack>
              <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
               <Stack gap={2}>
-                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: 'var(--main-color)'} ,":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
                     <AdjustIcon  fontSize='large'/>
                   </IconButton>
-                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":hover": {backgroundColor: 'var(--main-color)'} ,":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
                     <ModeOfTravelIcon  fontSize='large'/>
                   </IconButton>
               </Stack>

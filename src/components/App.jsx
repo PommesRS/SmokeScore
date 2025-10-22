@@ -85,7 +85,6 @@ function App() {
   }
 
   useEffect(() => {
-    
     onMessage( messaging, (payload) => {
       console.log(payload)
     })

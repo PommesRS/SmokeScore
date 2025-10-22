@@ -103,7 +103,7 @@ function Counter() {
     const docRef = doc(db, "Users", uID)
     latestCigsLocal = (await getDoc(docRef)).data().latestCigs
 
-    if (latestCigsLocal.length > 0) {
+    if (latestCigsLocal?.length > 0) {
       setDoesLatestCigExist(true)
     } else {
       setDoesLatestCigExist(false)
@@ -415,7 +415,7 @@ function Counter() {
     setHistoryArr(history)
 
     var sum = 0;
-    history.forEach(row => {
+    history?.forEach(row => {
       sum += row.price
     })
 
@@ -576,7 +576,7 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
         <Typography variant='h2' fontWeight={500}>Kaufhistorie</Typography>
         <br />
-        { historyArr.length > 0 ? 
+        { historyArr?.length > 0 ? 
 
         
         <TableContainer component={Paper} elevation={5} sx={{ background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0, marginBottom: 10, color: 'var(--color)'}}>
