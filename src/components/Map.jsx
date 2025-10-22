@@ -91,6 +91,10 @@ const Map = (props) => {
     })
   }, [user])
 
+  useEffect(() => {
+    getMarkers(true)
+  }, [coords])
+
   async function getFriendsIDs() {
       const uid = user.uid
       const docRef = doc(db, "Users", uid)
@@ -273,7 +277,7 @@ const Map = (props) => {
              </Stack>
              <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
               <Stack gap={2}>
-                  <IconButton onClick={jumpToLoc} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
                     <AdjustIcon  fontSize='large'/>
                   </IconButton>
                   <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
