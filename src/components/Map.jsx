@@ -5,6 +5,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
 import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/material';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
+import AdjustIcon from '@mui/icons-material/Adjust';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { db } from '../firebase.js';
 import { collection, getCountFromServer, doc, getDoc, orderBy} from "@firebase/firestore";
@@ -14,6 +15,7 @@ import { grey } from '@mui/material/colors';
 import CssBaseline from '@mui/material/CssBaseline';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import { useGeolocated } from "react-geolocated";
 
 var friendMarkers = []
 
@@ -50,10 +52,18 @@ const Map = (props) => {
   const [friends, setFriends] = useState([])
   const [friendIndex, setFriendIndex] = useState(0)
   const mapContainer = useRef(null);
+  const locMarker = useRef(null);
   const map = useRef(null);
   const [drawerProps, setDrawerProps] = useState({})
   const { user } = useUserAuth();
   const falkensee = { lng: 13.091315, lat: 52.560042 };
+  const { coords, isGeolocationAvailable, isGeolocationEnabled } =
+  useGeolocated({
+      positionOptions: {
+          enableHighAccuracy: true,
+      },
+      userDecisionTimeout: 5000,
+  });
   const zoom = 12;
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
   var mapStyle = '59d38153-6ea3-464a-b3c9-2e869c449863'
@@ -116,7 +126,31 @@ const Map = (props) => {
     }
   }
 
-  async function getMarkers() {
+  async function getMarkers(isOwnMarker) {
+
+    /* Intialize position marker */
+    
+    if(isOwnMarker){
+      if (locMarker.current) {
+        locMarker.current.remove()
+      }
+
+      var ownMarkerDiv = document.createElement('div');
+
+      var ownMarker = document.createElement('img');
+      ownMarkerDiv.appendChild(ownMarker)
+      ownMarker.src = 'ownPosition.svg';
+      ownMarker.style.width = '20px';
+      ownMarker.style.height = '20px';
+      
+      locMarker.current = new maptilersdk.Marker({element: ownMarker, draggable:true})
+      .setLngLat([coords.longitude, coords.latitude])
+      .addTo(map.current)
+
+    }else {
+
+          /* other Markers */
+
     const docRef = await doc(db, "Users", user.uid)
     const g = (await getDoc(docRef)).data().geoLocations
     console.log(g)
@@ -150,6 +184,9 @@ const Map = (props) => {
       .addTo(map.current)
 
     });
+
+    }
+
   }
 
   useEffect(() => {
@@ -218,6 +255,13 @@ const Map = (props) => {
     }
   }
 
+  const jumpToLoc = () => {
+    getMarkers(true)
+    if (map.current) {
+      map.current.jumpTo({ center: [coords.longitude, coords.latitude]})
+    }
+  }
+
       return (
         <>
             <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
@@ -228,9 +272,14 @@ const Map = (props) => {
               <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
              </Stack>
              <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
-                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
-                  <ModeOfTravelIcon  fontSize='large'/>
-                </IconButton>
+              <Stack gap={2}>
+                  <IconButton onClick={jumpToLoc} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                    <AdjustIcon  fontSize='large'/>
+                  </IconButton>
+                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                    <ModeOfTravelIcon  fontSize='large'/>
+                  </IconButton>
+              </Stack>
               </Box>
             <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 01), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">

@@ -4,6 +4,7 @@ import {Container, Box, Button, Typography, Table, TableBody,
   List, Dialog, Input, FormControl, IconButton,
   MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, 
 } from '@mui/material'
+import { tableCellClasses } from '@mui/material/TableCell';
 import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -24,9 +25,16 @@ import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
 import * as maptilersdk from '@maptiler/sdk';
-import { red } from '@mui/material/colors';
+import { styled } from '@mui/material/styles';
 
-
+const StyledTableCell = styled(TableCell)(({ theme }) => ({
+  [`&.${tableCellClasses.head}`]: {
+    color: 'var(--color)',
+  },
+  [`&.${tableCellClasses.body}`]: {
+    color: 'var(--color)'
+  },
+}));
 
 export function TextGradient({children}) {
     return (
@@ -551,7 +559,7 @@ function Counter() {
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
           <Stack fontWeight={700}  alignItems={'center'} justifyContent={'center'}>
-              <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color="white" fontSize="100pt"/>
+              <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color='inherit' fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
               {isExploding ? <Confetti/> : <></>}
               {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
@@ -565,20 +573,20 @@ function Counter() {
 
       {/* Ausgabentracker */}
 
-      <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+      <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
         <Typography variant='h2' fontWeight={500}>Kaufhistorie</Typography>
         <br />
         { historyArr.length > 0 ? 
 
         
-        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0, marginBottom: 10}}>
+        <TableContainer component={Paper} elevation={5} sx={{ background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0, marginBottom: 10, color: 'var(--color)'}}>
           <Table sx={{ Width: 650}} aria-label="simple table">
             <TableHead>
-              <TableRow>
-                <TableCell>Produkt</TableCell>
-                <TableCell align="right">Datum</TableCell>
-                <TableCell align="right">Preis</TableCell>
-                <TableCell align="right"></TableCell>
+              <TableRow >
+                <StyledTableCell >Produkt</StyledTableCell>
+                <StyledTableCell align="right">Datum</StyledTableCell>
+                <StyledTableCell align="right">Preis</StyledTableCell>
+                <StyledTableCell align="right"></StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -587,17 +595,18 @@ function Counter() {
               </TableRow>
                 {historyArr?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                   <TableRow key={index} >
-                    <TableCell component="th" scope="row">
+                    <StyledTableCell component="th" scope="row">
                       {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.date?.toDate().toLocaleDateString("de-DE")}</TableCell>
-                    <TableCell align="right">{row.price}&nbsp;€</TableCell>
-                    <TableCell align="right"><IconButton onClick={() => {deleteEntry(index)}}><DeleteIcon/></IconButton></TableCell>
+                    </StyledTableCell>
+                    <StyledTableCell align="right">{row.date?.toDate().toLocaleDateString("de-DE")}</StyledTableCell>
+                    <StyledTableCell align="right">{row.price}&nbsp;€</StyledTableCell>
+                    <StyledTableCell align="right"><IconButton onClick={() => {deleteEntry(index)}} sx={{color: 'var(--color)'}}><DeleteIcon/></IconButton></StyledTableCell>
                   </TableRow>
                 ))}
             </TableBody>
           </Table>
           <TablePagination
+            sx={{color: 'var(--color)'}}
             rowsPerPageOptions={[5, 10]}
             component="div"
             count={historyArr.length} // alle Einträge

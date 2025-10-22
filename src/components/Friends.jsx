@@ -3,7 +3,8 @@ import {
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Typography, Stack, Snackbar, Alert
+  Typography, Stack, Snackbar, Alert,
+  getFormControlLabelUtilityClasses
 } from '@mui/material'
 import './map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -211,7 +212,7 @@ const Friends = () => {
     }))
 
     setFriends(cacheFriends)
-
+    setFriendIndex(0)
 
   
     const mapCoords = cacheFriends[friendIndex][3]
@@ -236,7 +237,7 @@ const Friends = () => {
       map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
     }
 
-    console.log(friends)
+    console.log(friendIndex)
 
     map.current = new maptilersdk.Map({
       container: mapContainer.current,
@@ -263,6 +264,7 @@ const Friends = () => {
     }
   }
 
+  
   useEffect(() => {
     setFriends([])
     getOwnStats()
@@ -271,6 +273,10 @@ const Friends = () => {
     })
   
   }, [user])
+
+  useEffect(() => {
+    setFriendIndex(1)
+  },[])
 
   /*
   / Table FirendList

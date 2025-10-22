@@ -408,11 +408,19 @@ function App() {
           <Route path='/login' element={<Login/>}/>
           <Route path='/signup' element={<SignUp/>}/>
 
-
+          
+          {/* Einkommentieren um Paywall zu aktivieren // folgenden Block auskommentieren!
           <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
           <Route path='/stats' element={<ProtectedRoute><Paywall><Stats displayName={'Stats'}/></Paywall></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Paywall><Friends displayName={'Friends'}/></Paywall></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Paywall><Map displayName={'Map'}/></Paywall></ProtectedRoute>}/>
+          <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
+          <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/> */}
+
+          <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
+          <Route path='/stats' element={<ProtectedRoute><Stats displayName={'Stats'}/></ProtectedRoute>}/>
+          <Route path='/friends' element={<ProtectedRoute><Friends displayName={'Friends'}/></ProtectedRoute>}/>
+          <Route path='/map' element={<ProtectedRoute><Map displayName={'Map'}/></ProtectedRoute>}/>
           <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
 

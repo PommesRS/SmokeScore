@@ -71,7 +71,7 @@ const Stats = () => {
      <>
         <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
             <Stack height={'70vh'} width={'inherit'} px={2} alignItems={'center'} justifyContent={'space-between'} gap={'5vh'}>
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
+            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
 
                 <LineChart
                     grid={{ horizontal: false }}
@@ -128,7 +128,7 @@ const Stats = () => {
                         //change left yAxis label styles
                         "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
                             strokeWidth:"0.4",
-                            fill:"#ffff"
+                            fill:"var(--color)"
                         },
                         // change all labels fontFamily shown on both xAxis and yAxis
                         "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
@@ -136,8 +136,8 @@ const Stats = () => {
                         },
                         // change bottom label styles
                         "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
-                            strokeWidth:"0.5",
-                            fill:"#ffff",
+                            strokeWidth: 0,
+                            fill:"var(--color)",
                         },
                         // bottomAxis Line Styles
                         "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
@@ -182,7 +182,7 @@ const Stats = () => {
                     }]}
                 />
  
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'white', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Wöchentlich</Typography>
+            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Wöchentlich</Typography>
             <LineChart
                 grid={{ horizontal: false }}
                 series={[
@@ -234,8 +234,7 @@ const Stats = () => {
                     py: 0,
                     //change left yAxis label styles
                     "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
-                        strokeWidth: 0.4,
-                        fill:"#ffff"
+                        fill:"var(--color)"
                     },
                     // change all labels fontFamily shown on both xAxis and yAxis
                     "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
@@ -243,8 +242,8 @@ const Stats = () => {
                     },
                     // change bottom label styles
                     "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
-                        strokeWidth:"0.5",
-                        fill:"#ffff",
+                        strokeWidth: 0,
+                        fill:"var(--color)",
                     },
                     // bottomAxis Line Styles
                     "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
