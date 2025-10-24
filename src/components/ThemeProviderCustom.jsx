@@ -86,7 +86,7 @@ const themes = {
       }
     },
   },
-    purple: {
+  purple: {
     palette: {
       mode: 'dark',
       primary: {
@@ -102,7 +102,88 @@ const themes = {
       },
       background: {
       default: '#0b0618',
-      paper: '#0b0618',
+      paper: '#160d2c',
+      gradient: 'linear-gradient(150deg, rgba(49,6,69,1) 0%, rgba(170, 20, 240, 1) 50%, rgb(49, 6, 69) 100%)',
+      transparentGradient: 'linear-gradient(180deg, rgba(170, 20, 240, 0.3), rgba(170, 20, 240, 0))',
+      },
+      text: {
+          primary: '#ffff',
+          secondary: '#ffff',
+          gray: '#d4d4d4'
+      }
+    },
+  },
+  red: {
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: '#861f1f',
+        light: '#cd5555',
+        dark: '#4b1919',
+        transparent02: alpha('#861f1f', 0.3),
+        transparent05: alpha('#861f1f', 0.7),
+        contrastText: '#fffff'
+      },
+      secondary: {
+        main: '#79FFE4'
+      },
+      background: {
+      default: '#0a0000',
+      paper: '#180000',
+      gradient: 'linear-gradient(150deg,rgba(48, 0, 0, 1) 0%, rgba(134, 31, 31, 1) 50%, rgba(48, 0, 0, 1) 100%)',
+      transparentGradient: 'linear-gradient(180deg, rgba(134, 31, 31, 0.3), rgba(170, 20, 240, 0))',
+      },
+      text: {
+          primary: '#ffff',
+          secondary: '#ffff',
+          gray: '#d4d4d4'
+      }
+    },
+  },
+  grayRed: {
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: '#861f1f',
+        light: '#cd5555',
+        dark: '#4b1919',
+        transparent02: alpha('#861f1f', 0.3),
+        transparent05: alpha('#861f1f', 0.7),
+        contrastText: '#fffff'
+      },
+      secondary: {
+        main: '#79FFE4'
+      },
+      background: {
+      default: '#252525',
+      paper: '#252525',
+      gradient: 'linear-gradient(150deg,rgba(48, 0, 0, 1) 0%, rgba(134, 31, 31, 1) 50%, rgba(48, 0, 0, 1) 100%)',
+      transparentGradient: 'linear-gradient(180deg, rgba(134, 31, 31, 0.3), rgba(170, 20, 240, 0))',
+      },
+      text: {
+          primary: '#ffff',
+          secondary: '#ffff',
+          gray: '#d4d4d4'
+      }
+    },
+  },
+  grayPurple: {
+    palette: {
+      mode: 'dark',
+      primary: {
+        main: '#aa14f0',
+        light: '#DB8FFF',
+        dark: '#7510A3',
+        transparent02: alpha('#aa14f0', 0.3),
+        transparent05: alpha('#aa14f0', 0.7),
+        contrastText: '#fffff'
+      },
+      secondary: {
+        main: '#79FFE4'
+      },
+      background: {
+      default: '#252525',
+      paper: '#303030',
       gradient: 'linear-gradient(150deg, rgba(49,6,69,1) 0%, rgba(170, 20, 240, 1) 50%, rgb(49, 6, 69) 100%)',
       transparentGradient: 'linear-gradient(180deg, rgba(170, 20, 240, 0.3), rgba(170, 20, 240, 0))',
       },
