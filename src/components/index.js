@@ -13,6 +13,8 @@ import PaywallStats from "./PaywallStats";
 import PaywallRender from "./PaywallRender";
 import PaywallFriends from "./PaywallFriends";
 import PaywallMap from "./PaywallMap";
+import ThemeToggleButton from "./ThemeToggleButton";
+import Style from "./Style";
 
 export{
     App,
@@ -29,5 +31,7 @@ export{
     PaywallStats,
     PaywallRender,
     PaywallFriends,
-    PaywallMap
+    PaywallMap,
+    ThemeToggleButton,
+    Style
 }

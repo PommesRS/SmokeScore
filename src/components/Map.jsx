@@ -3,7 +3,7 @@ import * as maptilersdk from '@maptiler/sdk';
 import PropTypes from 'prop-types';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
-import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/material';
+import { Box, SwipeableDrawer, Typography, Stack, IconButton, useTheme } from '@mui/material';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
@@ -56,6 +56,7 @@ const Map = (props) => {
   const map = useRef(null);
   const [drawerProps, setDrawerProps] = useState({})
   const { user } = useUserAuth();
+  const theme = useTheme()
   const falkensee = { lng: 13.091315, lat: 52.560042 };
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
@@ -277,15 +278,15 @@ const Map = (props) => {
              </Stack>
              <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
               <Stack gap={2}>
-                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: 'var(--main-color)'} ,":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
                     <AdjustIcon  fontSize='large'/>
                   </IconButton>
-                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":hover": {backgroundColor: 'var(--main-color)'} ,":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='white' aria-label="addFriend">
+                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
                     <ModeOfTravelIcon  fontSize='large'/>
                   </IconButton>
               </Stack>
               </Box>
-            <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 01), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
+            <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: theme.palette.background.transparentGradient}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
                 <div ref={mapContainer} className="map-wrapper" />
             </Box>

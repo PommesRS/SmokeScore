@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import {Container, Box, Button, Typography, Table, TableBody, 
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
   List, Dialog, Input, FormControl, IconButton,
-  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, 
+  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress, LinearProgress,
+  useTheme
 } from '@mui/material'
 import { tableCellClasses } from '@mui/material/TableCell';
 import dayjs from 'dayjs';
@@ -36,13 +37,16 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
-export function TextGradient({children}) {
-    return (
+  
 
+export function TextGradient({children}) {
+    const theme = useTheme()
+    return (
+      
       <Typography 
         sx={{fontSize: '40pt', 
             fontWeight: 'bold', 
-            backgroundImage: 'var(--text-gradient)',
+            background: theme.palette.background.gradient,
             backgroundSize: "100%",
             backgroundRepeat: "repeat",
             backgroundClip: "text",
@@ -76,7 +80,7 @@ function Counter() {
   const [openPAdd, setOpenPAdd] = useState(false);
   const [product, setProduct] = useState('Tabak');
   const [anus, setAnus] = useState(1);
-
+  const theme = useTheme()
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -123,8 +127,9 @@ function Counter() {
   }
 
 
-  initiateCounter();
-  getLatestCigs()
+
+
+
   //console.log(latestCigs)
   
   useEffect(() => {
@@ -134,7 +139,18 @@ function Counter() {
 
   useEffect(() => {
     getSpendingHistory()
+    initiateCounter();
+    getLatestCigs()
   }, [])
+
+  const handleAddCig = async () => {
+    if (loading) return;
+
+    setLoading(true)
+    await incrementCounter()
+    setCount(prev => prev + 1)
+    setTimeout(() => setLoading(false), 1600) 
+  } 
 
   const incrementCounter = async () => {
     const docRef = doc(db, "Users", uID)
@@ -171,19 +187,22 @@ function Counter() {
     const friendIDArr = (await getDoc(friendsRef)).data().Friends
     friendIDArr.map(async (friendId) => {
       const FriendFCMRef = doc(db, 'Users', friendId)
-      const Token = (await getDoc(FriendFCMRef)).data().fcmToken
-      fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            token: Token,
-            title: 'Neue Kippe 🚬',
-            body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : ''
-        }),
-        })
-        .then(res => res.json())
-        .then(console.log)
-        .catch(console.error);
+      const friendCanNotifications = (await getDoc(FriendFCMRef)).data().canGetNotifications
+      if(friendCanNotifications != false){
+        const Token = (await getDoc(FriendFCMRef)).data().fcmToken
+        fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              token: Token,
+              title: 'Neue Kippe 🚬',
+              body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : ''
+          }),
+          })
+          .then(res => res.json())
+          .then(console.log)
+          .catch(console.error);
+      }
     })
     
 
@@ -440,7 +459,7 @@ function Counter() {
 
   function AddPurchase({children}) {
     return (
-      <Dialog open={openPAdd} onClose={pAddDialogClose} sx={{backdropFilter: "blur(2px)", '& .MuiDialog-paper': { width: '80%', maxHeight: 435, background: '#0B0B12', borderRadius: '5px' }}}>
+      <Dialog open={openPAdd} onClose={pAddDialogClose} sx={{backdropFilter: "blur(2px)", '& .MuiDialog-paper': { width: '80%', maxHeight: 435, borderRadius: '5px' }}}>
         <DialogTitle>Kauf eintragen</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -565,8 +584,20 @@ function Counter() {
               {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
           </Stack>
           <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
-            <Button loading={loading} sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {incrementCounter(); setCount(count + 1)}}><AddIcon fontSize='large'/></Button>
-            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
+            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleAddCig() /*incrementCounter(); setCount(count + 1)*/}}>
+              <AddIcon fontSize='large'/>
+              {loading && (
+                <LinearProgress 
+                color='primary'
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  position: 'absolute',
+                  borderRadius: '10px'
+                }}/>
+              )}
+            </Button>
+            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
           </Stack>
         </Stack>
       </Box>
@@ -579,7 +610,7 @@ function Counter() {
         { historyArr?.length > 0 ? 
 
         
-        <TableContainer component={Paper} elevation={5} sx={{ background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0, marginBottom: 10, color: 'var(--color)'}}>
+        <TableContainer sx={{ background: theme.palette.background.chartGradient, border: 0, marginBottom: 10, color: 'var(--color)', boxShadow: '4px 4px 28px 8px rgba(0,0,0,0.41)'}}>
           <Table sx={{ Width: 650}} aria-label="simple table">
             <TableHead>
               <TableRow >
@@ -591,7 +622,7 @@ function Counter() {
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell key={'addRow'} align='center' colSpan={4}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
+                <TableCell key={'addRow'} align='center' colSpan={4}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
               </TableRow>
                 {historyArr?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
                   <TableRow key={index} >

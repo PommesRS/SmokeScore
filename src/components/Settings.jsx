@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import {
     Box, List, ListItem, ListItemButton, Avatar, ListItemAvatar, ListItemText, Divider, Dialog, 
     DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Select, FormControl, InputLabel, TextField,
-    Alert, Snackbar
+    Alert, Snackbar, Switch, Stack, Typography
 } from '@mui/material'
 import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
@@ -10,13 +10,15 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import EditIcon from '@mui/icons-material/Edit';
 import SellIcon from '@mui/icons-material/Sell';
+import PaletteIcon from '@mui/icons-material/Palette';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { collection, doc, getDoc, updateDoc } from "@firebase/firestore";
 import { db } from '../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
-
+import { ThemeToggleButton } from './index.js'
+import {useNavigate} from 'react-router-dom';
 
 
 const Settings = () => {
@@ -25,103 +27,34 @@ const Settings = () => {
     // const [token, setToken] = useState();
     
     useEffect(() => {
-        initProfileData()
+        initSettings()
     }, [user])
 
-    const initProfileData = async () => {
+    const initSettings = async () => {
         const docRef = doc(db, 'Users', user.uid)
         const data = (await getDoc(docRef)).data().tags
-        if(!data) return
-        setCigType(data.cigType)
-        setTobacco(data.tobacco)
-    }
-
-    function sendNotification(){
-        fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            token: 'eF_z-yJYTOy5X6fS2DAeiX:APA91bGnZdk8oU0YgX51jD7LHpDDjRvmsGpx71PIaw4B4ImUG6DZAwwWw3rUyECZZ46sbHdwAl6QvhFDms7Xh56fFvh1By4xfrWdXplGMU_BgCY7uhOXEDY',
-            title: 'anus',
-            body: 'hodensack'
-        }),
-        })
-        .then(res => res.json())
-        .then(console.log)
-        .catch(console.error);
-    }
-
-    const saveFCMToken = async () => {
-        let uID = await user.uid
-
-        if (!user) {
-            console.warn("Kein eingeloggter Benutzer");
-            return;
+        const notificationValue = (await getDoc(docRef)).data().canGetNotifications
+        if(data){
+            setCigType(data.cigType)
+            setTobacco(data.tobacco)
+        }
+        
+        if(typeof notificationValue !== 'undefined'){
+            setNotificationSwitchValue(notificationValue)
+        }else{
+            setNotificationSwitchValue(true)
         }
 
-        const tokenRef = doc(db, 'Users', uID);
-            await updateDoc(tokenRef, {
-            fcmToken: TokenGlobal
-        });
-    }
-
-    const getAndroidPermission = () => {
-        PushNotifications.requestPermissions().then(result => {
-            if (result.receive === 'granted') {
-                PushNotifications.register();
-            } else {
-                console.warn('Keine Berechtigung für Push-Benachrichtigungen');
-            }
-        });
-
-        // Erfolgreich registriert
-        PushNotifications.addListener('registration', token => {
-            TokenGlobal = token.value
-            console.log('Registriert mit Token:', token.value);
-
-            async () => {
-                let uID = await user.uid
-
-                if (!user) {
-                console.warn("Kein eingeloggter Benutzer");
-                return;
-                }
-
-                try {
-                    const tokenRef = doc(db, 'Users', uID);
-                    await updateDoc(tokenRef, {
-                    fcmToken: token.value
-                    });
-                } catch (error) {
-                    console.log(error)
-                }
-                
-            }
-        });
-
-        // Fehler bei der Registrierung
-        PushNotifications.addListener('registrationError', err => {
-        console.error('Registrierungsfehler:', err);
-        });
-
-        // Push empfangen (App im Vordergrund)
-        PushNotifications.addListener('pushNotificationReceived', notification => {
-        console.log('Push erhalten:', notification);
-        });
-
-        // Benutzer klickt auf Notification
-        PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-        console.log('Benutzeraktion:', notification);
-        // z. B. Navigation auslösen
-        });
     }
 
     const [open, setOpen] = useState(false);
     const [openCustomization, setCustomizationOpen] = useState(false);
+    const [openNotificationSetting, setOpenNotificationSetting] = useState(false);
     const [cigType, setCigType] = useState('');
     const [tobacco, setTobacco] = useState('');
     const [alertState, setAlertState] = useState(false)
-    
+    const [notificationSwitchValue, setNotificationSwitchValue] = useState(false)
+    const navigate = useNavigate();
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -130,16 +63,25 @@ const Settings = () => {
     const handleCustomizationOpen = () => {
         setCustomizationOpen(true);
     };
+    
+    const handleNotificationSettingsOpen = () => {
+        setOpenNotificationSetting(true);
+    };
 
     const handleClose = () => {
         setOpen(false);
         setCustomizationOpen(false);
-        initProfileData()
+        setOpenNotificationSetting(false)
+        initSettings()
     };
 
     const handleChange = (event) => {
         setCigType(event.target.value || '');
         console.log(event.target.value)
+    }
+
+    const handleNotificationSwitch = (event) => {
+        setNotificationSwitchValue(event.target.checked);
     }
 
     const handleTextInput = (event) => {
@@ -163,12 +105,28 @@ const Settings = () => {
         
     }
 
+    const handleNotificationSave = async () => {
+        const docRef = doc(db, 'Users', user.uid)
+        try {
+            await updateDoc(docRef, {
+                canGetNotifications: notificationSwitchValue
+            })
+            setAlertState(true)
+            handleClose()
+        } catch (error) {
+            
+        }
+        
+    }
+
     const handleCloseAlert = () => {
         setAlertState(false)
     }
     
     return (
         <Box paddingTop={8} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="top">
+            
+            {/* Delete Account Dialog */}
             <Dialog
                 slotProps={
                     {paper: 
@@ -193,10 +151,11 @@ const Settings = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>Abbrechen</Button>
-                    <Button onClick={saveFCMToken}>Zustimmen</Button>
+                    <Button>Zustimmen</Button>
                 </DialogActions> 
             </Dialog>
-
+            
+            {/* Customization Dialog */}
             <Dialog
                 slotProps={
                     {paper: 
@@ -239,6 +198,44 @@ const Settings = () => {
                     <Button onClick={() => {handleTagSave()}}>Speichern</Button>
                 </DialogActions> 
             </Dialog>
+            
+            {/* Notification Dialog */}
+            <Dialog
+                slotProps={
+                    {paper: 
+                        {sx: 
+                            {background: '#0B0B12'}
+                        }
+                    }
+                }
+                sx={
+                    {backdropFilter: "blur(2px)"}
+                }
+                open={openNotificationSetting}
+                onClose={handleClose}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{'Benachrichtigungen anpassen.'}</DialogTitle>
+                <DialogContent>
+                    <Stack direction={'row'} flex={'true'} alignItems={'center'}>
+                        <Switch
+                            checked={notificationSwitchValue}
+                            onChange={handleNotificationSwitch}
+                            />
+                        <Stack>
+                            <Typography>Benarichtigungen aktivieren</Typography>
+                            <DialogContentText fontSize={15}>Du wirst {!notificationSwitchValue ? 'nicht' : ''} benachrichtigt wenn ein Freund eine Zigarette einträgt.</DialogContentText>
+                        </Stack>
+                    </Stack>
+                    
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {handleClose()}}>Abbrechen</Button>
+                    <Button onClick={() => {handleNotificationSave()}}>Speichern</Button>
+                </DialogActions> 
+            </Dialog>
+
             <Snackbar
                 anchorOrigin={{vertical: 'top', horizontal:'center'}}
                 autoHideDuration={3000}
@@ -255,7 +252,7 @@ const Settings = () => {
             <br />
             <button onClick={saveFCMToken} style={{color: 'white'}}>Dieses Gerät als Benachrichtungsgerät festlegen</button> */}
             <List sx={{ width: '100%'}}>
-                <ListItemButton onClick={'/*sendNotification*/'}>
+                <ListItemButton onClick={handleNotificationSettingsOpen}>
                     <ListItemAvatar>
                     <Avatar>
                         <NotificationsActiveIcon />
@@ -273,7 +270,7 @@ const Settings = () => {
                     <ListItemText primary="Profil Anpassen" />
                 </ListItemButton>
             <Divider />
-                <ListItemButton href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
+                <ListItemButton disabled={true} href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
                     <ListItemAvatar>
                     <Avatar>
                         <SellIcon />
@@ -289,6 +286,15 @@ const Settings = () => {
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Zurücksetzen" secondary="Alle Daten auf diesem Account werden Zurückgesetzt!" sx={{ color: 'red'}} />
+                </ListItemButton>
+            <Divider />
+                <ListItemButton onClick={() => {navigate(`/style`)}}>
+                    <ListItemAvatar>
+                        <Avatar>
+                            <PaletteIcon />
+                        </Avatar>
+                        </ListItemAvatar>
+                    <ListItemText primary="Farbstil ändern"/>
                 </ListItemButton>
             <Divider />
             </List>

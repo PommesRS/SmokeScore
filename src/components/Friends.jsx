@@ -4,7 +4,7 @@ import {
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Typography, Stack, Snackbar, Alert,
-  getFormControlLabelUtilityClasses
+  getFormControlLabelUtilityClasses, useTheme
 } from '@mui/material'
 import './map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -29,14 +29,22 @@ import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
 import * as maptilersdk from '@maptiler/sdk';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 
-
 export const CustomTag = ({value}) => {
+  const theme = useTheme()
   return (
-    <Typography flexGrow={1} textAlign={'center'} border={'2px solid var(--accent-color)'} position={'relative'} borderRadius={'53px'} px={3}>
+    <Typography flexGrow={1} textAlign={'center'} border={'2px solid' + theme.palette.secondary.main} position={'relative'} borderRadius={'53px'} px={3}>
       {value}
     </Typography>
   )
 }
+
+const chartBottomColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--chart-bottom")
+      .trim();
+
+const chartTopColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--chart-top")
+      .trim();
 
 const Friends = () => {
   const [friends, setFriends] = useState([])
@@ -48,6 +56,7 @@ const Friends = () => {
   const [ownStats, setOwnSats] = useState([])
   const [arsch, setArsch] = useState([])
   const { user } = useUserAuth();
+  const theme = useTheme()
   const uID = user.uid;
   const [friendIndex, setFriendIndex] = useState(0)
   const map = useRef(null)
@@ -108,7 +117,7 @@ const Friends = () => {
   if (!searchResult.length) {
     return(
       <ListItem key={'NoUserFound'}>
-      <ListItemText sx={{"& .MuiListItemText-primary": {color: '#8979FF'}, px:2}} primary='No User Found'/>
+      <ListItemText sx={{color: 'primary.light', px:2}} color='primary.main' primary='No User Found'/>
     </ListItem>
     )
   }
@@ -121,7 +130,7 @@ const Friends = () => {
           <Box>
             <ListItemText sx={{"& .MuiListItemText-primary": {color: 'inherit'}}}>{result[1].displayName}</ListItemText>
             <ListItemText sx={{"& .MuiListItemText-primary": {color: 'gray'}}}>{result[0]}</ListItemText>
-            <ListItemButton disableRipple={false} sx={{textAlign: 'left', p: 0, paddingBottom: 2, color: '#8979FF'}} data-uid={result[0]} onClick={handleRequestSend}>
+            <ListItemButton disableRipple={false} sx={{textAlign: 'left', p: 0, paddingBottom: 2, color: 'primary.light'}} data-uid={result[0]} onClick={handleRequestSend}>
               Anfragen
             </ListItemButton>
           </Box>
@@ -136,7 +145,7 @@ const Friends = () => {
   function FAddDialog ({children}) {
     return (
       <Dialog sx={{backdropFilter: "blur(2px)"}} onClose={fAddDialogClose} open={openFAdd}>
-        <Paper sx={{background: '#0B0B12', color:'#fff', border: '1px solid #767676', p: 2}}>
+        <Paper sx={{color:'#fff', border: '1px solid #767676', p: 2}}>
           <Input fullWidth={true} onChange={handleSearch} sx={{color:'#fff'}} placeholder="Benutzername" startAdornment={
             <InputAdornment sx={{color: 'inherit'}} position='start'>
               <SearchIcon />
@@ -286,7 +295,7 @@ const Friends = () => {
     <>
     <FAddDialog></FAddDialog>
           <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
-          <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: 'var(--main-color)'}} color='inherit' aria-label="addFriend">
+          <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
             <PersonAddAlt1Icon fontSize='large'/>
           </IconButton>
       </Box>
@@ -350,8 +359,8 @@ const Friends = () => {
                       id: '',
                       type: 'continuous',
                       min: 0,
-                      max: 3,
-                      color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
+                      max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
+                      color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
                     }
                 },
               ]}
@@ -421,14 +430,14 @@ const Friends = () => {
                       stroke: '#fff',
                   },
                   [`& .${lineElementClasses.root}`]: {
-                      stroke: 'var(--main-color)',
+                      stroke: theme.palette.primary.main,
                       strokeWidth: 2,
                   },
                   [`& .${markElementClasses.root}`]: {
-                  stroke: 'var(--main-color)',
-                  scale: '0.6',
-                  fill: 'transparent',
-                  strokeWidth: 2,
+                      stroke: theme.palette.primary.main,
+                      scale: '0.6',
+                      fill: 'transparent',
+                      strokeWidth: 0,
                   }
               }}
             />
@@ -440,7 +449,7 @@ const Friends = () => {
       </Box>
       <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
         <Box height={'75%'} width={'100%'} position={'relative'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'} sx={{
-            background: 'var(--button-gradient)', 
+            background: theme.palette.background.gradient,
             borderRadius: '52px', 
             boxShadow: '5px 5px 10px 0px rgba(0, 0, 0, 1)',
             '&::before': {
@@ -452,7 +461,7 @@ const Friends = () => {
               width: '30%',
               maxWidth: '200px',
               height: '15px',
-              background: 'var(--bg-color)',
+              bgcolor: 'background.default',
               zIndex: '1',
               borderRadius: '25px',
             },
@@ -465,7 +474,7 @@ const Friends = () => {
               width: '20px',
               maxWidth: '200px',
               height: '20px',
-              background: 'var(--bg-color)',
+              bgcolor: 'background.default',
               zIndex: '1',
               borderRadius: '19px',
             }

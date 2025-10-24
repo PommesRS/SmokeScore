@@ -32,7 +32,8 @@ export function UserAuthContextProvider({ children }) {
         latestCigs: [],
         spendingHistory: [],
         hasPremium: false,
-        tags: {}
+        tags: {},
+        canGetNotifications: true
       })
       return await updateProfile(result.user, {
         displayName: Name

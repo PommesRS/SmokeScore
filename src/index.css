@@ -1,16 +1,26 @@
 :root {
-  --bg-color: #0b0618; 
+
+
+  --main-color-raw: rgb(76, 45, 187);
+  --accent-color-raw: #8ad5f2;
+  --bg-color-raw: 2, 14, 35;
+  --bg-color: rgb(var(--bg-color-raw)); 
+  --text-gradient: linear-gradient(153deg,rgb(7, 13, 66) 0%, rgba(17, 30, 154) 50%, rgba(7, 13, 66) 100%);
+  --button-gradient: linear-gradient(153deg,rgb(7, 13, 66) 0%, rgba(17, 30, 154) 50%, rgba(7, 13, 66) 100%);
+  --main-color:  rgb(var(--main-color-raw));
+  --accent-color: rgb(var(--accent-color-raw));
+  --chart-bottom: rgba(var(--main-color-raw), 0.2);
+  --chart-top: rgba(var(--main-color-raw), 0.5);
+
+    /* --bg-color: #0b0618; 
   --text-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgb(49, 6, 69) 100%);
-  /* --button-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%); */
-  --button-gradient: linear-gradient(153deg,rgb(65, 8, 92) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%);
-  --card-gradient: linear-gradient(130deg,rgb(88, 32, 114) 0%, rgb(88, 32, 114) 30%, rgb(152, 58, 196) 50%, rgb(88, 32, 114) 65%, rgb(88, 32, 114) 100%);
-  --main-color: #aa14f0;
-  --accent-color: #79FFE4;
+  --button-gradient: linear-gradient(153deg,rgba(49,6,69,1) 0%, rgba(170,20,240,1) 50%, rgba(49,6,69,1) 100%); 
+  --main-color: rgb(170, 20, 240);
+  --accent-color: #79FFE4; */
+  
   --color: #ffffff;
   color: var(--color);
-  /*color: rgba(77, 11, 107, 0.2);*/
-  background-color: var(--bg-color);
-
+  /*background-color: var(--bg-color);*/
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,7 +28,7 @@
 }
 
 body {
-  background-color: var(--bg-color);
+  /*background-color: var(--bg-color);*/
   color: var(--color);
 }
 

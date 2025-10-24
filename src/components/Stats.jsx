@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from 'react'
+import { useTheme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts/LineChart';
 import {Container, Box, Button, Typography} from '@mui/material'
 import Stack from '@mui/material/Stack';
 import { ResponsiveChartContainer } from '@mui/x-charts';
 import {
-    LinePlot,
-    MarkPlot,
     lineElementClasses,
     markElementClasses,
-    AreaPlot,
-    MarkElement
   } from '@mui/x-charts/LineChart';
 import { db } from '../firebase';
 import { doc, getDoc } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
 import { startOfWeek, endOfWeek, format, getYear } from 'date-fns'
 
+const chartBottomColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--chart-bottom")
+      .trim();
 
+const chartTopColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--chart-top")
+      .trim();
 
 const Stats = () => {
     const [weeklyData, setWeeklyData] = useState([])
@@ -24,7 +27,7 @@ const Stats = () => {
     const [initiate, setInitiate] = useState(true)
     const [initiateMonth, setInitiateMonth] = useState(true)
     const { user } = useUserAuth()
-
+    const theme = useTheme()
 
     //const weeklyData = [2, 0, 12, 11, 6, 4, 5]
     async function getWeeklyData() {
@@ -99,7 +102,7 @@ const Stats = () => {
                                 type: 'continuous',
                                 min: 0,
                                 max: Math.max(...monthlyData),
-                                color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
+                                color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
                             }
                         },
                         ]}
@@ -170,14 +173,14 @@ const Stats = () => {
                             fill: '#fff'
                         },
                         [`& .${lineElementClasses.root}`]: {
-                            stroke: 'rgba(170,20,240,1)',
+                            stroke: theme.palette.primary.main,
                             strokeWidth: 2,
                         },
                         [`& .${markElementClasses.root}`]: {
-                        stroke: 'rgba(170,20,240,1)',
+                        stroke: theme.palette.primary.main,
                         scale: '0.6',
                         fill: 'transparent',
-                        strokeWidth: 2,
+                        strokeWidth: 0,
                         }
                     }]}
                 />
@@ -210,7 +213,7 @@ const Stats = () => {
                             type: 'continuous',
                             min: 0,
                             max: Math.max(...weeklyData),
-                            color: ['rgba(77, 11, 107, 0.2)', 'rgba(77, 11, 107, 0.5)'],
+                            color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
                         }
                     },
                     ]}
@@ -275,15 +278,15 @@ const Stats = () => {
                         stroke: '#fff',
                     },
                     [`& .${lineElementClasses.root}`]: {
-                        stroke: 'rgba(170,20,240,1)',
+                        stroke: theme.palette.primary.main,
                         strokeWidth: 2,
                     },
                     [`& .${markElementClasses.root}`]: {
-                    stroke: 'rgba(170,20,240,1)',
-                    scale: '0.6',
-                    fill: 'transparent',
-                    strokeWidth: 2,
-                    },
+                        stroke: theme.palette.primary.main,
+                        scale: '0.6',
+                        fill: 'transparent',
+                        strokeWidth: 0,
+                    }
                 }}
             />
 

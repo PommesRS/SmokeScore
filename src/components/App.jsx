@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Paywall, PaywallStats, PaywallRender } from './index.js';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Style, Paywall, PaywallStats, PaywallRender } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import GroupIcon from '@mui/icons-material/Group';
 import HomeIcon from '@mui/icons-material/Home';
+import PaletteIcon from '@mui/icons-material/Palette';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -46,6 +47,12 @@ export function ListItemCustom ({children, text}) {
     </>
   );
 }
+
+const mainColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--main-color")
+      .trim();
+
+console.log(mainColor)
 
 function App() {
   const [value, setValue] = useState('tracker');
@@ -237,13 +244,13 @@ function App() {
   function FRequestsDialog ({children}) {
   if (user) {
     return (
-      <Dialog slotProps={{paper: {sx: {background: 'var(--bg-color)'}}}} sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
+      <Dialog sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
         <DialogTitle textAlign={'center'} color='#fff'>Freundschaftsanfragen</DialogTitle>
         <List sx={{ p: 0 }} justifyContent={'center'}>
           {fRequestsNames ? fRequestsNames.map((friend) => (
             <ListItem sx={{px: 4}} key={friend}>
               <Stack>
-                <ListItemText sx={{"& .MuiListItemText-primary": {color: '#8979FF'}, textAlign: 'center'}} primary={friend}/>
+                <ListItemText sx={{"& .MuiListItemText-primary": {color: (theme) => theme.palette.primary.main}, textAlign: 'center'}} primary={friend}/>
                 <Stack direction={'row'}>
                   <ListItemButton onClick={() => handleRequestAccept(friend)}>
                     <ListItemText slotProps={{'data-role': 'role'}} sx={{color: '#fff', textAlign:'center'}} primary='Annehmen'/>
@@ -279,18 +286,18 @@ function App() {
 
 
   const DrawerList = (
-    <Box sx={{width: 250, height: '100vh', bgcolor: 'var(--bg-color)', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
+    <Box sx={{width: 250, height: '100vh', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
         <ListItemButton onClick={() => {navigate(`/friends`); setValue('friends');}}><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/tracker`); setValue('tracker');}}><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color="primary"><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color='primary'><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
         
       </List>
       <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
       <List>
-        <ListItemButton onClick={() => {navigate(`/about`); setValue('about');}}><ListItemCustom text={{text: 'Karte'}}><AccountCircleIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/style`); setValue('style');}}><ListItemCustom text={{text: 'Farbstil ändern'}}><PaletteIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/settings`); setValue('settings');}}><ListItemCustom text={{text: 'Einstellungen'}}><SettingsIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
       </List>
     </Box>
@@ -321,14 +328,14 @@ function App() {
     <>
 
       <FRequestsDialog></FRequestsDialog>
-      <Box sx={{zIndex: '-1',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%',position: 'absolute', background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(00px)'}}></Box>
-      <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>
+      {/*   */}
+      <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>  
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', background: 'var(--bg-color)', borderBottom: '1px solid gray'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
-        <Drawer sx={{backdropFilter: "blur(2px)"}} open={open} onClose={toggleDrawer(false)}>
+        <Drawer sx={{backdropFilter: "blur(2px)"}} elevation={0} open={open} onClose={toggleDrawer(false)}>
           {DrawerList}
         </Drawer>
         <Button onClick={handleClick} sx={user ? { zIndex: '10',color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}> <AccountCircleIcon/> </Button>
@@ -360,12 +367,10 @@ function App() {
                   right: 14,
                   width: 10,
                   height: 10,
-                  bgcolor: 'var(--bg-color)',
                   transform: 'translateY(-50%) rotate(45deg)',
                   zIndex: 0,
                 },
                 '& .MuiList-root': {
-                  bgcolor: 'var(--bg-color)',
                   color: 'white'
                 },
               },
@@ -420,7 +425,7 @@ function App() {
           <Route path='/stats' element={<ProtectedRoute><Stats displayName={'Stats'}/></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Friends displayName={'Friends'}/></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Map displayName={'Map'}/></ProtectedRoute>}/>
-          <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
+          <Route path='/style' element={<ProtectedRoute><Style/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
@@ -434,7 +439,7 @@ function App() {
         {user ? 
         <Box sx={{position:'fixed', bottom: '0', left: '0', right: '0', borderTop: '1px solid rgba(155,155,155,0.5)', zIndex: '2'}}>
           <BottomNavigation
-            sx={{background: 'var(--bg-color)', color: '#767676'}}
+            sx={{color: '#767676'}}
             value={value}
             onChange={handleChange}
             display={'flex'} justify-content={'space-between'}>
