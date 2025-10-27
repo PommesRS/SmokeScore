@@ -31,7 +31,7 @@ exports.sendPushToToken = functions.https.onRequest((req, res) => {
 
     console.log("📥 Anfrage erhalten:", req.method, req.body);
 
-    const { token, title, body } = req.body;
+    const { token, title, body, msgType, eventDate, senderName } = req.body;
 
     if (!token || !title || !body) {
       console.warn("❌ Fehlende Parameter:", req.body);
@@ -40,7 +40,7 @@ exports.sendPushToToken = functions.https.onRequest((req, res) => {
 
     try {
       const message = {
-        data: { title, body },
+        data: { title, body, msgType, eventDate, senderName },
         //notification: { title, body },
         token: token,
       };

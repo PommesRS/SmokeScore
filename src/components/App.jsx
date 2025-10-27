@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Style, Paywall, PaywallStats, PaywallRender } from './index.js';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, 
+  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -8,8 +9,9 @@ import HomeIcon from '@mui/icons-material/Home';
 import PaletteIcon from '@mui/icons-material/Palette';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import Diversity3Icon from '@mui/icons-material/Diversity3';
 import MenuIcon from '@mui/icons-material/Menu';
-import {Container, Box, Button, Typography, Stack } from '@mui/material';
+import {Container, Box, Button, Typography, Stack, ClickAwayListener } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Drawer from '@mui/material/Drawer';
@@ -31,11 +33,13 @@ import PeopleIcon from '@mui/icons-material/People';
 import Logout from '@mui/icons-material/Logout';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { db, messaging } from '../firebase.js';
 import { onMessage, getToken } from 'firebase/messaging';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
+import { db, messaging } from '../firebase.js';
+import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot } from "@firebase/firestore";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
+import { onBackgroundMessage } from 'firebase/messaging/sw';
+import dayjs from 'dayjs';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -52,8 +56,6 @@ const mainColor = getComputedStyle(document.documentElement)
       .getPropertyValue("--main-color")
       .trim();
 
-console.log(mainColor)
-
 function App() {
   const [value, setValue] = useState('tracker');
   const [open, setOpen] = useState(false);
@@ -61,12 +63,18 @@ function App() {
   const [compIndex, setCompIndex] = useState(true);
   const [openFRequests, setOpenFRequests] = useState(false);
   const [fRequests, setFRequests] = useState(0);
+  const [newInvites, setNewInvites] = useState(0);
   const [fRequestsNames, setfRequestsNames] = useState([]);
   const [getRequestNames, setGetRequestNames] = useState([true])
   const [subscriptionStatus, setSubscriptionStatus] = useState(false)
   const [reload, setReload] = useState(false)
   const navigate = useNavigate();
   const { user, logOut } = useUserAuth();
+  const [openEventPopup, setOpenEventPopup] = useState(false)
+  const [eventId, setEventId] = useState(null)
+  const [eventText, setEventText] = useState(null)
+  const [eventDate, setEventDate] = useState(null)
+  const [eventSenderName, setEventSenderName] = useState(null)
   let uID;
 
   const getFRequests = async () => {
@@ -92,75 +100,74 @@ function App() {
   }
 
   useEffect(() => {
-    onMessage( messaging, (payload) => {
-      console.log(payload)
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      console.log(event.data.data.msgType)
+      if (event.data.data.msgType === 'invite') {
+        console.log("Message from SW:", event.data.data);
+        setEventId(event.data.data.title)
+        setEventText(event.data.data.body)
+        setEventDate(event.data.data.eventDate)
+        setEventSenderName(event.data.data.senderName)
+        setOpenEventPopup(true);
+      }else {
+        console.log('anus')
+      }
     })
-
-    if (Capacitor.isPluginAvailable('PushNotifications')) {
-      PushNotifications.requestPermissions().then(result => {
-        if (result.receive === 'granted') {
-          PushNotifications.register();
-        } else {
-          console.warn('Keine Berechtigung für Push-Benachrichtigungen');
-        }
-      });
-
-      // Erfolgreich registriert
-      PushNotifications.addListener('registration', token => {
-        console.log('Registriert mit Token:', token.value);
-        async () => {
-          let uID = await user.uid
-
-          if (!user) {
-            console.warn("Kein eingeloggter Benutzer");
-            return;
-          }
-
-          const tokenRef = doc(db, 'Users', uID);
-            await updateDoc(tokenRef, {
-            fcmToken: token.value
-          });
-        }
-      });
-
-      // Fehler bei der Registrierung
-      PushNotifications.addListener('registrationError', err => {
-        console.error('Registrierungsfehler:', err);
-      });
-
-      // Push empfangen (App im Vordergrund)
-      PushNotifications.addListener('pushNotificationReceived', notification => {
-        console.log('Push erhalten:', notification);
-      });
-
-      // Benutzer klickt auf Notification
-      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-        console.log('Benutzeraktion:', notification);
-        // z. B. Navigation auslösen
-      });
-    }
-    
     
   }, [])
 
+  useEffect(() => {
+    if (!user?.uid) return; 
+    const ref = doc(db, "Users", user.uid);
+    const refEvents = collection(db, "Events");
+
+    const unsubscribe = onSnapshot(ref, async (snapshot) => {
+    if (snapshot.exists()) {
+        const data = snapshot.data().events
+        console.log(data)
+        let i = 0
+
+        await Promise.all(
+            data.map(async (event) => {
+              const eventDocRef = doc(db, "Events", event)
+              const eventData = (await getDoc(eventDocRef)).data()
+              if (eventData.status === 'pending' && eventData.sender !== user.uid) {
+                i++
+              }
+            })
+        )
+
+        setNewInvites(i)
+    }
+    });
+
+
+    return () => {unsubscribe(); unsubscribe2()}; // wichtig: Listener beim Unmount entfernen
+  }, [user?.uid])
+
   const saveFCMToken = async () => {
-    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
+    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hK'})
 
     try {
       uID = await user.uid
     } catch (error) {
-      
+
     }
 
     if (!user) {
     console.warn("Kein eingeloggter Benutzer");
     return;
-  }
+    }
 
-  const tokenRef = doc(db, 'Users', uID);
-  await updateDoc(tokenRef, {
-    fcmToken: token
-  });
+
+    try {
+      const tokenRef = doc(db, 'Users', uID);
+      await updateDoc(tokenRef, {
+        fcmToken: token
+      });
+    } catch (error) {
+      console.log(error)
+    }
 
   }
 
@@ -214,14 +221,16 @@ function App() {
   const handleRequestDeny = async (friend) => {
     try {
       uID = await user.uid;
-      const docRef = await doc(db, "Users", uID)
+      const docRef = doc(db, "Users", uID)
       //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
       await updateDoc(docRef, {
-        Friends: arrayRemove(friend)
+        FriendRequests: arrayRemove(friend)
       })
 
       console.log(fRequestsNames.indexOf(friend))
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
+
+      console.log(fRequestsNames)
 
       setFRequests(fRequests - 1)
       setReload(true)
@@ -293,6 +302,7 @@ function App() {
         <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color='primary'><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/events`); setValue('events');}}><ListItemCustom text={{text: 'Einladungen'}}><Diversity3Icon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         
       </List>
       <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
@@ -324,16 +334,30 @@ function App() {
     return <Navigate to='/tracker'/>
   }
 
+  const handlePopupClose = () => {
+    setOpenEventPopup(false)
+  }
+
+  const handleOpenEventPopup = () => {
+    setOpenEventPopup(true)
+    console.log(openEventPopup)
+  }
+
   return (
     <>
 
       <FRequestsDialog></FRequestsDialog>
+
+      {/* <ClickAwayListener onClickAway={handlePopupClose}>
+          <EventPopup open={openEventPopup} onTrigger={() => setOpenEventPopup(false)} senderName={eventSenderName} eventDate={eventDate} inviteText={eventText} eventId={eventId != null ? eventId : '4NMD0tUW93XjV9ITOYYZ' }>{openEventPopup}</EventPopup>
+      </ClickAwayListener> */}
+
       {/*   */}
       <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>  
 
       {user ? 
       <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
-        <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests} color="primary"><MenuIcon/></Badge></Button>
+        <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests + newInvites} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} elevation={0} open={open} onClose={toggleDrawer(false)}>
           {DrawerList}
@@ -380,12 +404,12 @@ function App() {
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
 
-          <MenuItem onClick={handleClose}>
+          <MenuItem>
             <Badge badgeContent={subscriptionStatus ? <SmokingRoomsIcon sx={{color: '#FFD700', position: 'absolute', left: '-50%', top:'-25%'}}/> : ''}><Avatar /></Badge> 
             {user ? user.displayName : 'Profile'}
           </MenuItem>
           <Divider />
-          <MenuItem onClick={handleClose}>
+          <MenuItem onClick={handleOpenEventPopup}>
             <ListItemIcon>
               <PersonAdd sx={{color: 'white'}} fontSize="small" />
             </ListItemIcon>
@@ -427,6 +451,7 @@ function App() {
           <Route path='/map' element={<ProtectedRoute><Map displayName={'Map'}/></ProtectedRoute>}/>
           <Route path='/style' element={<ProtectedRoute><Style/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
+          <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

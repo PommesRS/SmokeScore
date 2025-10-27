@@ -8,7 +8,8 @@ import {
   Divider,
   Paper,
   Popper,
-  ClickAwayListener
+  ClickAwayListener,
+  Grid2
 } from '@mui/material'
 import { Check, Add } from '@mui/icons-material'
 import { LineChart, lineElementClasses, markElementClasses } from '@mui/x-charts/LineChart'
@@ -87,104 +88,110 @@ const Style = () => {
 
       <ClickAwayListener onClickAway={handleClose}>
         <Stack direction="row" spacing={5} justifyContent="center">
-          <ColorButton onClick={() => {setThemeName('blue'); handleClose()}} uID="blue" color="#53b0ee" selected={themeName === 'blue'} />
-          <ColorButton onClick={() => {setThemeName('green'); handleClose()}} uID="green" color="#187" selected={themeName === 'green'} />
-          <ColorButton onClick={() => {setThemeName('sunset'); handleClose()}} uID="sunset" color="#C7784A" selected={themeName === 'sunset'} />
+          <Grid2 container spacing={5} justifyContent="center">
+            <Grid2 item>
+              <ColorButton onClick={() => {setThemeName('blue'); handleClose()}} uID="blue" color="#53b0ee" selected={themeName === 'blue'} />
+            </Grid2>
+            <Grid2 item>
+              <ColorButton onClick={() => {setThemeName('green'); handleClose()}} uID="green" color="#187" selected={themeName === 'green'} />
+            </Grid2>
+            <Grid2 item>
+              <ColorButton onClick={() => {setThemeName('sunset'); handleClose()}} uID="sunset" color="#C7784A" selected={themeName === 'sunset'} />
+            </Grid2>
+          
+          
+          
 
           {/* Popper-Button 1 */}
-          <Box position="relative">
-            <ColorButton
-              onClick={handlePopperToggle('purple')}
-              uID="purple"
-              color="#aa14f0"
-              selected={themeName === 'purple' || themeName === 'grayPurple'}
-            />
-            <Popper
-              open={openPopperId === 'purple'}
-              anchorEl={anchorEls['purple']}
-              placement="bottom"
-              sx={{ zIndex: 100 }}
-            >
-              <Paper
-                elevation={0}
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    width: 16,
-                    height: 16,
-                    top: -8,
-                    left: '50%',
-                    transform: 'translateX(-50%) rotate(45deg)',
-                    bgcolor: 'background.paper'
-                  },
-                  boxShadow : '2px 5px 40px #000'
-                }}
+          <Grid2 item>
+            <Box position="relative">
+              <ColorButton
+                onClick={handlePopperToggle('purple')}
+                uID="purple"
+                color="#aa14f0"
+                selected={themeName === 'purple' || themeName === 'grayPurple'}
+              />
+              <Popper
+                open={openPopperId === 'purple'}
+                anchorEl={anchorEls['purple']}
+                placement="bottom"
+                sx={{ zIndex: 100 }}
               >
-                <Stack direction="row" gap={2}>
-                  <ColorButton onClick={() => setThemeName('purple')} uID="purple" color="#aa14f0" />
-                  <ColorButton onClick={() => setThemeName('grayPurple')} uID="grayPurple" color="linear-gradient(135deg, #aa14f0 50%, #252525 50%)"/>
-                </Stack>
-              </Paper>
-            </Popper>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    position: 'relative',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      width: 16,
+                      height: 16,
+                      top: -8,
+                      left: '50%',
+                      transform: 'translateX(-50%) rotate(45deg)',
+                      bgcolor: 'background.paper'
+                    },
+                    boxShadow : '2px 5px 40px #000'
+                  }}
+                >
+                  <Stack direction="row" gap={2}>
+                    <ColorButton onClick={() => setThemeName('purple')} uID="purple" color="#aa14f0" />
+                    <ColorButton onClick={() => setThemeName('grayPurple')} uID="grayPurple" color="linear-gradient(135deg, #aa14f0 50%, #252525 50%)"/>
+                  </Stack>
+                </Paper>
+              </Popper>
           </Box>
 
+          </Grid2>
+
           {/* Popper-Button 2 */}
-          <Box position="relative">
-            <ColorButton
-              onClick={handlePopperToggle('red')}
-              uID="red"
-              color="#861f1f"
-              selected={ themeName === 'red' || themeName === 'grayRed'}
-            />
-            <Popper
-              open={openPopperId === 'red'}
-              anchorEl={anchorEls['red']}
-              placement="bottom"
-              sx={{ zIndex: 100 }}
-            >
-              <Paper
-                elevation={0}
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    width: 16,
-                    height: 16,
-                    top: -8,
-                    left: '50%',
-                    transform: 'translateX(-50%) rotate(45deg)',
-                    bgcolor: 'background.paper'
-                  },
-                  boxShadow : '2px 5px 40px #000'
-                }}
+            <Box position="relative">
+              <ColorButton
+                onClick={handlePopperToggle('red')}
+                uID="red"
+                color="#861f1f"
+                selected={ themeName === 'red' || themeName === 'grayRed'}
+              />
+              <Popper
+                open={openPopperId === 'red'}
+                anchorEl={anchorEls['red']}
+                placement="bottom"
+                sx={{ zIndex: 100 }}
               >
-                <Stack direction="row" gap={2}>
-                  <ColorButton onClick={() => setThemeName('red')} uID="red" color="#861f1f" />
-                  <ColorButton onClick={() => setThemeName('grayRed')} uID="grayRed" color="linear-gradient(135deg, #861f1f 50%, #252525 50%)" />
-                </Stack>
-              </Paper>
-            </Popper>
-          </Box>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    position: 'relative',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      width: 16,
+                      height: 16,
+                      top: -8,
+                      left: '50%',
+                      transform: 'translateX(-50%) rotate(45deg)',
+                      bgcolor: 'background.paper'
+                    },
+                    boxShadow : '2px 5px 40px #000'
+                  }}
+                >
+                  <Stack direction="row" gap={2}>
+                    <ColorButton onClick={() => setThemeName('red')} uID="red" color="#861f1f" />
+                    <ColorButton onClick={() => setThemeName('grayRed')} uID="grayRed" color="linear-gradient(135deg, #861f1f 50%, #252525 50%)" />
+                  </Stack>
+                </Paper>
+              </Popper>
+            </Box>
+          </Grid2>
         </Stack>
       </ClickAwayListener>
 
       {/* Vorschau-Box */}
-      <Box
-        border={1}
-        borderRadius="10px"
-        p={2}
-        pb={0}
-        mb={10}
-        position="relative"
-        height="50vh"
-        width="inherit"
+      <Box border={1} borderRadius="10px" p={2} pb={0} mb={10} position="relative" height="50vh" width="inherit"
         sx={{
           '&::before': {
             content: '"Vorschau"',

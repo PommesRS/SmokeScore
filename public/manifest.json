@@ -1,8 +1,8 @@
 {
   "name": "smokescore",
   "short_name": "SmokeScore",
-  "theme_color": "#4c2de7",
-  "background_color": "#0b0618",
+  "theme_color": "#02000e",
+  "background_color": "#252525",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",

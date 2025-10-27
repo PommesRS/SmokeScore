@@ -209,13 +209,17 @@ const Friends = () => {
       const totalAmount = (await getDoc(docRef)).data().counter
       const tags = (await getDoc(docRef)).data().tags
       const locations = (await getDoc(docRef)).data().geoLocations
+      let street
+
       locations.sort((a,b) => {
         return b.amount - a.amount
       })
 
-      const street =  await maptilersdk.geocoding.reverse([locations[0].point._long, locations[0].point._lat]);
-      console.log(street)
-      locations[0].street = street.features[0].text
+      if (typeof locations[0] !== 'undefined') {
+        street = await maptilersdk.geocoding.reverse([locations[0].point._long, locations[0].point._lat]);
+        locations[0].street = street.features[0].text
+      }
+
 
       cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags])
     }))
@@ -240,22 +244,32 @@ const Friends = () => {
       return
     }
 
-    const mapCoords = friends[friendIndex][3]
-    console.log(map.current)
-    if (map.current) {
-      map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
+    if(typeof friends[friendIndex][3] !== 'undefined') { 
+
+      const mapCoords = friends[friendIndex][3]
+      if (map.current) {
+        map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
+      }
+  
+      console.log(friendIndex)
+  
+      map.current = new maptilersdk.Map({
+        container: mapContainer.current,
+        style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+        //style: mapStyle,
+        center: [mapCoords.point._long, mapCoords.point._lat],
+        zoom: 12,
+        navigationControl: false
+      });
+    }else {
+      map.current = new maptilersdk.Map({
+        container: mapContainer.current,
+        style: '59d38153-6ea3-464a-b3c9-2e869c449863',
+        //style: mapStyle,
+        zoom: 0,
+        navigationControl: false
+      });
     }
-
-    console.log(friendIndex)
-
-    map.current = new maptilersdk.Map({
-      container: mapContainer.current,
-      style: '59d38153-6ea3-464a-b3c9-2e869c449863',
-      //style: mapStyle,
-      center: [mapCoords.point._long, mapCoords.point._lat],
-      zoom: 12,
-      navigationControl: false
-    });
 
   }, [friendIndex])
 
@@ -523,8 +537,9 @@ const Friends = () => {
               <div ref={mapContainer} className='map-wrapper' style={{borderRadius: '27px'}}/>
               <img src="pin.svg" width={20} alt="pin" style={{position: 'absolute', transform: 'translateY(-50%)'}}/>
               <Stack direction={'row'} position={'absolute'} width={'90%'} sx={{justifyContent: 'space-between'}} bottom={'12%'} zIndex={2}>
-                <Typography display={'flex'} alignItems={'center'}><PersonPinCircleIcon/>{friends.length != 0 ? friends[friendIndex][3].street : 'loading...'}</Typography>
-                <Typography textAlign={'right'}>{friends.length != 0 ? friends[friendIndex][3].amount : 'loading...'}</Typography>
+                <Typography display={'flex'} alignItems={'center'}><PersonPinCircleIcon/>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].street : 'noch kein Ort gespeichert' : 'loading...'}</Typography>
+                {console.log(friends[friendIndex][3])}
+                <Typography textAlign={'right'}>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].amount : '0' : 'loading...'}</Typography>
               </Stack>
             </Box>
 

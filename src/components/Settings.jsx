@@ -270,7 +270,7 @@ const Settings = () => {
                     <ListItemText primary="Profil Anpassen" />
                 </ListItemButton>
             <Divider />
-                <ListItemButton disabled={true} href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
+                <ListItemButton disabled href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
                     <ListItemAvatar>
                     <Avatar>
                         <SellIcon />
@@ -279,7 +279,7 @@ const Settings = () => {
                     <ListItemText primary="Abonnement Optionen" secondary='Zum Kundenportal' />
                 </ListItemButton>
             <Divider />
-                <ListItemButton onClick={handleClickOpen}>
+                <ListItemButton disabled onClick={handleClickOpen}>
                     <ListItemAvatar>
                     <Avatar>
                         <DeleteForeverIcon />

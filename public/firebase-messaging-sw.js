@@ -22,6 +22,10 @@ firebase.initializeApp({
 // messages.
 const messaging = firebase.messaging();
 
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
 messaging.onBackgroundMessage((payload) => {
     console.log(
         '[firebase-messaging-sw.js] Received background message ',
@@ -29,12 +33,61 @@ messaging.onBackgroundMessage((payload) => {
     );
     // Customize notification here
 
-    const notificationTitle = payload.data.title;
-    const notificationOptions = {
-        body: payload.data.body,
-        icon: './logo.png',
-        //icon: payload.notification.image
-    };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
-    });
+    if (payload.data.msgType == 'invite') {
+        const notificationTitle = `${payload.data.senderName} hat dir eine Einladung geschickt!`;
+        const notificationOptions = {
+            body: payload.data.body,
+            icon: './logo.png',
+        };
+
+        self.registration.showNotification(notificationTitle, notificationOptions);
+    }else{
+        const notificationTitle = payload.data.title;
+        const notificationOptions = {
+            body: payload.data.body,
+            icon: './logo.png',
+        };
+
+        self.registration.showNotification(notificationTitle, notificationOptions);
+    }
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsArr => {
+      for (const client of clientsArr) {
+        // Prüfen ob ein Fenster oder PWA-Instanz schon offen ist
+        if (client.url.startsWith(url) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Falls keine PWA offen, neues Fenster öffnen (öffnet evtl. Browser)
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
+
+messaging.onMessage((payload) => {
+    console.log(
+        '[firebase-messaging-sw.js] Received message ',
+        payload
+    );
+
+    if (payload.data.msgType === 'invite') {
+        self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+            clients.forEach(client => {
+            client.postMessage({
+                data: data
+            });
+            });
+        })
+    }
+
+})

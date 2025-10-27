@@ -15,6 +15,8 @@ import PaywallFriends from "./PaywallFriends";
 import PaywallMap from "./PaywallMap";
 import ThemeToggleButton from "./ThemeToggleButton";
 import Style from "./Style";
+import EventPopup from "./EventPopup";
+import Events from "./Events";
 
 export{
     App,
@@ -33,5 +35,7 @@ export{
     PaywallFriends,
     PaywallMap,
     ThemeToggleButton,
-    Style
+    Style,
+    EventPopup,
+    Events
 }

@@ -196,7 +196,8 @@ function Counter() {
           body: JSON.stringify({
               token: Token,
               title: 'Neue Kippe 🚬',
-              body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : ''
+              body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : '',
+              msgType: 'notification'
           }),
           })
           .then(res => res.json())
