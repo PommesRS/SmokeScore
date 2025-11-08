@@ -197,11 +197,13 @@ function Counter() {
               token: Token,
               title: 'Neue Kippe 🚬',
               body: user ? user.displayName + ' hat soeben eine neue Kippe eingetragen. Ziehe schnell nach!' : '',
-              msgType: 'notification'
+              msgType: 'notification',
+              eventDate: '-', 
+              senderName: '-'
           }),
           })
           .then(res => res.json())
-          .then(console.log)
+          .then((res) => {console.log(res)})
           .catch(console.error);
       }
     })
