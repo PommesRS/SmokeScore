@@ -131,7 +131,11 @@ function App() {
             data.map(async (event) => {
               const eventDocRef = doc(db, "Events", event)
               const eventData = (await getDoc(eventDocRef)).data()
+              console.log(eventData)
               if (eventData.status === 'pending' && eventData.sender !== user.uid) {
+                i++
+              }
+              if (eventData.newMsg === true && eventData.lastMsgSender !== user.uid){
                 i++
               }
             })
@@ -142,7 +146,7 @@ function App() {
     });
 
 
-    return () => {unsubscribe(); unsubscribe2()}; // wichtig: Listener beim Unmount entfernen
+    return () => {unsubscribe()}; // wichtig: Listener beim Unmount entfernen
   }, [user?.uid])
 
   const saveFCMToken = async () => {
@@ -302,7 +306,7 @@ function App() {
         <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color='primary'><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={() => {navigate(`/events`); setValue('events');}}><ListItemCustom text={{text: 'Einladungen'}}><Diversity3Icon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/events`); setValue('events');}}><ListItemCustom text={{text: 'Einladungen'}}><Badge badgeContent={newInvites} color='primary'><Diversity3Icon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
         
       </List>
       <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>

@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useReducer } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { 
     Box, Button, Typography, ListItemButton, List, ListItem, Stack, ToggleButtonGroup, ToggleButton, useTheme,
-    TextField, ListItemAvatar, ListItemText, Avatar, Divider
+    TextField, ListItemAvatar, ListItemText, Avatar, Divider, Dialog, Paper, Input, InputBase,
+    InputAdornment, IconButton, AppBar, FormControl, Badge
  } from '@mui/material'
 import SouthEastIcon from '@mui/icons-material/SouthEast';
 import NorthEastIcon from '@mui/icons-material/NorthEast';
@@ -10,12 +11,13 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
+import ForumIcon from '@mui/icons-material/Forum';
+import SendIcon from '@mui/icons-material/Send';
 import { DatePicker } from '@mui/x-date-pickers';
 import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
-import SearchIcon from '@mui/icons-material/Search';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { db } from '../firebase.js';
-import { collection, doc, getDoc, addDoc, updateDoc, onSnapshot, arrayRemove, deleteDoc, increment } from "@firebase/firestore";
+import { collection, doc, getDoc, addDoc, updateDoc, onSnapshot, arrayRemove, deleteDoc, increment, query, orderBy, serverTimestamp } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -23,6 +25,108 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import { setDate } from 'date-fns';
 import { data } from 'react-router-dom';
+
+export function Message({callback, message}) {
+    const { user } = useUserAuth()
+
+    useEffect(() => {
+      callback()
+    }, [])
+
+    return (
+        <Paper key={message.id} sx={message.senderId !== user.uid ? {color:'#fff', p: 2, alignSelf: 'start'} : {color:'#fff', p: 2,  alignSelf: 'end'}}>
+            {message.text}
+        </Paper>
+    )
+}
+
+export function ChatMessages({messages}) {
+
+    const callback = () => {
+        const container = document.querySelector('.chat-container');
+        if(container.lastElementChild) {
+            container.lastElementChild.scrollIntoView(true)
+        }
+
+    }
+
+    return (
+        <Stack gap={2} className='chat-container'>
+            {messages.map(message => (
+                <Message message={message} callback={callback}/>
+                // <Paper key={message.id} sx={message.receiving ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
+                //     {message.text}
+                // </Paper>
+                ))
+            }
+        </Stack >
+    )
+}
+
+function ChatDialog({ open, onClose, theme, activeEvent, messages, typedMessage, setTypedMessage, handleSendMessage, scrollRef }) {
+    const { user } = useUserAuth()
+    if (!activeEvent) return null;
+
+    useEffect(() => {
+        handleResetNewMsgAlert()
+    }, [messages])
+
+    const handleResetNewMsgAlert = async () => {
+        const docRef = doc(db, 'Events', activeEvent.eventId)
+        const lastMsgSender = (await getDoc(docRef)).data().lastMsgSender
+        console.log(await lastMsgSender)
+        if (lastMsgSender !== user.uid) {
+            await updateDoc(docRef, {
+                newMsg: false
+            })
+            
+        }
+
+        const receiverRef = doc(db, 'Users', user.uid)
+        const receiverEvents = (await getDoc(receiverRef)).data().updateVar
+
+        await updateDoc(receiverRef, {
+            updateVar: increment(1)
+        })
+        await updateDoc(receiverRef, {
+            updateVar: increment(-1)
+        })
+    }
+
+
+    return (
+        <Dialog slotProps={{paper: { sx: {background: theme.palette.background.gradient}}}} fullScreen sx={{alignItems: 'end'}} onClose={onClose} open={open} display={'flex'}>
+                <AppBar position='fixed' sx={{pr: '0px !important'}}>
+                    <Button fullWidth startIcon={<ArrowBackIosNewIcon/>} sx={{':focus': {outline: 'none'}, zIndex: 10, background: theme.palette.background.paper}} onClick={onClose}>Zurück</Button>
+                </AppBar>
+
+                
+
+                <Stack justifyContent={'space-between'}>
+                    <Stack m={1} gap={2} mt={7} mb={10}>
+                        <Paper key={'initMessage'} sx={activeEvent?.sender !== user.uid ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
+                            {activeEvent?.inviteText}
+                        </Paper>
+                        <ChatMessages ref={scrollRef} messages={messages}/>
+                    </Stack>
+                    
+                    <Paper elevation={8} sx={{display: 'flex', alignItems: 'center', borderRadius: 10, background: theme.palette.primary.main, position: 'fixed', left: 22, right: 22, bottom: 22, }}>
+                        <InputBase
+                            multiline
+                            fullWidth
+                            sx={{ml: 0.5, pl: 2, background: theme.palette.background.paper, borderRadius: '50px'}}
+                            placeholder="Nachricht"
+                            onChange={(e) => setTypedMessage(e.target.value)}
+                            value={typedMessage}
+                        />
+                        <IconButton type='submit' onClick={() => {handleSendMessage(activeEvent.eventId)}} sx={{pr: 1.5, ':focus': {outline: 'none'}}}>
+                            <SendIcon/>
+                        </IconButton>
+                    </Paper>
+                </Stack>
+        </Dialog>
+    );
+}
 
 
 const Events = () => {
@@ -38,6 +142,30 @@ const Events = () => {
     const [msg, setMsg] = useState()
     const theme = useTheme()
     const [value, setValue] = useState([]);
+    const [chatOpen, setChatOpen] = useState(false)
+    const [activeEvent, setActiveEvent] = useState(null)
+    const [messages, setMessages] = useState([]);
+    const [typedMessage, setTypedMessage] = useState('');
+    const ChatScroll = useRef(null)
+
+    useEffect(() => {
+        if (!chatOpen || !activeEvent) return;
+        const messagesRef = collection(db, "Events", activeEvent.eventId, "Messages");
+        const q = query(messagesRef, orderBy("timestamp", "asc"));
+
+        // Realtime Listener starten
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const newMessages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            }));
+            setMessages(newMessages);
+        });
+
+        // Cleanup: Listener stoppen, wenn Chat geschlossen oder gewechselt wird
+        return () => unsubscribe();
+        
+    }, [chatOpen, activeEvent])
     
 
     async function getFriends() {
@@ -46,9 +174,9 @@ const Events = () => {
 
         const friendsData = await Promise.all(
             friendListInit.map(async (friend) => {
-            const friendDocRef = doc(db, "Users", friend)
-            const friendName = (await getDoc(friendDocRef)).data().displayName
-            return [friend, friendName]
+                const friendDocRef = doc(db, "Users", friend)
+                const friendName = (await getDoc(friendDocRef)).data().displayName
+                return [friend, friendName]
             })
         )
 
@@ -219,6 +347,14 @@ const Events = () => {
         await updateDoc(eventDocRef, {
             status: 'denied'
         })
+
+                const docRef = doc(db, "Users", user.uid)
+        await updateDoc(docRef, {
+            updateVar: increment(1)
+        })
+        await updateDoc(docRef, {
+            updateVar: increment(-1)
+        })
     }
 
     const handleDeleteEvent = async (id) => {
@@ -237,11 +373,85 @@ const Events = () => {
         });
 
         await deleteDoc(eventDocRef)
+    }
 
+    const handleOpenChat = async (id) => {
+        const eventDocRef = doc(db, "Events", id)
+        let eventData = (await getDoc(eventDocRef)).data()
+        eventData = {...eventData, eventId: id}
+        //console.log((await getDoc(eventDocRef)).data())
+        setActiveEvent(eventData)
+        setChatOpen(true)
+    }
+
+    const handleChatClose = () => {
+        setChatOpen(false);
+    };
+
+    const handleSendMessage = async (event) => {
+        if (!typedMessage.trim()) return
+        const messagesRef = collection(db, "Events", activeEvent.eventId, "Messages");
+        console.log(user.uid, activeEvent.sender)
+        await addDoc(messagesRef, {
+            receiving: user.uid === activeEvent.sender ? true : false,
+            text: typedMessage,
+            timestamp: serverTimestamp(),
+            senderId: user.uid
+        });
+
+        setTypedMessage('')
+        const container = document.querySelector('.chat-container');
+        container.lastElementChild.scrollIntoView(true)
+        const eventRef = doc(db, 'Events', activeEvent.eventId)
+        await updateDoc(eventRef, {
+            lastMsgSender: user.uid,
+            newMsg: true
+        })
+
+        const receiverId = activeEvent.receiver === user.uid ? activeEvent.sender : activeEvent.receiver
+
+        const receiverRef = doc(db, 'Users', receiverId)
+        const receiverToken = (await getDoc(receiverRef)).data().fcmToken
+        console.log(activeEvent.receiver)
+
+        await updateDoc(receiverRef, {
+            updateVar: increment(1)
+        })
+
+        await updateDoc(receiverRef, {
+            updateVar: increment(-1)
+        })
+
+        fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              token: await receiverToken,
+              title: 'Nachricht von ' + user.displayName,
+              body: typedMessage,
+              msgType: 'notification',
+              eventDate: '-', 
+              senderName: '-'
+          }),
+          })
+          .then(res => res.json())
+          .then((res) => {console.log(res)})
+          .catch(console.error);
     }
 
   return (
     <Box pt={9} gap={5} width="100%" height="100%" display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+        <ChatDialog 
+            open={chatOpen}
+            onClose={handleChatClose}
+            theme={theme}
+            activeEvent={activeEvent}
+            messages={messages}
+            typedMessage={typedMessage}
+            setTypedMessage={setTypedMessage}
+            handleSendMessage={handleSendMessage}
+            scrollRef={ChatScroll}
+        />
         <Typography align="center" variant="h4">
         Einladungen
         </Typography>
@@ -313,22 +523,28 @@ const Events = () => {
         <List sx={{width: '100%', mb: 10, border: 1, borderRadius: '10px'}} dense={value < 0}>
             {eventList.map((event, i) => (
                 event.sender.sender === user.uid ? 
-                    <React.Fragment key={event}>
-                        <ListItem >
+                    <React.Fragment key={event.eventId}>
+                        <ListItem>
                             <Stack direction={'column'} flex width={'100%'}>
                                 <Stack direction={'row'} flex alignItems={'center'}>
                                     <ListItemAvatar>
-                                        <Avatar><NorthEastIcon/></Avatar>
+                                        {event.status === 'pending' ? 
+                                            <Avatar><NorthEastIcon/></Avatar>
+                                        : event.status === 'accepted' ? 
+                                            <Avatar color='success' sx={{background: theme.palette.primary.main}}><CheckIcon/></Avatar>
+                                        : 
+                                            <Avatar color='error' sx={{background: 'red'}}><CloseIcon/></Avatar>
+                                        }
                                     </ListItemAvatar>
                                     <ListItemText slotProps={{primary: { component: 'span' },secondary: { component: 'span' }}} primary={`Einladung an ${event.receiver.receiverName}`} secondary={
                                         <React.Fragment>
                                         <Stack direction={'row'} gap={2}>
                                             <Stack direction={'row'} flex alignItems={'center'} gap={1}>
-                                                <AccessTimeIcon/>
+                                                <CalendarTodayIcon/>
                                                 <Typography alignItems={'center'}>{dayjs(event.date.toDate()).format('DD.MM.YYYY')}</Typography>
                                             </Stack>
                                             <Stack direction={'row'} flex alignItems={'center'} gap={1}>
-                                                <CalendarTodayIcon/>
+                                                <AccessTimeIcon/>
                                                 <Typography alignItems={'center'}>{dayjs(event.date.toDate()).format('HH:mm')}</Typography>
                                             </Stack>
                                         </Stack>
@@ -336,32 +552,61 @@ const Events = () => {
                                     }/>
                                 </Stack>
                                 <Stack>
-                                    <ListItemText primary='Status' secondary={event.status === 'accepted' ? 'Akzeptiert' : event.status === 'pending' ? 'Ausstehend' : 'Abgelehnt'}/>
+                                    <ListItemText primary='Nachricht:' secondary={event.inviteText}/>
                                 </Stack>
-                                <Stack>
-                                    <Button variant='outlined' startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                                                <Stack>
+                                    {event.status === 'pending' ? 
+
+                                        <Stack direction={'row'} width={'100%'} gap={2}>
+                                            <Button fullWidth variant='contained' color='error' startIcon={<CloseIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDenyEvent(event.eventId)}>Ablehnen</Button>
+                                            <Button fullWidth variant='outlined' startIcon={<CheckIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleAcceptEvent(event.eventId)}>Annehmen</Button>
+                                        </Stack>
+                                        
+                                    :
+                                        <Stack direction={'row'} width={'100%'} gap={2}>
+                                            {event.status === 'accepted' ? 
+                                                <React.Fragment>
+                                                    <Button fullWidth variant='outlined' key={'delete'} startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                                    <Box sx={{width: '100%'}}>
+                                                        <Badge sx={{width: '100%'}} variant='dot' color='secondary' invisible={event.newMsg && (event.lastMsgSender !== user.uid) ? false : true}>
+                                                            <Button fullWidth variant='contained' key={'openChat'} startIcon={<ForumIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleOpenChat(event.eventId)}>Chat</Button>
+                                                        </Badge>
+                                                    </Box>
+                                                </React.Fragment>
+                                            :
+                                                <Button fullWidth variant='outlined' startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                            }
+                                        </Stack>
+                                        
+                                    }
                                 </Stack>
                             </Stack>
                         </ListItem>
                         <Divider  sx={{...(i+1 >= eventList.length && {display: 'none'}), borderBottom: 1}}></Divider>
                     </React.Fragment>
                     :
-                    <React.Fragment key={event}>
+                    <React.Fragment key={event.eventId}>
                         <ListItem>
                             <Stack direction={'column'} flex width={'100%'}>
                                 <Stack direction={'row'} flex alignItems={'center'}>
                                     <ListItemAvatar>
-                                        <Avatar><SouthEastIcon/></Avatar>
+                                        {event.status === 'pending' ? 
+                                            <Avatar><SouthEastIcon/></Avatar>
+                                        : event.status === 'accepted' ? 
+                                            <Avatar color='success' sx={{background: theme.palette.primary.main}}><CheckIcon/></Avatar>
+                                        : 
+                                            <Avatar color='error' sx={{background: 'red'}}><CloseIcon/></Avatar>
+                                        }
                                     </ListItemAvatar>
                                     <ListItemText slotProps={{primary: { component: 'span' },secondary: { component: 'span' }}} primary={`Einladung von ${event.sender.senderName}`} secondary={
                                         <React.Fragment>
                                         <Stack direction={'row'} gap={2}>
                                             <Stack direction={'row'} flex alignItems={'center'} gap={1}>
-                                                <AccessTimeIcon/>
+                                                <CalendarTodayIcon/>
                                                 <Typography component='span' alignItems={'center'}>{dayjs(event.date.toDate()).format('DD.MM.YYYY')}</Typography>
                                             </Stack>
                                             <Stack direction={'row'} flex alignItems={'center'} gap={1}>
-                                                <CalendarTodayIcon/>
+                                                <AccessTimeIcon/>
                                                 <Typography component='span' alignItems={'center'}>{dayjs(event.date.toDate()).format('HH:mm')}</Typography>
                                             </Stack>
                                         </Stack>
@@ -369,7 +614,7 @@ const Events = () => {
                                     } />
                                 </Stack>
                                 <Stack>
-                                    <ListItemText primary='Status' secondary={event.status === 'accepted' ? 'Akzeptiert' : event.status === 'pending' ? 'Ausstehend' : 'Abgelehnt'}/>
+                                    <ListItemText primary='Nachricht:' secondary={event.inviteText}/>
                                 </Stack>
                                 <Stack>
                                     {event.status === 'pending' ? 
@@ -380,7 +625,21 @@ const Events = () => {
                                         </Stack>
                                         
                                     :
-                                        <Button variant='outlined' startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                        <Stack direction={'row'} width={'100%'} gap={2}>
+                                            {event.status === 'accepted' ? 
+                                                <React.Fragment>
+                                                    <Button fullWidth variant='outlined' key={'delete'} startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                                    <Box sx={{width: '100%'}}>
+                                                        <Badge sx={{width: '100%'}} variant='dot' color='secondary' invisible={event.newMsg && (event.lastMsgSender !== user.uid) ? false : true}>
+                                                            <Button fullWidth variant='contained' key={'openChat'} startIcon={<ForumIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleOpenChat(event.eventId)}>Chat</Button>
+                                                        </Badge>
+                                                    </Box>
+                                                </React.Fragment>
+                                            :
+                                                <Button fullWidth variant='outlined' startIcon={<DeleteIcon/>} sx={{':focus': {outline: 'none'}, mb: 1}} onClick={() => handleDeleteEvent(event.eventId)}>Löschen</Button>
+                                            }
+                                        </Stack>
+                                        
                                     }
                                 </Stack>
                             </Stack>
