@@ -25,6 +25,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import { setDate } from 'date-fns';
 import { data } from 'react-router-dom';
+import { grey } from '@mui/material/colors';
 
 export function Message({callback, message}) {
     const { user } = useUserAuth()
@@ -34,8 +35,11 @@ export function Message({callback, message}) {
     }, [])
 
     return (
-        <Paper key={message.id} sx={message.senderId !== user.uid ? {color:'#fff', p: 2, alignSelf: 'start'} : {color:'#fff', p: 2,  alignSelf: 'end'}}>
-            {message.text}
+        <Paper key={message.id} sx={message.senderId !== user.uid ? {color:'#fff', p: 2, alignSelf: 'start', maxWidth: '70%'} : {color:'#fff', p: 2,  alignSelf: 'end', maxWidth: '70%'}}>
+            <Stack position={'relative'}>
+                <Typography fontSize={17} pr={5}>{message.text}</Typography>
+                <Typography fontSize={12} alignSelf={'end'} position={'absolute'} bottom={-12} right={-7} color={grey[100]}>{dayjs(message.timestamp?.toDate()).format('HH:mm')}</Typography>
+            </Stack>
         </Paper>
     )
 }
@@ -99,25 +103,27 @@ function ChatDialog({ open, onClose, theme, activeEvent, messages, typedMessage,
                 <AppBar position='fixed' sx={{pr: '0px !important'}}>
                     <Button fullWidth startIcon={<ArrowBackIosNewIcon/>} sx={{':focus': {outline: 'none'}, zIndex: 10, background: theme.palette.background.paper}} onClick={onClose}>Zurück</Button>
                 </AppBar>
-
                 
 
-                <Stack justifyContent={'space-between'}>
-                    <Stack m={1} gap={2} mt={7} mb={10}>
+                <Stack justifyContent={'space-between'} height={'100vh'}>
+                    <Stack m={1} gap={2} mt={7} mb={2} maxHeight={'80vh'} overflow={'auto'}>
                         <Paper key={'initMessage'} sx={activeEvent?.sender !== user.uid ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
                             {activeEvent?.inviteText}
                         </Paper>
                         <ChatMessages ref={scrollRef} messages={messages}/>
                     </Stack>
                     
-                    <Paper elevation={8} sx={{display: 'flex', alignItems: 'center', borderRadius: 10, background: theme.palette.primary.main, position: 'fixed', left: 22, right: 22, bottom: 22, }}>
+                    <Paper elevation={8} sx={{display: 'flex', alignItems: 'center', borderRadius: '20px', background: theme.palette.primary.main, ml: 2, mr: 2, mb: 2, }}>
                         <InputBase
                             multiline
+                            maxRows={5}
                             fullWidth
-                            sx={{ml: 0.5, pl: 2, background: theme.palette.background.paper, borderRadius: '50px'}}
+                            size=''
+                            sx={{ml: 0, pl: 2, background: theme.palette.background.paper, borderRadius: '20px',}}
                             placeholder="Nachricht"
                             onChange={(e) => setTypedMessage(e.target.value)}
                             value={typedMessage}
+                            slotProps={{input: { sx: {py: 0.5}}}}
                         />
                         <IconButton type='submit' onClick={() => {handleSendMessage(activeEvent.eventId)}} sx={{pr: 1.5, ':focus': {outline: 'none'}}}>
                             <SendIcon/>
@@ -400,8 +406,6 @@ const Events = () => {
         });
 
         setTypedMessage('')
-        const container = document.querySelector('.chat-container');
-        container.lastElementChild.scrollIntoView(true)
         const eventRef = doc(db, 'Events', activeEvent.eventId)
         await updateDoc(eventRef, {
             lastMsgSender: user.uid,
