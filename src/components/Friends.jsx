@@ -3,7 +3,7 @@ import {
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Typography, Stack, Snackbar, Alert,
+  Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
   getFormControlLabelUtilityClasses, useTheme
 } from '@mui/material'
 import './map.css';
@@ -13,6 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { db } from '../firebase.js';
 import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
@@ -49,7 +50,9 @@ const chartTopColor = getComputedStyle(document.documentElement)
 const Friends = () => {
   const [friends, setFriends] = useState([])
   const [openFAdd, setOpenFAdd] = useState(false);
+  const [openFDel, setOpenFDel] = useState(false);
   const [alertState, setAlertState] = useState(false)
+  const [alertText, setAlertText] = useState('')
   const [errorMessage, setErrorMessage] = useState('No User Found')
   const [searchResult, setSearchResult] = useState([])
   const [reload, setReload] = useState(false)
@@ -99,12 +102,14 @@ const Friends = () => {
 
   const handleRequestSend = async (e) => {
     const idForRequest = e.target.getAttribute('data-uid')
-    const docRef = await doc(db, "Users", idForRequest)
+    const docRef = doc(db, "Users", idForRequest)
 
     await updateDoc(docRef, {
       FriendRequests: arrayUnion(uID)
     })
+    
     fAddDialogClose()
+    setAlertText('Freund erfolgreich Angefragt!')
     setAlertState(true)
   }
   
@@ -158,6 +163,51 @@ const Friends = () => {
       </Dialog>
     );
   }
+
+  function FDeleteDialog ({children}) {
+    return (
+      <Dialog
+          sx={
+              {backdropFilter: "blur(2px)"}
+          }
+          open={openFDel}
+          onClose={fDelDialogClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+      >
+          <DialogTitle id="alert-dialog-title">{friends.length > 0 && friends[friendIndex][1]} als Freund entfernen.</DialogTitle>
+          <DialogContent>
+              <Stack direction={'row'} flex={'true'} alignItems={'center'}>
+                  <Stack>
+                      <DialogContentText fontSize={15}>Du wirst nicht mehr mit {friends.length > 0 && friends[friendIndex][1]} befreundet sein.</DialogContentText>
+                      <DialogContentText fontSize={15}>Diese Aktion kann nicht Rückgängig gemacht werden!</DialogContentText>
+                  </Stack>
+              </Stack>
+              
+          </DialogContent>
+          <DialogActions>
+              <Button sx={{':focus': {outline: 'none'}}} onClick={fDelDialogClose}>Abbrechen</Button>
+              <Button variant='contained' sx={{background: theme.palette.error.dark, ':focus': {outline: 'none'}}} onClick={fDelFriend}>Entfernen</Button>
+          </DialogActions> 
+      </Dialog>
+    );
+  }
+
+  const fDelFriend = async () => {
+    const uid = user.uid
+    const friendToDelete = friends[friendIndex][0]
+    console.log(friendToDelete)
+    const userDocRef = doc(db, "Users", uid)
+    await updateDoc(userDocRef, {
+      Friends: friends.filter((friend) => friend[0] !== friendToDelete).map((friend) => friend[0])
+    })
+    setFriendIndex(0)
+    setFriends(friends.filter((friend) => friend[0] !== friendToDelete).map((friend) => friend))
+    console.log(friends)
+    fDelDialogClose()
+    setAlertText('Freund erfolgreich entfernt!')
+    setAlertState(true)
+  }
   
   const fAddDialogOpen = () => {
     setOpenFAdd(true);
@@ -166,6 +216,14 @@ const Friends = () => {
   const fAddDialogClose = () => {
     setOpenFAdd(false);
     setSearchResult([])
+  };
+
+    const fDelDialogOpen = () => {
+      setOpenFDel(true);
+    };
+
+  const fDelDialogClose = () => {
+    setOpenFDel(false);
   };
 
   async function getOwnStats() {
@@ -308,10 +366,16 @@ const Friends = () => {
   return (
     <>
     <FAddDialog></FAddDialog>
+    <FDeleteDialog></FDeleteDialog>
           <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
-          <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
-            <PersonAddAlt1Icon fontSize='large'/>
-          </IconButton>
+          <Stack gap={2}>
+            <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
+              <PersonAddAlt1Icon fontSize='smalllarge'/>
+            </IconButton>
+            <IconButton onClick={fDelDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.error.dark}} bgcolor='primary' aria-label="removeFriend">
+              <DeleteIcon fontSize='smalllarge'/>
+            </IconButton>
+          </Stack>
       </Box>
       <Snackbar
         anchorOrigin={{vertical: 'top', horizontal:'center'}}
@@ -320,7 +384,7 @@ const Friends = () => {
         onClose={handleCloseAlert}
       >
         <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
-          Freund erfolgreich Angefragt!
+          {alertText}
         </Alert>
       </Snackbar>
     {

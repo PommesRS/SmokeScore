@@ -11,13 +11,12 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import MenuIcon from '@mui/icons-material/Menu';
-import {Container, Box, Button, Typography, Stack, ClickAwayListener } from '@mui/material';
+import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Drawer from '@mui/material/Drawer';
 import Badge from '@mui/material/Badge';
 import List from '@mui/material/List';
-import Divider from '@mui/material/Divider';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -40,6 +39,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { onBackgroundMessage } from 'firebase/messaging/sw';
 import dayjs from 'dayjs';
+import { TheaterComedy } from '@mui/icons-material';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -77,21 +77,6 @@ function App() {
   const [eventSenderName, setEventSenderName] = useState(null)
   let uID;
 
-  const getFRequests = async () => {
-    if (getRequestNames) {
-      try {
-        uID = await user.uid;
-        const docRef = await doc(db, "Users", uID)
-        //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
-        setfRequestsNames((await getDoc(docRef)).data().FriendRequests)
-        setFRequests((await getDoc(docRef)).data().FriendRequests.length)
-        setGetRequestNames(false)
-      } catch (error) {
-        
-      }
-    }
-  }
-
   const getSubscriptionStatus = async () => {
     const docRef = doc(db, "Users", user.uid)
     if ((await getDoc(docRef)).data().hasPremium) {
@@ -123,15 +108,18 @@ function App() {
 
     const unsubscribe = onSnapshot(ref, async (snapshot) => {
     if (snapshot.exists()) {
-        const data = snapshot.data().events
-        console.log(data)
+        console.log("Current data: ", snapshot.data());
+        const data = snapshot.data()
+        console.log(data.events)
         let i = 0
+        let fRequestsNamesLocal = []
+        let fRequestLocal = 0
 
         await Promise.all(
-            data.map(async (event) => {
+            (data.events).map(async (event) => {
               const eventDocRef = doc(db, "Events", event)
               const eventData = (await getDoc(eventDocRef)).data()
-              console.log(eventData)
+              console.log(await eventData)
               if (eventData.status === 'pending' && eventData.sender !== user.uid) {
                 i++
               }
@@ -141,7 +129,19 @@ function App() {
             })
         )
 
+        await Promise.all(
+          (data.FriendRequests).map(async (friend) => {
+            const friendDocRef = doc(db, "Users", friend)
+            const friendData = (await getDoc(friendDocRef)).data()
+            fRequestsNamesLocal.push({displayName: friendData.displayName, uid: friend})
+            console.log(fRequestsNamesLocal)
+            fRequestLocal++
+          })
+        )
+
         setNewInvites(i)
+        setfRequestsNames(fRequestsNamesLocal)
+        setFRequests(fRequestLocal)
     }
     });
 
@@ -177,7 +177,6 @@ function App() {
 
   useEffect(() => {
     navigate(`/tracker`)
-    getFRequests()
     saveFCMToken()
     getSubscriptionStatus()
   }, [user])
@@ -258,19 +257,16 @@ function App() {
   if (user) {
     return (
       <Dialog sx={{backdropFilter: "blur(2px)"}} onClose={fRequestDialogClose} open={openFRequests}>
-        <DialogTitle textAlign={'center'} color='#fff'>Freundschaftsanfragen</DialogTitle>
-        <List sx={{ p: 0 }} justifyContent={'center'}>
+        <DialogTitle textAlign={'center'} color='#fff' sx={{textShadow: '4px 4px 3px rgba(0, 0, 0, 0.25)'}}>Freundschaftsanfragen</DialogTitle>
+        <List sx={{ p: 0 }}>
           {fRequestsNames ? fRequestsNames.map((friend) => (
-            <ListItem sx={{px: 4}} key={friend}>
-              <Stack>
-                <ListItemText sx={{"& .MuiListItemText-primary": {color: (theme) => theme.palette.primary.main}, textAlign: 'center'}} primary={friend}/>
-                <Stack direction={'row'}>
-                  <ListItemButton onClick={() => handleRequestAccept(friend)}>
-                    <ListItemText slotProps={{'data-role': 'role'}} sx={{color: '#fff', textAlign:'center'}} primary='Annehmen'/>
-                  </ListItemButton>
-                  <ListItemButton display= {'flex'}  alignItems='center' onClick={() => handleRequestDeny(friend)}>
-                    <ListItemText sx={{color: '#fff', textAlign:'center'}} primary='Ablehnen'/>
-                  </ListItemButton>
+            <ListItem sx={{px: 1}} key={friend.uid} >
+              <Stack gap={1} p={1} sx={{ borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper', width: '100%' }}>
+                <Typography sx={{textAlign: 'center'}}>
+                  <Typography component='span' color='primary.light'>{friend.displayName}</Typography>&nbsp;möchte mit dir befreundet sein</Typography>
+                <Stack direction={'row'} gap={2} justifyContent='space-around'>
+                  <Button variant='outlined' display= {'flex'} alignItems='center' onClick={() => handleRequestDeny(friend.uid)}>Ablehnen</Button>
+                  <Button variant='contained' onClick={() => handleRequestAccept(friend.uid)}>Annehmen</Button>
                 </Stack>
               </Stack>
             </ListItem>

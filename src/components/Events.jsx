@@ -26,25 +26,33 @@ import 'dayjs/locale/de';
 import { setDate } from 'date-fns';
 import { data } from 'react-router-dom';
 import { grey } from '@mui/material/colors';
+import { fi } from 'date-fns/locale';
 
 export function Message({callback, message}) {
     const { user } = useUserAuth()
+    const theme = useTheme()
 
     useEffect(() => {
       callback()
     }, [])
 
     return (
-        <Paper key={message.id} sx={message.senderId !== user.uid ? {color:'#fff', p: 2, alignSelf: 'start', maxWidth: '70%'} : {color:'#fff', p: 2,  alignSelf: 'end', maxWidth: '70%'}}>
-            <Stack position={'relative'}>
-                <Typography fontSize={17} pr={5}>{message.text}</Typography>
-                <Typography fontSize={12} alignSelf={'end'} position={'absolute'} bottom={-12} right={-7} color={grey[100]}>{dayjs(message.timestamp?.toDate()).format('HH:mm')}</Typography>
-            </Stack>
-        </Paper>
+        <React.Fragment>
+            <Paper elevation={0} key={message.id} sx={message.senderId !== user.uid ? 
+                {position: 'relative',color:'#fff', p: 2,  alignSelf: 'start', maxWidth: '70%', ':before': {content: '""', position: 'absolute', width: '10px', height: '10px', left: -6, top: 0, background: `linear-gradient(225deg, ${theme.palette.background.paper} 50%, rgba(0,0,0,0) 50%)`, filter: 'opacity(1)'}} 
+                : 
+                {position: 'relative',color:'#fff', p: 2,  alignSelf: 'end', maxWidth: '70%', ':before': {content: '""', position: 'absolute', width: '10px', height: '10px', right: -6, top: 0, background: `linear-gradient(135deg, ${theme.palette.background.paper} 50%, rgba(0,0,0,0) 50%)`, filter: 'opacity(1)'}}}>
+                <Stack position={'relative'}>
+                    <Typography fontSize={17} pr={5}>{message.text}</Typography>
+                    <Typography fontSize={12} alignSelf={'end'} position={'absolute'} bottom={-12} right={-7} color={grey[100]}>{dayjs(message.timestamp?.toDate()).format('HH:mm')}</Typography>
+                </Stack>
+            </Paper>
+        </React.Fragment>
     )
 }
 
 export function ChatMessages({messages}) {
+    const theme = useTheme()
 
     const callback = () => {
         const container = document.querySelector('.chat-container');
@@ -54,15 +62,80 @@ export function ChatMessages({messages}) {
 
     }
 
+    const sortedMessages = [...messages].sort(
+    (a, b) => a.timestamp?.toMillis() - b.timestamp?.toMillis()
+    );
+
+    const groupedMessages = sortedMessages.reduce((acc, msg) => {
+    const ts = msg.timestamp?.toDate();
+    const dateKey = dayjs(ts).startOf("day").toDate(); // echtes Date!
+
+    acc[dateKey] = acc[dateKey] || [];
+    acc[dateKey].push(msg);
+
+    return acc;
+    }, {});
+
+    console.log(groupedMessages)
+
+    function formatChatDate(date) {
+        const d = dayjs(date);
+        const today = dayjs();
+        const yesterday = dayjs().subtract(1, "day");
+
+        if (d.isSame(today, "day")) return "Heute";
+        if (d.isSame(yesterday, "day")) return "Gestern";
+
+        return d.format("DD.MM.YY");
+    }
+
+    function DateSeparator({ date }) {
+        return (
+            <Box
+                component={'div'}
+                sx={{
+                    position: "sticky",
+                    top: 50, // passe an deinen Header an
+                    zIndex: 5,
+                    background: theme.palette.background.paper,
+                    textAlign: "center",
+                    py: 0.5,
+                    width: '30%',
+                    borderRadius: "10px",
+                    alignSelf: 'center',
+                }}
+            >
+            <Typography sx={{ opacity: 0.9 }}>
+                {formatChatDate(date)}
+            </Typography>
+            </Box>
+        );
+    }
+
     return (
         <Stack gap={2} className='chat-container'>
-            {messages.map(message => (
-                <Message message={message} callback={callback}/>
+
+            {Object.entries(groupedMessages).map(([date, msgs]) => (
+                <React.Fragment key={date}>
+
+                    <DateSeparator date={date} />
+                    {msgs.map(message => (
+                        <React.Fragment key={message.id}>
+                            <Message message={message} callback={callback}/>
+                        </React.Fragment>
+                    ))}
+                </React.Fragment>
+            ))}
+            {/* {messages.map(message => (
+                <React.Fragment >
+                    <Message message={message} callback={callback}/>
+                </React.Fragment>
+
                 // <Paper key={message.id} sx={message.receiving ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
                 //     {message.text}
                 // </Paper>
                 ))
-            }
+            } */}
         </Stack >
     )
 }
@@ -105,10 +178,13 @@ function ChatDialog({ open, onClose, theme, activeEvent, messages, typedMessage,
                 </AppBar>
                 
 
-                <Stack justifyContent={'space-between'} height={'100vh'}>
-                    <Stack m={1} gap={2} mt={7} mb={2} maxHeight={'80vh'} overflow={'auto'}>
-                        <Paper key={'initMessage'} sx={activeEvent?.sender !== user.uid ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
-                            {activeEvent?.inviteText}
+                <Stack justifyContent={'space-between'} gap={2} height={'100vh'}>
+                    <Stack px={1} gap={2} overflow={'auto'}>
+                        <Paper key={'initMessage'} sx={{color:'#fff', p: 2, width: '100%', mt: 6}}>
+                            <Stack position={'relative'}>
+                                <Typography fontSize={12} alignSelf={'end'} position={'absolute'} top={-12} right={-7} color='primary'>Einladungs Text</Typography>
+                                <Typography fontSize={17} pr={5}>{activeEvent.inviteText}</Typography>
+                            </Stack>
                         </Paper>
                         <ChatMessages ref={scrollRef} messages={messages}/>
                     </Stack>
@@ -159,16 +235,15 @@ const Events = () => {
         const messagesRef = collection(db, "Events", activeEvent.eventId, "Messages");
         const q = query(messagesRef, orderBy("timestamp", "asc"));
 
-        // Realtime Listener starten
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const newMessages = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             }));
+            console.log(newMessages)
             setMessages(newMessages);
         });
 
-        // Cleanup: Listener stoppen, wenn Chat geschlossen oder gewechselt wird
         return () => unsubscribe();
         
     }, [chatOpen, activeEvent])
@@ -192,16 +267,16 @@ const Events = () => {
     async function getEvents() {
         const docRef = doc(db, "Users", user.uid)
         const eventsInit = (await getDoc(docRef)).data().events
-        console.log(value)
+        console.log(eventsInit)
 
         const eventsData = await Promise.all(
             eventsInit.map(async (event) => {
             const eventsDocRef = doc(db, "Events", event)
-            const eventData = (await getDoc(eventsDocRef)).data()
-            const senderDocRef = doc(db, "Users", eventData.sender)
-            const senderName = (await getDoc(senderDocRef)).data().displayName
-            const receiverDocRef = doc(db, "Users", eventData.receiver)
-            const receiverName = (await getDoc(receiverDocRef)).data().displayName
+                const eventData = (await getDoc(eventsDocRef)).data()
+                const senderDocRef = doc(db, "Users", eventData.sender)
+                const senderName = (await getDoc(senderDocRef)).data().displayName
+                const receiverDocRef = doc(db, "Users", eventData.receiver)
+                const receiverName = (await getDoc(receiverDocRef)).data().displayName
             eventData.sender = {
                 sender: eventData.sender,
                 senderName: senderName
@@ -397,7 +472,7 @@ const Events = () => {
     const handleSendMessage = async (event) => {
         if (!typedMessage.trim()) return
         const messagesRef = collection(db, "Events", activeEvent.eventId, "Messages");
-        console.log(user.uid, activeEvent.sender)
+        console.log(serverTimestamp())
         await addDoc(messagesRef, {
             receiving: user.uid === activeEvent.sender ? true : false,
             text: typedMessage,
