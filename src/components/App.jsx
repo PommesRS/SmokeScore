@@ -202,8 +202,7 @@ function App() {
       })
       console.log(fRequestsNames.indexOf(friend))
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
-      setfRequestsNames(null)
-      fRequestDialogClose()
+      setfRequestsNames(fRequestsNames.splice(fRequestsNames.indexOf(friend)))
       setFRequests(fRequests - 1)
       setReload(true)
     } catch (error) {

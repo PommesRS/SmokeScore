@@ -88,5 +88,77 @@ button:focus-visible {
 }
 
 .counter-container{
-  font-family: 'Poppins';
+  font-family: 'Poppins', sans-serif;
+}
+
+.animation-boom {
+  position: absolute;
+  animation: boom-animation 3s ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes boom-animation {
+  0% { 
+    transform: scale(1);
+     
+  }
+
+  10% { 
+    transform: scale(2) rotate(calc(36deg*1));
+  }
+
+  20%{
+    transform: scale(1) rotate(calc(36deg*2)) ;
+  }
+
+  30% { 
+    transform: scale(2) rotate(calc(36deg*3)) ; 
+  }
+
+  40%{
+    transform: scale(1) rotate(calc(36deg*4)) ; 
+  }
+
+  50% { 
+    transform: scale(2) rotate(calc(36deg*5)) ; 
+  }
+
+  60%{
+    transform: scale(1) rotate(calc(36deg*6)); 
+  }
+  70% { 
+    transform: scale(2) rotate(calc(36deg*7));
+  }
+  80%{
+    transform: scale(1) rotate(calc(36deg*8)); 
+  }
+  90% { 
+    transform: scale(2) rotate(calc(36deg*9)); 
+  }
+
+  100% { 
+    transform: scale(1) rotate(calc(36deg*10)); 
+  }
+}
+
+.glow-animate {
+  color: #FFD700;
+  z-index: 10;
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% {
+    filter: drop-shadow(0 0 6px #FFD700);
+    translate:  0 -5px;
+  }
+  50% {
+    filter: drop-shadow(0 0 2px #FFD700);
+    translate: 0 0px;
+  }
+  100% {
+    filter: drop-shadow(0 0 6px #FFD700);
+    translate: 0 -5px;
+  }
+
 }

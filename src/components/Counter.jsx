@@ -51,7 +51,8 @@ export function TextGradient({children}) {
             backgroundRepeat: "repeat",
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent"}}>
+            WebkitTextFillColor: "transparent",
+            }}>
         {children}
       </Typography>
     );
@@ -79,8 +80,9 @@ function Counter() {
   const [rowsPerPage, setRowsPerPage] = useState(5); // Einträge pro Seite
   const [openPAdd, setOpenPAdd] = useState(false);
   const [product, setProduct] = useState('Tabak');
-  const [anus, setAnus] = useState(1);
   const theme = useTheme()
+  const [displayWoo, setDisplayWoo] = useState('none')
+  const [confettiType, setConfettiType] = useState('boom')
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -344,12 +346,27 @@ function Counter() {
     
 
     if ((count + 1) % 10 === 0) {
+      if ((count + 1) % 1000 !== 0) {
+        setConfettiType('boom')
+        setIsExploding(true)
+        setTimeout(() => {
+          setIsExploding(false)
+        }, 5000);
+
+      }
+
+    }
+
+    if ((count + 1) % 1000 === 0) {
       setIsExploding(true)
-      //setIsExploding(false)
+      setDisplayWoo('block')
+      setConfettiType('fall')
       setTimeout(() => {
         setIsExploding(false)
-      }, 5000);
+        setDisplayWoo('none')
+      }, 10000);
     }
+    
     getLatestCigs()
   }
 
@@ -580,11 +597,13 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
-          <Stack fontWeight={700}  alignItems={'center'} justifyContent={'center'}>
-              <AnimatedCounter digitStyles={{textAlign: 'center'}} includeDecimals={false} value={count} color='inherit' fontSize="100pt"/>
+          <Stack alignItems={'center'} justifyContent={'center'}>
+              <AnimatedCounter digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800', textShadow: '6px 6px 4px rgba(0, 0, 0, 0.3)'}} includeDecimals={false} value={count} color='inherit' fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
-              {isExploding ? <Confetti/> : <></>}
-              {/* <Typography lineHeight={'80%'} sx={{fontWeight: 'bold', fontSize: '100pt'}}>{count}</Typography> */}
+                {isExploding ? <Confetti style={{overflow: 'hidden'}} fadeOutHeight={1} mode={confettiType}/> : <></>}
+              <Box position={'absolute'} overflow={'hidden'} width={'100%'} height={'100%'}>
+                <Typography  className='animation-boom' display={displayWoo} variant='h6' fontWeight={1000} fontSize={100} color='primary' sx={{position: 'absolute', translate: '-50%', zIndex: 1000000}} left={'50%'} top={'25%'}>Woooh!</Typography>
+              </Box>
           </Stack>
           <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
             <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleAddCig() /*incrementCounter(); setCount(count + 1)*/}}>

@@ -12,6 +12,7 @@ import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { db } from '../firebase.js';
@@ -107,7 +108,7 @@ const Friends = () => {
     await updateDoc(docRef, {
       FriendRequests: arrayUnion(uID)
     })
-    
+
     fAddDialogClose()
     setAlertText('Freund erfolgreich Angefragt!')
     setAlertState(true)
@@ -395,7 +396,16 @@ const Friends = () => {
         <Stack height={'70vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={4}>
           <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
             <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
-            <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
+            <Stack justifyContent={'center'} alignItems={'center'} position={'relative'}>
+              {friends[friendIndex][4] >= 1000 ? 
+              <React.Fragment>
+                <SmokingRoomsIcon className='glow-animate' fontSize='large' sx={{position: 'absolute', top: -20, color: '#FFD700'}}/>
+                <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative'}}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
+              </React.Fragment>
+              
+              : <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative'}}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
+              }
+            </Stack>
             <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
           </Stack>
           <Stack>

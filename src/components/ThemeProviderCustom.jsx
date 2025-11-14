@@ -204,7 +204,7 @@ export const ThemeProviderCustom = ({ children }) => {
     return createTheme({
       ...themeConfig,
       typography: {
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Poppins', sans-serif",
       },
     });
   }, [themeName]);
