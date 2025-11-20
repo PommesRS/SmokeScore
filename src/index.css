@@ -142,23 +142,46 @@ button:focus-visible {
 }
 
 .glow-animate {
-  color: #FFD700;
   z-index: 10;
-  animation: pulseGlow 2.5s infinite ease-in-out;
+  color: #FFD700;
+  animation: pulseGlow 1.5s infinite alternate ease-in-out;
+  /* font-weight: 'bold';
+  background: red;
+  background-size: "100%";
+  background-repeat: "repeat";
+  background-clip: "text";
+  -webkit-background-clip: "text";
+  -webkit-text-fill-color: "transparent"; */
 }
 
 @keyframes pulseGlow {
-  0% {
-    filter: drop-shadow(0 0 6px #FFD700);
+  from {
+    filter: drop-shadow(0 0 6px #FFD700) saturate(200%);
     translate:  0 -5px;
+    color: #eeead1;
   }
-  50% {
-    filter: drop-shadow(0 0 2px #FFD700);
+  to {
+    filter: drop-shadow(0 0 2px #FFD700) saturate(100%);
     translate: 0 0px;
   }
-  100% {
-    filter: drop-shadow(0 0 6px #FFD700);
-    translate: 0 -5px;
-  }
 
+
+}
+
+.storyDialog{
+  top: 0%;
+  position: fixed;
+  transition: all 0.15s ease-in-out;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.storyDialog.closed{
+  top: 100%;
+}
+
+.sed{
+  object-fit:scale-down;
 }

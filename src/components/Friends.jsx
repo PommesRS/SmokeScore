@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox,
   Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
-  getFormControlLabelUtilityClasses, useTheme
+  getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider
 } from '@mui/material'
 import './map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -12,11 +12,13 @@ import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { db } from '../firebase.js';
-import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc } from "@firebase/firestore";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { db, storage } from '../firebase.js';
+import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
 import {
   LinePlot,
@@ -27,9 +29,12 @@ import {
   MarkElement
 } from '@mui/x-charts/LineChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { startOfWeek, endOfWeek, format, getDay } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getDay, set } from 'date-fns'
 import * as maptilersdk from '@maptiler/sdk';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import dayjs from 'dayjs';
+import { CameraCapture } from './index.js';
+import { deleteObject, ref } from 'firebase/storage';
 
 export const CustomTag = ({value}) => {
   const theme = useTheme()
@@ -52,6 +57,8 @@ const Friends = () => {
   const [friends, setFriends] = useState([])
   const [openFAdd, setOpenFAdd] = useState(false);
   const [openFDel, setOpenFDel] = useState(false);
+  const [openStory, setOpenStory] = useState(false);
+  const [openCamera, setOpenCamera] = useState(false);
   const [alertState, setAlertState] = useState(false)
   const [alertText, setAlertText] = useState('')
   const [errorMessage, setErrorMessage] = useState('No User Found')
@@ -66,6 +73,11 @@ const Friends = () => {
   const map = useRef(null)
   const mapContainer = useRef(null)
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
+  const dialogRef = useRef(null);
+  const currentPicsRef = useRef(null);
+  const [friendsMoments, setFriendsMoments] = useState([])
+  const [anchorEl, setAnchorEl] = React.useState(null);
+
 
   const handleSearch = async (e) => {
     var searchInput = e.target.value
@@ -268,6 +280,8 @@ const Friends = () => {
       const totalAmount = (await getDoc(docRef)).data().counter
       const tags = (await getDoc(docRef)).data().tags
       const locations = (await getDoc(docRef)).data().geoLocations
+      const currentPics = (await getDoc(docRef)).data().currentPics
+      const isExcluded = (await getDoc(docRef)).data().excludeMoments?.includes(user.uid)
       let street
 
       locations.sort((a,b) => {
@@ -280,9 +294,10 @@ const Friends = () => {
       }
 
 
-      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags])
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded])
     }))
 
+    console.log(cacheFriends)
     setFriends(cacheFriends)
     setFriendIndex(0)
 
@@ -346,6 +361,106 @@ const Friends = () => {
     }
   }
 
+  const getMoments = async () => {
+    const docRef = doc(db, 'Users', user.uid)
+    const blackList = (await getDoc(docRef)).data().excludeMoments
+
+    let localfreindsArr
+    localfreindsArr = [...friends]
+    localfreindsArr.unshift([user.uid, 'Deine'])
+    const filtered = localfreindsArr.filter(sub => 
+      !sub.some(value => blackList?.includes(value))
+    );
+    console.log(filtered)
+    const promises = filtered.map(async (friend) => {
+      const q = query(collection(db, 'smokeMoments'), where('userId', 'in', [friend[0]]));
+      const querySnapshot = await getDocs(q);
+
+      let friendArr = [];
+      let isSmthNew = false 
+      querySnapshot.forEach((doc) => {
+        friendArr.push(doc.data())
+        console.log(doc.data())
+        if (doc.data().seenBy?.some(e => e.userId !== user.uid) || !doc.data().seenBy || doc.data().seenBy?.length < 1) {
+          isSmthNew = true
+        }
+      });
+
+      if (friendArr.length > 0) {
+        return { moments: friendArr, name: friend[1], shouldShowNew: isSmthNew};
+      } else {
+        return null;
+      }
+    });
+
+    const results = [...await Promise.all(promises)];
+
+    setFriendsMoments(results.filter(item => item !== null));
+  };
+
+  const cleanUpExpiredMoments = async (imagePath) => {
+    console.log('arnus')
+    const now = Timestamp.now()
+
+    if (!imagePath) {
+      const q = query(collection(db, 'smokeMoments'), where('expiresAt', '<', now))
+  
+      const expiredMoments = await getDocs(q)
+  
+      for (const moment of expiredMoments.docs) {
+        const data = moment.data();
+        console.log('data', data)
+  
+        if(data.imagePath){
+          const substr = (data.imagePath.split('/')[7].split('%2F'))
+          const substr2 = substr[2].split('?')
+          const imageUrl = `${substr[0]}/${substr[1]}/${substr2[0]}`
+          const imgRef = ref(storage, imageUrl);
+          await deleteObject(imgRef).catch(() => null)
+        }
+  
+        await deleteDoc(moment.ref)
+      }
+    }else{
+      const q = query(collection(db, 'smokeMoments'), where('imagePath', '==', imagePath))
+  
+      const expiredMoments = await getDocs(q)
+  
+      for (const moment of expiredMoments.docs) {
+        const data = moment.data();
+        console.log('data', data)
+  
+        if(data.imagePath){
+          const substr = (data.imagePath.split('/')[7].split('%2F'))
+          const substr2 = substr[2].split('?')
+          const imageUrl = `${substr[0]}/${substr[1]}/${substr2[0]}`
+          const imgRef = ref(storage, imageUrl);
+          await deleteObject(imgRef).catch(() => null)
+        }
+  
+        await deleteDoc(moment.ref)
+      }
+    }
+  }
+
+  useEffect(() => {
+    getMoments()
+
+
+    const momentsRef = collection(db, "smokeMoments");
+    const userRef = doc(db, 'Users', user.uid)
+
+    const unsubscribe = onSnapshot(momentsRef, () => {
+        getMoments()
+    });
+
+    const unsubscribe2 = onSnapshot(userRef, () => {
+      getMoments()
+    })
+
+    return () => {unsubscribe(), unsubscribe2()};
+
+  }, [friends])
   
   useEffect(() => {
     setFriends([])
@@ -358,48 +473,461 @@ const Friends = () => {
 
   useEffect(() => {
     setFriendIndex(1)
-  },[])
+    cleanUpExpiredMoments()
+  }, [])
 
-  /*
-  / Table FirendList
-  */
+  /* Story Feature */
+
+  function CustomProgressBar({imgIndex, selfIndex, callBack, arrLength, isPaused}) {
+    
+  const [progress, setProgress] = useState(0);
+  const pauseRef = useRef(isPaused);
+  const prevImgIndex = useRef(imgIndex);
+
+  // Keep ref in sync.
+  useEffect(() => {
+    pauseRef.current = isPaused;
+  }, [isPaused]);
+
+  useEffect(() => {
+    if (imgIndex === selfIndex && prevImgIndex.current !== imgIndex) {
+      setProgress(0);
+    }
+    prevImgIndex.current = imgIndex;
+  }, [imgIndex, selfIndex]);
+
+  // Progress logic.
+  useEffect(() => {
+    // Before / after ordering
+    if (imgIndex > selfIndex) {
+      setProgress(100);
+      return;
+    }
+    if (imgIndex < selfIndex) {
+      setProgress(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      //if (pauseRef.current) return; // why: avoid stale closure + skip when paused
+
+      setProgress((prev) => {
+        if (prev >= 100) {
+          if (selfIndex === arrLength - 1) {
+            handleStoryClose?.();
+          } else {
+            callBack?.();
+          }
+          return 0;
+        }
+        if (!pauseRef.current) {
+          return prev + 1;
+        }else {
+          return prev
+        };
+      });
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [imgIndex, selfIndex, arrLength, callBack, handleStoryClose]);
+
+  return (
+    <Stack direction={"row"} spacing={1} sx={{ width: "100%" }}>
+      <LinearProgress
+        sx={{ width: "100%", borderRadius: 10 }}
+        variant="determinate"
+        value={progress}
+      />
+    </Stack>
+  );
+  }
+
+  function StoryDialog({currentPics}) {
+    const [openInsights, setOpenInsights] = useState(false)
+    console.log(currentPics)
+    if (openStory == false) {return}
+    const [imgIndex, setImgIndex] = useState(0)
+    const [isPaused, setIsPaused] = useState(false)
+
+
+
+  const addToSeen = useCallback(async () => {
+    if (currentPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
+    if (currentPics[0].userId === user.uid) return
+    const seenBy = currentPics[imgIndex].seenBy
+
+    let momentId = ''
+    const q = query(collection(db, 'smokeMoments'), where('imagePath', '==', currentPics[imgIndex].imagePath))
+    const querySnapshot = await getDocs(q)
+
+    querySnapshot.forEach(doc => {
+      momentId = doc.id
+    });
+
+    const momentRef = doc(db, 'smokeMoments', momentId)
+    let updatedSeenBy = []
+    if (seenBy) {
+      updatedSeenBy = [...seenBy, {name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+      
+    }else{
+      updatedSeenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+    }
+
+    await updateDoc(momentRef, {
+      seenBy: updatedSeenBy
+    })
+
+    currentPics[imgIndex].seenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+  }, [currentPics, imgIndex])
+
+    useEffect(() => {
+      addToSeen()
+    }, [imgIndex, currentPics[imgIndex]?.imagePath])
+
+    const handleNextImage = () => {
+      console.log(imgIndex)
+      if (imgIndex >= currentPics.length - 1) {
+      handleStoryClose()
+      } else {
+        setImgIndex(imgIndex + 1)
+      }
+    }
+
+    const handlePrevImgage = () => {
+      if (imgIndex == 0) { 
+        return
+      }
+      setImgIndex(imgIndex - 1)
+      console.log(imgIndex - 1)
+    }
+
+    const tapTimer = useRef(null);
+    const tapStart = useRef(0);
+
+    const handlePressStart = (e, side) => {
+      e.preventDefault();
+      tapStart.current = Date.now();
+      setIsPaused(true);
+
+      tapTimer.current = setTimeout(() => {
+        // long press → only pause
+      }, 200);
+    };
+
+    const handlePressEnd = (e, side) => {
+      e.preventDefault();
+      setIsPaused(false);
+      clearTimeout(tapTimer.current);
+
+      const tapDuration = Date.now() - tapStart.current;
+
+      if (tapDuration < 200) {
+        // short tap
+        if (side === 'left') {
+          handlePrevImgage();
+        } else {
+          handleNextImage();
+        }
+      }
+    };
+
+    function InsightDialog() {
+      return (
+        <Dialog sx={{backdropFilter: 'blur(2px)'}}  open={openInsights} onClose={handleCloseInsights}>
+          <DialogTitle>Optionen</DialogTitle>
+          <Divider />
+          <DialogTitle>Bild Löschen</DialogTitle>
+          <DialogContent>
+            <Stack>
+              <DialogContentText>Willst du dieses Bild wirklich aus deinen Smokementen löschen?</DialogContentText>
+              <DialogContentText>Diese Aktion kann nicht rückgängig gemacht werden!</DialogContentText>
+            </Stack>
+            <DialogActions>
+              <Button sx={{':focus': {outline: 'none'}}} onClick={handleCloseInsights}>Abbrechen</Button>
+              <Button variant='contained' sx={{':focus': {outline: 'none'}}} color='error' onClick={() => {cleanUpExpiredMoments(currentPics[imgIndex].imagePath), handleStoryClose()}}>Löschen</Button>
+            </DialogActions>
+          </DialogContent>
+          <Divider />
+          <DialogTitle>Gesehen von</DialogTitle>
+          <DialogContent>
+            <List sx={{maxHeight: 300}}>
+              {currentPics[imgIndex].seenBy?.map((user) => (
+                  <Paper key={user.userId} elevation={5} sx={{my: 2, p: 1}}>
+                    <ListItem>
+                      <Stack direction={'row'} justifyContent={'space-between'} sx={{width: '100%'}}>
+                        <Typography>{user.name}</Typography>
+                        <Typography fontWeight={200}>{dayjs(user.time.toDate()).format('HH:mm')}</Typography>
+                      </Stack>
+                    </ListItem>
+                  </Paper>
+              ))}
+            </List>
+          </DialogContent>
+        </Dialog>
+      )
+    }
+
+    const handleOpenInsights = () => {
+      setIsPaused(true);
+      setOpenInsights(true)
+    }
+
+    const handleCloseInsights = () => {
+      setIsPaused(false);
+      setOpenInsights(false)
+    }
+
+    return (
+      <>
+      <InsightDialog></InsightDialog>
+      <SwipeableDrawer
+        anchor="bottom"
+        ref={dialogRef}
+        className='storyDialog'
+        sx={{
+          backdropFilter: "blur(2px)"
+        }}
+        open={openStory}
+        onClose={handleStoryClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        swipeAreaWidth={0}
+        fullScreen
+        >
+        <Box sx={{overflow:'hidden'}} display={'flex'} alignItems="center" justifyContent="center">
+          <Box sx={{position: 'absolute', zIndex: 10, top: 0, left: 0, width: '100%', height: '95%', boxShadow: 'inset 0px 60px 21px -7px rgba(0,0,0,0.51)', pb: 5}}>
+            <Stack mx={1} pt={1}>
+              <Stack direction={'row'} gap={1} sx={{width: '100%'}}>
+                {currentPics?.map((e, i) => (
+                  <CustomProgressBar key={i} selfIndex={i} imgIndex={imgIndex} callBack={handleNextImage} isPaused={isPaused} arrLength={currentPics.length}/>
+                ))}
+              </Stack>
+              <Stack mx={1} mt={0.5} direction={'row'} sx={{position: 'relative'}} alignItems={'center'} justifyContent={'space-between'} gap={2}>
+                <ArrowBackIosIcon onClick={handleStoryClose} sx={{':hover': {cursor: 'pointer'}}}/>
+                <Typography fontSize={20} fontWeight={600} sx={{position: 'absolute', left: '50%', transform: 'translate(-50%)'}}>{currentPics[0].name}</Typography>
+                <Stack direction={'row'} gap={2} justifyContent={'center'} alignItems={'center'}>
+                  <Typography fontSize={10} fontWeight={400}>{dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'hour') > 0 ? dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'hour') + ' Std.' : dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'minute') + ' Min'}</Typography>
+                  {currentPics[imgIndex].userId == user.uid ? 
+                    <IconButton sx={{p: 1}} onClick={handleOpenInsights}><MoreVertIcon fontSize='small' /></IconButton>
+                  : 
+                  <></>
+                }
+                </Stack>
+
+              </Stack>
+            </Stack>
+            <Stack height={'100%'} direction={'row'} gap={4} justifyContent={'space-between'}>
+              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'left')} onTouchEnd={(e) => handlePressEnd(e, 'left')} onMouseDown={(e) => handlePressStart(e, 'left')} onMouseUp={(e) => handlePressEnd(e, 'left')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
+              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
+            </Stack>
+          </Box>
+          <img className='stroyImg' 
+            src={currentPics ? currentPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
+            alt="mainImg"
+            maxWidth={'546px'}
+            />
+        </Box>
+      </SwipeableDrawer>
+      </>
+    )
+  }
+
+  const handleStoryOpen = (currentPics) => {
+    currentPicsRef.current = currentPics
+    setOpenStory(true)
+  }
+
+  const handleStoryClose = () => {
+    dialogRef.current.classList.add('closed')
+    setTimeout(() => {
+      setOpenStory(false)
+      dialogRef.current.classList.remove('closed')
+    }, 200);
+    
+  }
+
+  const handleOpenCamera = () => {
+    setOpenCamera(true)
+  }
+
+  const handleCamClose = () => {
+    setOpenCamera(false)
+  }
+
+  function CameraDialog({callback}) {
+
+    return (
+      <Dialog
+        fullScreen
+        sx={{backdropFilter: "blur(2px)", p:0, overflow: 'hidden'}}
+        onClose={handleCamClose}
+        open={openCamera}
+      >
+        <CameraCapture onClose={handleCamClose}></CameraCapture>
+      </Dialog>
+    )
+  }
+
+  const handleOpenExcludeList = (event) => {
+    setAnchorEl(event.currentTarget);
+  } 
+
+  const handleCloseExcludeList = () => {
+    setAnchorEl(null);
+  }
+
+  const openExcludeList = Boolean(anchorEl)
+  const excludeListId = openExcludeList ? 'excludeList-popover' : undefined;
+
+  function ExcludeListPopover() {
+
+    const [friendsList, setFriendsList] = useState([])
+
+    useEffect(() => {
+      getFriendExcludeInfo()
+    }, [friends])
+
+    const getFriendExcludeInfo = async () => {
+
+      if(!friends) return
+        const promises = friends.map(async (friend) => {
+          const docRef = doc(db, 'Users', friend[0])
+          const isExcluded = (await getDoc(docRef)).data().excludeMoments?.includes(user.uid)
+          return [friend[1], isExcluded, friend[0]]
+        });
+
+        const friendListCache = await Promise.all(promises)
+        console.log(friendListCache)
+        setFriendsList(friendListCache);
+    }
+
+    const handleCheckboxChange = async (i) => {
+      console.log(i)
+      const newState = [ ...friendsList]
+      const docRef = doc(db, 'Users', newState[i][2])
+      if (newState[i][1]) {
+        console.log(newState[i][1])
+        newState[i][1] = false
+        await updateDoc(docRef, {
+          excludeMoments: arrayRemove(user.uid)
+        })
+      }else {
+        newState[i][1] = true
+        await updateDoc(docRef, {
+          excludeMoments: arrayUnion(user.uid)
+        })
+      }
+
+      setFriendsList(newState)
+    }
+
+    return(
+
+      <Popover
+        id={excludeListId}
+        open={openExcludeList}
+        anchorEl={anchorEl}
+        onClose={handleCloseExcludeList}
+        anchorOrigin={{
+          vertical: 'center',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        <Typography sx={{ p: 2 }}>Wer darf meine Smokemente sehen?</Typography>
+        <Divider></Divider>
+        {friendsList.map((friend, i) => (
+          <Stack key={i} p={2} direction={'row'} gap={2} alignItems={'center'}>
+            <Typography>{friend[0]}</Typography>
+            <Checkbox checked={!friend[1]} onChange={(e) => handleCheckboxChange(i)}/>
+          </Stack>
+        ))}
+      </Popover>
+    )
+  }
     
   return (
     <>
     <FAddDialog></FAddDialog>
     <FDeleteDialog></FDeleteDialog>
-          <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
-          <Stack gap={2}>
-            <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
-              <PersonAddAlt1Icon fontSize='smalllarge'/>
-            </IconButton>
-            <IconButton onClick={fDelDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.error.dark}} bgcolor='primary' aria-label="removeFriend">
-              <DeleteIcon fontSize='smalllarge'/>
-            </IconButton>
-          </Stack>
-      </Box>
-      <Snackbar
-        anchorOrigin={{vertical: 'top', horizontal:'center'}}
-        autoHideDuration={3000}
-        open={alertState}
-        onClose={handleCloseAlert}
-      >
-        <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
-          {alertText}
-        </Alert>
-      </Snackbar>
+    <StoryDialog currentPics={currentPicsRef.current}></StoryDialog>
+    <CameraDialog></CameraDialog>
+    <ExcludeListPopover></ExcludeListPopover>
+
+    <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
+      <Stack gap={2}>
+        <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
+          <PersonAddAlt1Icon fontSize='smalllarge'/>
+        </IconButton>
+        <IconButton onClick={fDelDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.error.dark}} bgcolor='primary' aria-label="removeFriend">
+          <DeleteIcon fontSize='smalllarge'/>
+        </IconButton>
+      </Stack>
+    </Box>
+    <Snackbar
+      anchorOrigin={{vertical: 'top', horizontal:'center'}}
+      autoHideDuration={3000}
+      open={alertState}
+      onClose={handleCloseAlert}
+    >
+      <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
+        {alertText}
+      </Alert>
+    </Snackbar>
     {
       friends.length > 0 ? 
     
       <>
       <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
-        <Stack height={'70vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={4}>
+        <Stack height={'80vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={5}>
+          <Stack width={'inherit'} gap={1}>
+            <Stack direction={'row'} gap={1} alignItems="center" justifyContent="flex-start">
+              <Typography alignSelf={'flex-start'} fontSize={20} fontWeight={500}>Smokemente</Typography>
+              <IconButton sx={{":focus": {outline: 'none'}, p:0}} onClick={handleOpenExcludeList}><MoreVertIcon fontSize='medium'/></IconButton>
+            </Stack>
+            <Box width={'100%'} sx={{overflow: 'scroll'}} display={'flex'} alignItems={'flex-start'}>
+                <Stack direction={'row'} gap={2} overflow={'auto'}>
+                  <Stack alignItems="center" justifyContent="center">
+                      <Button onClick={handleOpenCamera} sx={{":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10}}>
+                        <Box sx={{background: theme.palette.background.default, borderRadius: 10, overflow: 'hidden', width: '67px', height: '67px', m: '3px'}} display={'flex'} alignItems="center" justifyContent="center" >
+                          <Box sx={{borderRadius: 10, overflow: 'hidden', width: '60px', height: '60px'}} display={'flex'} alignItems="center" justifyContent="center" >
+                            <Typography variant='h4'>+</Typography>
+                          </Box>
+                        </Box>
+                      </Button> 
+                      <Typography fontSize={13}>neu</Typography>
+                    </Stack>
+                  {console.log(friendsMoments)}
+                  {friendsMoments?.map((friend, i) => (
+                    friendsMoments?.length > 0 ?
+                    <Stack alignItems="center" justifyContent="center">
+                      <Button key={i} onClick={() => handleStoryOpen(friend.moments)} sx={friend.shouldShowNew ? {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10} : {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: 'transparent', borderRadius: 10}}>
+                        <Box sx={{background: theme.palette.background.default, borderRadius: 10, overflow: 'hidden', width: '67px', height: '67px', m: '3px'}} display={'flex'} alignItems="center" justifyContent="center" >
+                          <Box sx={{borderRadius: 10, overflow: 'hidden', width: '60px', height: '60px'}} display={'flex'} alignItems="center" justifyContent="center" >
+                            <img src={friend.moments[0].imagePath} alt="thumb" width={'60px'} />
+                          </Box>
+                        </Box>
+                      </Button> 
+                      <Typography fontSize={13}>{friend.name}</Typography>
+                    </Stack> : <></>
+                    ))
+                  }
+                  
+                </Stack>
+              </Box>
+          </Stack>
           <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
             <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
             <Stack justifyContent={'center'} alignItems={'center'} position={'relative'}>
               {friends[friendIndex][4] >= 1000 ? 
               <React.Fragment>
-                <SmokingRoomsIcon className='glow-animate' fontSize='large' sx={{position: 'absolute', top: -20, color: '#FFD700'}}/>
+                <SmokingRoomsIcon className='glow-animate' fontSize='large' sx={{
+                  position: 'absolute', 
+                  top: -20, 
+                  fontWeight: 'bold'}}/>
                 <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative'}}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
               </React.Fragment>
               
@@ -408,13 +936,13 @@ const Friends = () => {
             </Stack>
             <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
           </Stack>
-          <Stack>
+          {/* <Stack>
             <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'}>
               <WhatshotIcon sx={{fontSize: '70pt'}}/>
               <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '90pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>NaN</Typography>
             </Stack>
             <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '20pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
-          </Stack>
+          </Stack> */}
           {friends.length > 0 ?
             <LineChart
               grid={{ horizontal: false }}

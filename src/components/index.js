@@ -17,6 +17,7 @@ import ThemeToggleButton from "./ThemeToggleButton";
 import Style from "./Style";
 import EventPopup from "./EventPopup";
 import Events from "./Events";
+import CameraCapture from "./CameraCapture";
 
 export{
     App,
@@ -37,5 +38,6 @@ export{
     ThemeToggleButton,
     Style,
     EventPopup,
-    Events
+    Events,
+    CameraCapture
 }
