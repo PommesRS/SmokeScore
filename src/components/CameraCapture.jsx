@@ -108,7 +108,8 @@ export default function CameraCapture({ onClose }) {
     const capture = useCallback(() => {
         const dataUrl = camera.current.getScreenshot({
             width: 564,
-            height: 1000
+            height: 1000,
+            
         });
         
         const blob = dataURLtoBlob(dataUrl)
@@ -226,12 +227,11 @@ export default function CameraCapture({ onClose }) {
         const friendsRef = doc(db, "Users", user.uid)
         const friendData = (await getDoc(friendsRef)).data()
         const friendIDArr = friendData?.Friends
-        const friendExcludeList = friendData?.excludeMoments
-        console.log(friendExcludeList.includes(user.uid))
 
         friendIDArr.map(async (friendId) => {
             const FriendFCMRef = doc(db, 'Users', friendId)
             const friendCanNotifications = (await getDoc(FriendFCMRef)).data().canGetNotifications
+            const friendExcludeList = (await getDoc(FriendFCMRef)).data().excludeMoments
             if(friendCanNotifications != false && !friendExcludeList.includes(user.uid)){
             const Token = (await getDoc(FriendFCMRef)).data().fcmToken
             fetch('https://sendpushtotoken-wcqbnpknwa-uc.a.run.app', {
@@ -267,6 +267,7 @@ export default function CameraCapture({ onClose }) {
                     ref={camera}
                     videoConstraints={videoConstraints}
                     screenshotFormat="image/webp"
+                    screenshotQuality={0.7}
                     style={{
                         position: "absolute",
                         top: "50%",

@@ -18,6 +18,7 @@ import Style from "./Style";
 import EventPopup from "./EventPopup";
 import Events from "./Events";
 import CameraCapture from "./CameraCapture";
+import Support from "./Support";
 
 export{
     App,
@@ -39,5 +40,6 @@ export{
     Style,
     EventPopup,
     Events,
-    CameraCapture
+    CameraCapture,
+    Support
 }

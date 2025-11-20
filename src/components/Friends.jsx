@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, 
@@ -17,6 +17,7 @@ import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { db, storage } from '../firebase.js';
 import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
@@ -77,6 +78,7 @@ const Friends = () => {
   const currentPicsRef = useRef(null);
   const [friendsMoments, setFriendsMoments] = useState([])
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [imgIndexGlobal, setImgIndexGlobal] = useState(0)
 
 
   const handleSearch = async (e) => {
@@ -297,7 +299,6 @@ const Friends = () => {
       cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded])
     }))
 
-    console.log(cacheFriends)
     setFriends(cacheFriends)
     setFriendIndex(0)
 
@@ -351,12 +352,12 @@ const Friends = () => {
     if (direction == 'up') {
       if (friendIndex < friends.length - 1 ) {
         setFriendIndex(friendIndex + 1)
-        console.log(friendIndex)
+
       }
     } else if (direction == 'down') {
       if (friendIndex > 0) {
         setFriendIndex(friendIndex - 1)
-        console.log(friendIndex)
+
       }
     }
   }
@@ -380,8 +381,8 @@ const Friends = () => {
       let isSmthNew = false 
       querySnapshot.forEach((doc) => {
         friendArr.push(doc.data())
-        console.log(doc.data())
-        if (doc.data().seenBy?.some(e => e.userId !== user.uid) || !doc.data().seenBy || doc.data().seenBy?.length < 1) {
+        console.log(doc.data().seenBy?.find(e => e.userId !== user.uid))
+        if (!doc.data().seenBy?.some((e) => e.userId === user.uid) || !doc.data().seenBy || doc.data().seenBy?.length < 1) {
           isSmthNew = true
         }
       });
@@ -399,7 +400,7 @@ const Friends = () => {
   };
 
   const cleanUpExpiredMoments = async (imagePath) => {
-    console.log('arnus')
+
     const now = Timestamp.now()
 
     if (!imagePath) {
@@ -409,7 +410,7 @@ const Friends = () => {
   
       for (const moment of expiredMoments.docs) {
         const data = moment.data();
-        console.log('data', data)
+
   
         if(data.imagePath){
           const substr = (data.imagePath.split('/')[7].split('%2F'))
@@ -428,7 +429,7 @@ const Friends = () => {
   
       for (const moment of expiredMoments.docs) {
         const data = moment.data();
-        console.log('data', data)
+
   
         if(data.imagePath){
           const substr = (data.imagePath.split('/')[7].split('%2F'))
@@ -543,50 +544,55 @@ const Friends = () => {
   }
 
   function StoryDialog({currentPics}) {
-    const [openInsights, setOpenInsights] = useState(false)
-    console.log(currentPics)
     if (openStory == false) {return}
     const [imgIndex, setImgIndex] = useState(0)
+    const [openInsights, setOpenInsights] = useState(false)
+    
     const [isPaused, setIsPaused] = useState(false)
+    //currentPics = currentPics.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
 
+    const sortedPics = useMemo(() => {
+      return [...currentPics].sort((a, b) =>
+        a.createdAt.toMillis() - b.createdAt.toMillis()
+      );
+    }, [currentPics]);
 
+    const addToSeen = useCallback(async () => {
+      if (sortedPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
+      if (sortedPics[0].userId === user.uid) return
 
-  const addToSeen = useCallback(async () => {
-    if (currentPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
-    if (currentPics[0].userId === user.uid) return
-    const seenBy = currentPics[imgIndex].seenBy
+      const seenBy = sortedPics[imgIndex].seenBy
 
-    let momentId = ''
-    const q = query(collection(db, 'smokeMoments'), where('imagePath', '==', currentPics[imgIndex].imagePath))
-    const querySnapshot = await getDocs(q)
+      let momentId = ''
+      const q = query(collection(db, 'smokeMoments'), where('imagePath', '==', sortedPics[imgIndex].imagePath))
+      const querySnapshot = await getDocs(q)
 
-    querySnapshot.forEach(doc => {
-      momentId = doc.id
-    });
+      querySnapshot.forEach(doc => {
+        momentId = doc.id
+      });
 
-    const momentRef = doc(db, 'smokeMoments', momentId)
-    let updatedSeenBy = []
-    if (seenBy) {
-      updatedSeenBy = [...seenBy, {name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-      
-    }else{
-      updatedSeenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-    }
+      const momentRef = doc(db, 'smokeMoments', momentId)
+      let updatedSeenBy = []
+      if (seenBy) {
+        updatedSeenBy = [...seenBy, {name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+      }else{
+        updatedSeenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+      }
 
-    await updateDoc(momentRef, {
-      seenBy: updatedSeenBy
-    })
+      await updateDoc(momentRef, {
+        seenBy: updatedSeenBy
+      })
 
-    currentPics[imgIndex].seenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-  }, [currentPics, imgIndex])
+      sortedPics[imgIndex].seenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
+    }, [imgIndex])
 
     useEffect(() => {
       addToSeen()
-    }, [imgIndex, currentPics[imgIndex]?.imagePath])
+    }, [imgIndex, sortedPics])
 
     const handleNextImage = () => {
-      console.log(imgIndex)
-      if (imgIndex >= currentPics.length - 1) {
+
+      if (imgIndex >= sortedPics.length - 1) {
       handleStoryClose()
       } else {
         setImgIndex(imgIndex + 1)
@@ -598,7 +604,8 @@ const Friends = () => {
         return
       }
       setImgIndex(imgIndex - 1)
-      console.log(imgIndex - 1)
+
+
     }
 
     const tapTimer = useRef(null);
@@ -634,24 +641,17 @@ const Friends = () => {
     function InsightDialog() {
       return (
         <Dialog sx={{backdropFilter: 'blur(2px)'}}  open={openInsights} onClose={handleCloseInsights}>
-          <DialogTitle>Optionen</DialogTitle>
-          <Divider />
-          <DialogTitle>Bild Löschen</DialogTitle>
-          <DialogContent>
-            <Stack>
-              <DialogContentText>Willst du dieses Bild wirklich aus deinen Smokementen löschen?</DialogContentText>
-              <DialogContentText>Diese Aktion kann nicht rückgängig gemacht werden!</DialogContentText>
+          <DialogTitle>
+            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+              Optionen
+              <IconButton sx={{':focus' : {outline: 'none'}}} onClick={handleCloseInsights}><CloseRoundedIcon fontSize='medium'/></IconButton>
             </Stack>
-            <DialogActions>
-              <Button sx={{':focus': {outline: 'none'}}} onClick={handleCloseInsights}>Abbrechen</Button>
-              <Button variant='contained' sx={{':focus': {outline: 'none'}}} color='error' onClick={() => {cleanUpExpiredMoments(currentPics[imgIndex].imagePath), handleStoryClose()}}>Löschen</Button>
-            </DialogActions>
-          </DialogContent>
+          </DialogTitle>
           <Divider />
           <DialogTitle>Gesehen von</DialogTitle>
           <DialogContent>
             <List sx={{maxHeight: 300}}>
-              {currentPics[imgIndex].seenBy?.map((user) => (
+              {sortedPics[imgIndex].seenBy?.map((user) => (
                   <Paper key={user.userId} elevation={5} sx={{my: 2, p: 1}}>
                     <ListItem>
                       <Stack direction={'row'} justifyContent={'space-between'} sx={{width: '100%'}}>
@@ -662,6 +662,17 @@ const Friends = () => {
                   </Paper>
               ))}
             </List>
+          </DialogContent>
+          <Divider />
+          <DialogTitle>Bild Löschen</DialogTitle>
+          <DialogContent>
+            <Stack>
+              <DialogContentText>Willst du dieses Bild wirklich aus deinen Smokementen löschen?</DialogContentText>
+              <DialogContentText>Diese Aktion kann nicht rückgängig gemacht werden!</DialogContentText>
+            </Stack>
+            <DialogActions>
+              <Button variant='contained' sx={{':focus': {outline: 'none'}}} color='error' onClick={() => {cleanUpExpiredMoments(sortedPics[imgIndex].imagePath), handleStoryClose()}}>Löschen</Button>
+            </DialogActions>
           </DialogContent>
         </Dialog>
       )
@@ -698,17 +709,17 @@ const Friends = () => {
           <Box sx={{position: 'absolute', zIndex: 10, top: 0, left: 0, width: '100%', height: '95%', boxShadow: 'inset 0px 60px 21px -7px rgba(0,0,0,0.51)', pb: 5}}>
             <Stack mx={1} pt={1}>
               <Stack direction={'row'} gap={1} sx={{width: '100%'}}>
-                {currentPics?.map((e, i) => (
-                  <CustomProgressBar key={i} selfIndex={i} imgIndex={imgIndex} callBack={handleNextImage} isPaused={isPaused} arrLength={currentPics.length}/>
+                {sortedPics?.map((e, i) => (
+                  <CustomProgressBar key={i} selfIndex={i} imgIndex={imgIndex} callBack={handleNextImage} isPaused={isPaused} arrLength={sortedPics.length}/>
                 ))}
               </Stack>
               <Stack mx={1} mt={0.5} direction={'row'} sx={{position: 'relative'}} alignItems={'center'} justifyContent={'space-between'} gap={2}>
                 <ArrowBackIosIcon onClick={handleStoryClose} sx={{':hover': {cursor: 'pointer'}}}/>
-                <Typography fontSize={20} fontWeight={600} sx={{position: 'absolute', left: '50%', transform: 'translate(-50%)'}}>{currentPics[0].name}</Typography>
+                <Typography fontSize={20} fontWeight={600} sx={{position: 'absolute', left: '50%', transform: 'translate(-50%)'}}>{sortedPics[0].name}</Typography>
                 <Stack direction={'row'} gap={2} justifyContent={'center'} alignItems={'center'}>
-                  <Typography fontSize={10} fontWeight={400}>{dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'hour') > 0 ? dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'hour') + ' Std.' : dayjs().diff(dayjs((currentPics[imgIndex].createdAt).toDate()), 'minute') + ' Min'}</Typography>
-                  {currentPics[imgIndex].userId == user.uid ? 
-                    <IconButton sx={{p: 1}} onClick={handleOpenInsights}><MoreVertIcon fontSize='small' /></IconButton>
+                  <Typography fontSize={10} fontWeight={400}>{dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') > 0 ? dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') + ' Std.' : dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'minute') + ' Min'}</Typography>
+                  {sortedPics[imgIndex].userId == user.uid ? 
+                    <IconButton sx={{p: 1, ':focus' : {outline: 'none'}}} onClick={handleOpenInsights} ><MoreVertIcon fontSize='small' /></IconButton>
                   : 
                   <></>
                 }
@@ -722,7 +733,7 @@ const Friends = () => {
             </Stack>
           </Box>
           <img className='stroyImg' 
-            src={currentPics ? currentPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
+            src={sortedPics ? sortedPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
             alt="mainImg"
             maxWidth={'546px'}
             />
@@ -743,7 +754,7 @@ const Friends = () => {
       setOpenStory(false)
       dialogRef.current.classList.remove('closed')
     }, 200);
-    
+    setImgIndexGlobal(0)
   }
 
   const handleOpenCamera = () => {
@@ -797,16 +808,14 @@ const Friends = () => {
         });
 
         const friendListCache = await Promise.all(promises)
-        console.log(friendListCache)
         setFriendsList(friendListCache);
     }
 
     const handleCheckboxChange = async (i) => {
-      console.log(i)
       const newState = [ ...friendsList]
       const docRef = doc(db, 'Users', newState[i][2])
       if (newState[i][1]) {
-        console.log(newState[i][1])
+
         newState[i][1] = false
         await updateDoc(docRef, {
           excludeMoments: arrayRemove(user.uid)
@@ -904,7 +913,7 @@ const Friends = () => {
                   {friendsMoments?.map((friend, i) => (
                     friendsMoments?.length > 0 ?
                     <Stack alignItems="center" justifyContent="center">
-                      <Button key={i} onClick={() => handleStoryOpen(friend.moments)} sx={friend.shouldShowNew ? {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10} : {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: 'transparent', borderRadius: 10}}>
+                      <Button key={i} onClick={() => handleStoryOpen(friend.moments)} sx={friend.shouldShowNew ? {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10} : {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: '#252525', borderRadius: 10}}>
                         <Box sx={{background: theme.palette.background.default, borderRadius: 10, overflow: 'hidden', width: '67px', height: '67px', m: '3px'}} display={'flex'} alignItems="center" justifyContent="center" >
                           <Box sx={{borderRadius: 10, overflow: 'hidden', width: '60px', height: '60px'}} display={'flex'} alignItems="center" justifyContent="center" >
                             <img src={friend.moments[0].imagePath} alt="thumb" width={'60px'} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, 
-  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events } from './index.js';
+  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -408,23 +408,17 @@ function App() {
             {user ? user.displayName : 'Profile'}
           </MenuItem>
           <Divider />
-          <MenuItem onClick={handleOpenEventPopup}>
-            <ListItemIcon>
-              <PersonAdd sx={{color: 'white'}} fontSize="small" />
-            </ListItemIcon>
-            Add another account
-          </MenuItem>
           <MenuItem onClick={() => {navigate(`/settings`); setValue('settings')}}>
             <ListItemIcon>
               <SettingsIcon sx={{color: 'white'}} fontSize="small" />
             </ListItemIcon>
-            Settings
+            Einstellungen
           </MenuItem>
           <MenuItem onClick={handleLogout}>
             <ListItemIcon>
               <Logout sx={{color: 'white'}} fontSize="small" />
             </ListItemIcon>
-            Logout
+            Abmelden
           </MenuItem>
         </Menu>
       </Box> :
@@ -451,6 +445,7 @@ function App() {
           <Route path='/style' element={<ProtectedRoute><Style/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
+          <Route path='/support' element={<ProtectedRoute><Support/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

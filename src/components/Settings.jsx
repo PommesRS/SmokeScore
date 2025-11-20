@@ -11,6 +11,7 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import EditIcon from '@mui/icons-material/Edit';
 import SellIcon from '@mui/icons-material/Sell';
 import PaletteIcon from '@mui/icons-material/Palette';
+import EmailIcon from '@mui/icons-material/Email';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
@@ -297,6 +298,16 @@ const Settings = () => {
                     <ListItemText primary="Farbstil ändern"/>
                 </ListItemButton>
             <Divider />
+                <ListItemButton onClick={() => {navigate(`/support`)}}>
+                    <ListItemAvatar>
+                        <Avatar>
+                            <EmailIcon />
+                        </Avatar>
+                        </ListItemAvatar>
+                    <ListItemText primary="Support"/>
+                </ListItemButton>
+            <Divider />
+            
             </List>
         </Box>
     )
