@@ -587,7 +587,7 @@ const Friends = () => {
     }, [imgIndex])
 
     useEffect(() => {
-      addToSeen()
+      return () => addToSeen()
     }, [imgIndex, sortedPics])
 
     const handleNextImage = () => {
@@ -696,7 +696,8 @@ const Friends = () => {
         ref={dialogRef}
         className='storyDialog'
         sx={{
-          backdropFilter: "blur(2px)"
+          backdropFilter: "blur(2px)",
+          height: '100vh'
         }}
         open={openStory}
         onClose={handleStoryClose}
@@ -705,7 +706,7 @@ const Friends = () => {
         swipeAreaWidth={0}
         fullScreen
         >
-        <Box sx={{overflow:'hidden'}} display={'flex'} alignItems="center" justifyContent="center">
+        <Box sx={{height: '100vh'}} display={'flex'} alignItems="center" justifyContent="center">
           <Box sx={{position: 'absolute', zIndex: 10, top: 0, left: 0, width: '100%', height: '95%', boxShadow: 'inset 0px 60px 21px -7px rgba(0,0,0,0.51)', pb: 5}}>
             <Stack mx={1} pt={1}>
               <Stack direction={'row'} gap={1} sx={{width: '100%'}}>
@@ -732,11 +733,13 @@ const Friends = () => {
               <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
             </Stack>
           </Box>
-          <img className='stroyImg' 
-            src={sortedPics ? sortedPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
-            alt="mainImg"
-            maxWidth={'546px'}
-            />
+          <Box sx={{maxHeight: '100dvh', maxWidth: '546px'}}>
+
+            <img className='storyImg' 
+              src={sortedPics ? sortedPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
+              alt="mainImg"
+              />
+          </Box>
         </Box>
       </SwipeableDrawer>
       </>

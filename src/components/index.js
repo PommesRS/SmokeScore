@@ -19,6 +19,7 @@ import EventPopup from "./EventPopup";
 import Events from "./Events";
 import CameraCapture from "./CameraCapture";
 import Support from "./Support";
+import ImageEditor from './ImageEditor';
 
 export{
     App,
@@ -41,5 +42,6 @@ export{
     EventPopup,
     Events,
     CameraCapture,
-    Support
+    Support,
+    ImageEditor
 }

@@ -1,9 +1,9 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
+import { ImageEditor } from './index.js'
 import { Button, Card, Dialog, Typography, Box, Stack, useTheme, IconButton, DialogActions, DialogTitle, DialogContentText, DialogContent } from "@mui/material";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { getFirestore, doc, setDoc, Timestamp, getDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid"; // für eindeutige Moment-IDs
-import { Camera } from "react-camera-pro";
 import Webcam from 'react-webcam'
 import FlashOnIcon from '@mui/icons-material/FlashOn';
 import FlashOffIcon from '@mui/icons-material/FlashOff';
@@ -17,6 +17,7 @@ import { useUserAuth } from "../context/userAuthConfig";
 
 export default function CameraCapture({ onClose }) {
     const camera = useRef(null);
+    const canvasRef = useRef(null);
     const [image, setImage] = useState(null);
     const [imageB64, setImageB64] = useState(null)
     const [showImage, setShowImage] = useState(false)
@@ -105,7 +106,7 @@ export default function CameraCapture({ onClose }) {
         return new Blob([u8arr], { type: mime });
     }
 
-    const capture = useCallback(() => {
+    const capture = useCallback( async () => {
         const dataUrl = camera.current.getScreenshot({
             width: 564,
             height: 1000,
@@ -114,6 +115,10 @@ export default function CameraCapture({ onClose }) {
         
         const blob = dataURLtoBlob(dataUrl)
         
+        const addedText = await addTextToImage(blob, 'erfwsfwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww')
+        const url = URL.createObjectURL(addedText)
+
+        //setImageB64(url)
         setImageB64(dataUrl)
         setImage(blob)
         setShowImage(true)
@@ -198,6 +203,41 @@ export default function CameraCapture({ onClose }) {
         closeConfirmDel()
     }
 
+    async function addTextToImage(file, text) {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+
+        await new Promise(resolve => img.onload = resolve);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext("2d");
+
+        // Bild zeichnen
+        ctx.drawImage(img, 0, 0);
+
+        // Text-Einstellungen
+        ctx.font = "48px sans-serif";
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 4;
+        ctx.fontSize = '5pt'
+
+        // Position (z. B. unten links)
+        const x = 40;
+        const y = 500;
+
+        // Kontur + Text
+        ctx.strokeText(text, x, y);
+        ctx.fillText(text, x, y);
+
+        return new Promise(resolve => {
+            canvas.toBlob(resolve, "image/webp", 0.85);   // komprimiertes WebP
+        });
+        }
+
     const uploadImage = async () => {
         if(!image) return;
         if(uploading) return;
@@ -258,6 +298,7 @@ export default function CameraCapture({ onClose }) {
     <Box>
         <ConfirmDeleteDialog></ConfirmDeleteDialog>
         {showImage ? 
+            // <ImageEditor imageUrl={imageB64}></ImageEditor>
             <Box sx={{width: '100%', height: '100%', zIndex: 100, position: 'absolute', backgroundImage: `url(${imageB64})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'}}>
             </Box>
         :

@@ -23,7 +23,7 @@ createRoot(document.getElementById('root')).render(
       </UserAuthContextProvider>
       </HashRouter>
     </ThemeProviderCustom>
-  </StrictMode>,
+  </StrictMode>
 )
 
 serviceWorkerRegistration.register();
