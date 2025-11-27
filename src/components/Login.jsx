@@ -12,7 +12,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { logIn } = useUserAuth();
+    const { logIn, googleSignIn } = useUserAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -42,7 +42,7 @@ const Login = () => {
                 </form>
                 <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
                 <Divider sx={{height: '2vh'}}/>
-                <GoogleButton style={{width: '100%', ":focus": {outline: 'none'}}}/>
+                <GoogleButton onClick={googleSignIn} style={{width: '100%', ":focus": {outline: 'none'}}}/>
             </Stack>
         </Box>
         <Box p={2} border={1} width={'80vw'} height={'5vh'} flexDirection={'column'} display={'flex'} justifyContent={'center'} alignItems={'center'}>

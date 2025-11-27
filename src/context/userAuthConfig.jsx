@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { db } from "../firebase";
-import { doc, setDoc, } from "@firebase/firestore";
+import { doc, setDoc, query, collection, getDoc } from "@firebase/firestore";
 
 
 const userAuthContext = createContext();
@@ -33,7 +33,8 @@ export function UserAuthContextProvider({ children }) {
         spendingHistory: [],
         hasPremium: false,
         tags: {},
-        canGetNotifications: true
+        canGetNotifications: true,
+        events: []
       })
       return await updateProfile(result.user, {
         displayName: Name
@@ -44,9 +45,29 @@ export function UserAuthContextProvider({ children }) {
   function logOut() {
     return signOut(auth);
   }
+
   function googleSignIn() {
     const googleAuthProvider = new GoogleAuthProvider();
-    return signInWithPopup(auth, googleAuthProvider);
+    return signInWithPopup(auth, googleAuthProvider).then(async function (result) {
+      const docRef = doc(db, 'Users', result.user.uid)
+      if ((await docRef.getDoc()).exists()) {
+        console.log('exists')
+        return
+      }
+      await setDoc(doc(db, "Users", result.user.uid), {
+        counter: 0,
+        displayName: result.user.displayName,
+        Friends: [],
+        FriendRequests: [],
+        geoLocations: [],
+        latestCigs: [],
+        spendingHistory: [],
+        hasPremium: false,
+        tags: {},
+        canGetNotifications: true,
+        events: []
+      })
+    })
   }
 
   useEffect(() => {

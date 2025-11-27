@@ -14,7 +14,7 @@ const SignUp = () => {
     const [displayName, setDisplayName] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { signUp } = useUserAuth();
+    const { signUp, googleSignIn } = useUserAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,7 +46,7 @@ const SignUp = () => {
                     </Stack>
                 </form>
                 <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
-                <GoogleButton style={{width: '100%', ":focus": {outline: 'none'}}}/>
+                <GoogleButton onClick={googleSignIn} style={{width: '100%', ":focus": {outline: 'none'}}}/>
             </Stack>
         </Box>
         <Box p={2} border={1} width={'80vw'} height={'5vh'}  display={'flex'} justifyContent={'center'} alignItems={'center'}>

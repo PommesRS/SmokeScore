@@ -32,8 +32,8 @@ export default function CameraCapture({ onClose }) {
     const [uploading, setUploading] = useState(false);
     const { user } = useUserAuth()
     const theme = useTheme()
-    const [text, setText] = useState("Mein Text");
-    const [position, setPosition] = useState({ x: 0, y: 500 });
+    const [text, setText] = useState("");
+    const [position, setPosition] = useState({ x: 0, y: 200 });
 
     const handleDevices = useCallback((mediaDevices) =>
             //console.log(mediaDevices.filter(({ kind }) => kind === "videoinput")),
@@ -55,8 +55,9 @@ export default function CameraCapture({ onClose }) {
             const track = stream.getVideoTracks()[0];
             // Check if torch is supported
             const capabilities = track.getCapabilities();
+            console.log(capabilities.focusMode)
             if (!capabilities.torch) {
-                setTorchSupported(true)
+                setTorchSupported(false)
             }else {
                 setTorchSupported(true)
             }
@@ -117,9 +118,6 @@ export default function CameraCapture({ onClose }) {
         });
         
         const blob = dataURLtoBlob(dataUrl)
-        
-        const addedText = await addTextToImage(blob, 'erfwsfwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww')
-        const url = URL.createObjectURL(addedText)
 
         //setImageB64(url)
         setImageB64(dataUrl)
@@ -131,6 +129,10 @@ export default function CameraCapture({ onClose }) {
     const toggleTorch = () => {
         const video = camera.current?.video;
         const stream = video?.srcObject;
+        const track = stream.getVideoTracks()[0];
+
+        const capabilities = track.getCapabilities();
+        setTorchSupported(capabilities.torch)
 
         if(torchToggled){
             if (!stream) return;
@@ -143,20 +145,18 @@ export default function CameraCapture({ onClose }) {
         }else{
             
             if (!stream) return;
-            const track = stream.getVideoTracks()[0];
-
-            // Check if torch is supported
-            const capabilities = track.getCapabilities();
             if (!capabilities.torch) {
-                alert("Torch/Flash wird von diesem Gerät nicht unterstützt.");
+                setTorchToggled(true)
                 return
+            }else{
+
+                setTorchToggled(true)
+                track.applyConstraints({
+                    advanced: [{ torch: true }]
+                });
             }
             
-            setTorchToggled(true)
-
-            track.applyConstraints({
-                advanced: [{ torch: true }]
-            });
+            
         }
     }
 
@@ -207,41 +207,6 @@ export default function CameraCapture({ onClose }) {
         setShowImage(false)
         closeConfirmDel()
     }
-
-    async function addTextToImage(file, text) {
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-
-        await new Promise(resolve => img.onload = resolve);
-
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        const ctx = canvas.getContext("2d");
-
-        // Bild zeichnen
-        ctx.drawImage(img, 0, 0);
-
-        // Text-Einstellungen
-        ctx.font = "48px sans-serif";
-        ctx.fillStyle = "white";
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 4;
-        ctx.fontSize = '5pt'
-
-        // Position (z. B. unten links)
-        const x = 40;
-        const y = 500;
-
-        // Kontur + Text
-        ctx.strokeText(text, x, y);
-        ctx.fillText(text, x, y);
-
-        return new Promise(resolve => {
-            canvas.toBlob(resolve, "image/webp", 0.85);   // komprimiertes WebP
-        });
-        }
 
     const uploadImage = async () => {
         if(!image) return;
@@ -323,27 +288,29 @@ export default function CameraCapture({ onClose }) {
         <ConfirmDeleteDialog></ConfirmDeleteDialog>
         {showImage ?
             shouldEditor ? 
-                <ImageEditor             
-                    text={text}
-                    setText={setText}
-                    position={position}
-                    setPosition={setPosition} 
-                    imageUrl={imageB64}
-                    imgRef={imgRef}
-                    onDelete={() => setShouldEditor(false)}
-                    ></ImageEditor>
+                <Box sx={{width: '100dvw', height: '100dvh', zIndex: 100, position: 'absolute', overflow: 'hidden'}} display={'flex'} justifyContent={'center'} alignItems={'center'}>
+                    <ImageEditor             
+                        text={text}
+                        setText={setText}
+                        position={position}
+                        setPosition={setPosition} 
+                        imageUrl={imageB64}
+                        imgRef={imgRef}
+                        onDelete={() => setShouldEditor(false)}
+                        ></ImageEditor>
+                </Box>
             
             :
-            <Box onClick={() => setShouldEditor(true)} sx={{width: '100%', height: '100%', zIndex: 100, position: 'absolute', backgroundImage: `url(${imageB64})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'}}>
-            </Box>
+                <Box onClick={() => setShouldEditor(true)} sx={{width: '100%', height: '100%', zIndex: 100, position: 'absolute', backgroundImage: `url(${imageB64})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'}}>
+                </Box>
         :
             
-            <Box sx={{position: 'fixed', inset: 0, overflow: 'hidden', background: 'black'}}>
+            <Box sx={{position: 'fixed', inset: 1, overflow: 'hidden', background: 'black'}}>
                 <Webcam
                     ref={camera}
                     videoConstraints={videoConstraints}
                     screenshotFormat="image/webp"
-                    screenshotQuality={0.7}
+                    screenshotQuality={0.85}
                     style={{
                         position: "absolute",
                         top: "50%",
@@ -363,7 +330,14 @@ export default function CameraCapture({ onClose }) {
                     //     'It is not possible to switch camera to different one because there is only one video device accessible.',
                     //     canvas: 'Canvas is not supported.',
                     // }}
-                /> 
+                />
+                {console.log(torchSupported)}
+                {!torchSupported && torchToggled ? 
+                    <Box sx={{position: 'absolute', inset: 0, overflow: 'hidden', boxShadow: 'inset 0px 0px 35px 70px #FFFFFF'}}/>
+                : 
+                    <></>
+                }
+                
             </Box>
         }
 
@@ -377,20 +351,18 @@ export default function CameraCapture({ onClose }) {
 
         {!showImage ? 
             <Stack gap={2} sx={{position: 'absolute', right: 0, top: 0, zIndex: 100}}>
-                {torchSupported && (
-                    <IconButton
-                        disableRipple 
-                        sx={{":focus": {outline: 'none'}, m:2, padding: 0, minWidth: 'auto'}} 
-                        onClick={toggleTorch}
-                    >
-                        {!torchToggled ? 
+                <IconButton
+                    disableRipple 
+                    sx={{":focus": {outline: 'none'}, m:2, padding: 0, minWidth: 'auto'}} 
+                    onClick={toggleTorch}
+                >
+                    {!torchToggled ? 
 
-                            <Typography sx={{position: 'relative'}}><FlashOffIcon sx={{position: 'absolute', right: 0, fill: 'black', zIndex: 0, filter: 'blur(2px)'}} fontSize="large" /><FlashOffIcon fontSize="large" sx={{position: 'absolute', zIndex: 10, right: 0}}/></Typography>
-                        :
-                            <Typography sx={{position: 'relative'}}><FlashOnIcon sx={{position: 'absolute', right: 0, fill: 'black', zIndex: 0, filter: 'blur(2px)'}} fontSize="large" /><FlashOnIcon fontSize="large" sx={{position: 'absolute', zIndex: 10, right: 0}}/></Typography>
-                        }
-                    </IconButton>
-                )}
+                        <Typography sx={{position: 'relative'}}><FlashOffIcon sx={{position: 'absolute', right: 0, fill: 'black', zIndex: 0, filter: 'blur(2px)'}} fontSize="large" /><FlashOffIcon fontSize="large" sx={{position: 'absolute', zIndex: 10, right: 0}}/></Typography>
+                    :
+                        <Typography sx={{position: 'relative'}}><FlashOnIcon sx={{position: 'absolute', right: 0, fill: 'black', zIndex: 0, filter: 'blur(2px)'}} fontSize="large" /><FlashOnIcon fontSize="large" sx={{position: 'absolute', zIndex: 10, right: 0}}/></Typography>
+                    }
+                </IconButton>
                 <IconButton
                     disableRipple 
                     sx={{":focus": {outline: 'none'}, m:2, padding: 0, minWidth: 'auto'}} 
