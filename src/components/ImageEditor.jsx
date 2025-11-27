@@ -1,9 +1,48 @@
 import { useState, useRef } from "react";
 import { Box, IconButton } from "@mui/material";
-import { DndContext, useDraggable, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, useDraggable, PointerSensor, useSensor, useSensors, TouchSensor } from "@dnd-kit/core";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import DeleteIcon from '@mui/icons-material/Delete';
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
-function DraggableText({ text, setText, position, setPosition }) {
+
+export function restrictToContainer(position, containerRef) {
+  return ({ transform }) => {
+    if (!containerRef.current) return transform;
+
+    const container = containerRef.current;
+    const el = container.querySelector("#text");
+    if (!el) return transform;
+
+    const containerHeight = container.offsetHeight;
+    const elHeight = el.offsetHeight;
+
+    // Berechnete, geplante Position nach dem Drag
+    const newY = position.y + transform.y;
+
+    const minY = 0;
+    const maxY = containerHeight - elHeight;
+
+    let correctedY = transform.y;
+
+    if (newY < minY) {
+      correctedY = minY - position.y;
+    }
+
+    if (newY > maxY) {
+      correctedY = maxY - position.y;
+    }
+
+    return {
+      ...transform,
+      y: correctedY
+    };
+  };
+}
+
+
+
+
+function DraggableText({ text, setText, position, onDelete, setPosition }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: "text" });
   const textRef = useRef(null)
 
@@ -32,7 +71,7 @@ function DraggableText({ text, setText, position, setPosition }) {
         {...attributes}
         ref={setNodeRef}
         size="small"
-        sx={{ color: "white", p: 0.5, mr: 1, left: 3, position:'absolute', ':focus': {outline: 'none'} }}
+        sx={{ color: "white", p: 0.5, mr: 1, left: 3, position:'absolute', ':focus': {outline: 'none'}, touchAction:'none' }}
       >
         <DragIndicatorIcon fontSize="small" />
       </IconButton>
@@ -46,20 +85,36 @@ function DraggableText({ text, setText, position, setPosition }) {
           textRef.current = e.currentTarget.textContent;
         }}
         onBlur={() => setText(textRef.current)}
-        style={{ color: "white", fontSize: 24, outline: "none", textAlign: 'center', textWrap: 'wrap', maxWidth:'100%', mx: 50}}
+        style={{ color: "white", fontSize: 24, outline: "none", textAlign: 'center', textWrap: 'wrap', maxWidth:'100%', mx: 50, touchAction: 'none'}}
       >
         {text}
       </div>
+      <IconButton
+        size="small"
+        sx={{ color: "white", p: 0.5, mr: 1, right: 3, position:'absolute', ':focus': {outline: 'none'} }}
+        onClick={() => {
+          setPosition({x: 0, y: 500})
+          onDelete()
+        }}
+      >
+        <DeleteIcon fontSize="small" />
+      </IconButton>
     </Box>
   );
 }
 
-export default function ImageEditor({ imageUrl }) {
-  const [text, setText] = useState("Mein Text");
-  const [position, setPosition] = useState({ x: 0, y: 500 });
+export default function ImageEditor({ imageUrl, text, position, setText, setPosition, imgRef, onDelete }) {
+  const containerRef = useRef(null);
 
-
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100,
+        tolerance: 5
+      }
+    })
+  );
 
   // const imgElement = document.getElementById("image");
   // const imageWidth = imgElement.offsetWidth;
@@ -70,9 +125,9 @@ export default function ImageEditor({ imageUrl }) {
   // const textHeight = textElement.offsetHeight;
 
   return (
-    <Box sx={{ textAlign: "center", height: '100%', mx: "auto", position: 'absolute', left: '50%', transform: 'translate(-50%)' }}>
+    <Box sx={{ textAlign: "center", height: 'auto', mx: "auto", position: 'absolute', left: '50%', transform: 'translate(calc(-50% + 0.6px))', overflow:'hidden' }}>
       <DndContext
-      modifiers={[restrictToVerticalAxis]}
+        modifiers={[restrictToVerticalAxis, restrictToContainer(position, containerRef)]}
         sensors={sensors}
         onDragEnd={(event) => {
           const { delta } = event;
@@ -82,14 +137,15 @@ export default function ImageEditor({ imageUrl }) {
           }));
         }}
       >
-        <Box sx={{ position: "relative", width: "100%" }}>
-          <img id="image" src={imageUrl} style={{ width: "auto", display: "block", objectFit: 'cover', height:'100vh' }} alt="preview" />
+        <Box ref={containerRef} sx={{ position: "relative", width: "100%", height: '100vh' }}>
+          <img className="storyImg" ref={imgRef} id="image" src={imageUrl} alt="preview" />
 
           <DraggableText
             text={text}
             setText={setText}
             position={position}
             setPosition={setPosition}
+            onDelete={onDelete}
           />
         </Box>
       </DndContext>

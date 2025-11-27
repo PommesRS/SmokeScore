@@ -18,6 +18,7 @@ import { useUserAuth } from "../context/userAuthConfig";
 export default function CameraCapture({ onClose }) {
     const camera = useRef(null);
     const canvasRef = useRef(null);
+    const imgRef = useRef(null);
     const [image, setImage] = useState(null);
     const [imageB64, setImageB64] = useState(null)
     const [showImage, setShowImage] = useState(false)
@@ -31,6 +32,8 @@ export default function CameraCapture({ onClose }) {
     const [uploading, setUploading] = useState(false);
     const { user } = useUserAuth()
     const theme = useTheme()
+    const [text, setText] = useState("Mein Text");
+    const [position, setPosition] = useState({ x: 0, y: 500 });
 
     const handleDevices = useCallback((mediaDevices) =>
             //console.log(mediaDevices.filter(({ kind }) => kind === "videoinput")),
@@ -162,9 +165,11 @@ export default function CameraCapture({ onClose }) {
         return (
             <React.Fragment>
                 <Dialog
-                    sx={
-                        {backdropFilter: "blur(2px)"}
-                    }
+                    sx={{
+                        backdropFilter: "blur(2px)",
+                        position: 'absolute',
+                        top: 0
+                    }}
                     open={openConfirmDel}
                     onClose={closeConfirmDel}
                     aria-labelledby="alert-dialog-title"
@@ -243,6 +248,8 @@ export default function CameraCapture({ onClose }) {
         if(uploading) return;
         setUploading(true)
 
+        //console.log(Math.round((position.y / imgRef.current.offsetHeight) * 100))
+
         const momentId = uuidv4()
         const path = `smokeMoments/${user.uid}/${momentId}.webp`
         const storageRef = ref(storage, path)
@@ -251,17 +258,32 @@ export default function CameraCapture({ onClose }) {
         //console.log(await (getDownloadURL(ref(storage, 'smokeMoments/pflyg0G66heJeBD3Ld6Q48SqpDB3/ff17818a-72f3-4df1-b340-2a14ddec7601.webp'))))
 
         const now = Timestamp.now()
-        await setDoc(doc(db, 'smokeMoments', momentId), {
-            userId: user.uid,
-            name: user.displayName,
-            imagePath: await (getDownloadURL(ref(storage, path))).then((url) => {return url}),
-            createdAt: now,
-            expiresAt: Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000),
-        })
+        //console.log(text !== 'Mein Text' && (Boolean(text.trim()) && text !== 'Mein Text'))
+        if (text !== 'Mein Text' && (Boolean(text.trim()) && text !== 'Mein Text')) {
+            await setDoc(doc(db, 'smokeMoments', momentId), {
+                userId: user.uid,
+                name: user.displayName,
+                imagePath: await (getDownloadURL(ref(storage, path))).then((url) => {return url}),
+                createdAt: now,
+                expiresAt: Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000),
+                overlay: {
+                    text: text,
+                    positionY: Math.round((position.y / imgRef.current.offsetHeight) * 100)
+                }
+            })
+        }else{
+            await setDoc(doc(db, 'smokeMoments', momentId), {
+                userId: user.uid,
+                name: user.displayName,
+                imagePath: await (getDownloadURL(ref(storage, path))).then((url) => {return url}),
+                createdAt: now,
+                expiresAt: Timestamp.fromMillis(now.toMillis() + 24 * 60 * 60 * 1000),
+            })
+        }
 
         setUploading(false)
-        setImage(null)
-        setImageB64(null)
+        // setImage(null)
+        // setImageB64(null)
 
 
         const friendsRef = doc(db, "Users", user.uid)
@@ -294,12 +316,25 @@ export default function CameraCapture({ onClose }) {
         onClose()
     }
 
+    const [shouldEditor, setShouldEditor] = useState(false)
+
   return (
     <Box>
         <ConfirmDeleteDialog></ConfirmDeleteDialog>
-        {showImage ? 
-            // <ImageEditor imageUrl={imageB64}></ImageEditor>
-            <Box sx={{width: '100%', height: '100%', zIndex: 100, position: 'absolute', backgroundImage: `url(${imageB64})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'}}>
+        {showImage ?
+            shouldEditor ? 
+                <ImageEditor             
+                    text={text}
+                    setText={setText}
+                    position={position}
+                    setPosition={setPosition} 
+                    imageUrl={imageB64}
+                    imgRef={imgRef}
+                    onDelete={() => setShouldEditor(false)}
+                    ></ImageEditor>
+            
+            :
+            <Box onClick={() => setShouldEditor(true)} sx={{width: '100%', height: '100%', zIndex: 100, position: 'absolute', backgroundImage: `url(${imageB64})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'}}>
             </Box>
         :
             
@@ -388,11 +423,11 @@ export default function CameraCapture({ onClose }) {
         }
                 
         <Stack direction={'row'} sx={{ position: 'fixed', bottom: 0, width: '100%', minWidth: '130px', 
-            minHeight: '130px', height: '20%', background: 'linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0))', zIndex: 101, alignItems: 'center', justifyContent:'center',}}>
+            minHeight: '130px', height: '20%', background: 'linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0))', zIndex: 101, alignItems: 'center', justifyContent:'center', pointerEvents:'none'}}>
             {!showImage ? 
                 <Button 
                     disableRipple 
-                    sx={{":focus": {outline: 'none'}, ':hover': {border: '5px solid'}, padding: 4, minWidth: 'auto', borderRadius: '50%', border: '5px solid'}} 
+                    sx={{":focus": {outline: 'none'}, ':hover': {border: '5px solid'}, padding: 4, minWidth: 'auto', borderRadius: '50%', border: '5px solid', pointerEvents: 'all'}} 
                     color="white" 
                     // onClick={() => {
                     //     if (camera.current) {
@@ -408,7 +443,7 @@ export default function CameraCapture({ onClose }) {
                 <IconButton
                     disabled={uploading}
                     disableRipple
-                    sx={{":focus": {outline: 'none'}, minWidth: 'auto', borderRadius: '100px', background: theme.palette.background.gradient}} 
+                    sx={{":focus": {outline: 'none'}, minWidth: 'auto', borderRadius: '100px', background: theme.palette.background.gradient, pointerEvents: 'all'}} 
                     color="white" 
                     onClick={uploadImage}
                 >

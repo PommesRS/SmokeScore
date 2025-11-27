@@ -557,6 +557,8 @@ const Friends = () => {
       );
     }, [currentPics]);
 
+    console.log(sortedPics)
+
     const addToSeen = useCallback(async () => {
       if (sortedPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
       if (sortedPics[0].userId === user.uid) return
@@ -697,7 +699,7 @@ const Friends = () => {
         className='storyDialog'
         sx={{
           backdropFilter: "blur(2px)",
-          height: '100vh'
+          height: '100vh',
         }}
         open={openStory}
         onClose={handleStoryClose}
@@ -706,7 +708,7 @@ const Friends = () => {
         swipeAreaWidth={0}
         fullScreen
         >
-        <Box sx={{height: '100vh'}} display={'flex'} alignItems="center" justifyContent="center">
+        <Box sx={{height: '100vh', overflow: 'hidden'}} display={'flex'} alignItems="center" justifyContent="center">
           <Box sx={{position: 'absolute', zIndex: 10, top: 0, left: 0, width: '100%', height: '95%', boxShadow: 'inset 0px 60px 21px -7px rgba(0,0,0,0.51)', pb: 5}}>
             <Stack mx={1} pt={1}>
               <Stack direction={'row'} gap={1} sx={{width: '100%'}}>
@@ -733,8 +735,17 @@ const Friends = () => {
               <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
             </Stack>
           </Box>
-          <Box sx={{maxHeight: '100dvh', maxWidth: '546px'}}>
-
+          <Box sx={{maxHeight: '100dvh', maxWidth: '546px', position: 'relative'}}>
+            {sortedPics[imgIndex].overlay ? 
+                    <div
+                      style={{ color: "white", fontSize: 24, outline: "none", textAlign: 'center', textWrap: 'balance', wordBreak: 'break-all', maxWidth:'546px', mx: 50, touchAction: 'none', background: 'rgba(0,0,0,0.6)', position: 'absolute', width: '100%', top: `${sortedPics[imgIndex].overlay.positionY}%`,}}
+                    >
+                      {sortedPics[imgIndex].overlay.text}
+                    </div>
+              // <Typography variant='h6' sx={{background: 'rgba(0,0,0,0.6)', position: 'absolute', width: '100%', top: `${sortedPics[imgIndex].overlay.positionY}%`, textAlign:'center', textWrap: 'wrap', maxWidth:'100%'}}>{sortedPics[imgIndex].overlay.text}</Typography>
+              :
+              <></>
+            }
             <img className='storyImg' 
               src={sortedPics ? sortedPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
               alt="mainImg"
