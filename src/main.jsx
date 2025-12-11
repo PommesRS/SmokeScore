@@ -15,7 +15,6 @@ import { ThemeProviderCustom } from './components/ThemeProviderCustom';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProviderCustom>
-      
       <HashRouter>
       <UserAuthContextProvider>
         <CssBaseline/>

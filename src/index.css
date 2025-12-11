@@ -145,27 +145,55 @@ button:focus-visible {
   z-index: 10;
   color: #FFD700;
   animation: pulseGlow 1.5s infinite alternate ease-in-out;
-  /* font-weight: 'bold';
-  background: red;
-  background-size: "100%";
-  background-repeat: "repeat";
-  background-clip: "text";
-  -webkit-background-clip: "text";
-  -webkit-text-fill-color: "transparent"; */
 }
+
 
 @keyframes pulseGlow {
   from {
     filter: drop-shadow(0 0 6px #FFD700) saturate(200%);
     translate:  0 -5px;
-    color: #eeead1;
+    color: #fcffd1;
   }
   to {
     filter: drop-shadow(0 0 2px #FFD700) saturate(100%);
     translate: 0 0px;
   }
+}
 
+.glow-animate-streak {
+  z-index: 10;
+  color: #fff;
+  animation: pulseGlowStreak 0.8s ease-in-out;
+}
 
+@keyframes pulseGlowStreak {
+  0% {
+    font-size: 50pt;
+    color: #ff7b00;
+    filter: drop-shadow(0 0 2px #ff7b00) saturate(100%);
+  }
+  33%{
+    font-size: 45pt;
+    transform: rotate(10deg);
+    color: #ff7b00;
+    filter: drop-shadow(0 0 2px #ff7b00) saturate(100%);
+  }
+  66%{
+    font-size: 60pt;
+    transform: rotate(-5deg);
+    color: #ff7b00;
+    filter: drop-shadow(0 0 5px #ff7b00) saturate(100%);
+  }
+  100%{
+    font-size: 50pt;
+    transform: rotate(0deg);
+    color: #ff7b00;
+    filter: drop-shadow(0 0 2px #ff7b00) saturate(100%);
+  }
+  /* 100% {
+    filter: drop-shadow(0 0 2px #ff7b00) saturate(100%);
+    translate: 0 0px;
+  } */
 }
 
 @media (max-width: 546px) {

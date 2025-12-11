@@ -40,12 +40,11 @@ const Login = () => {
                         <Button variant='contained' color='primary' type='submit'>Anmelden</Button>
                     </Stack>
                 </form>
-                <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
                 <Divider sx={{height: '2vh'}}/>
                 <GoogleButton onClick={googleSignIn} style={{width: '100%', ":focus": {outline: 'none'}}}/>
             </Stack>
         </Box>
-        <Box p={2} border={1} width={'80vw'} height={'5vh'} flexDirection={'column'} display={'flex'} justifyContent={'center'} alignItems={'center'}>
+        <Box p={2} border={1} width={'80vw'} flexDirection={'column'} display={'flex'} justifyContent={'center'} alignItems={'center'}>
             <Typography>Noch keinen Account? <Link href='#/signup'>Registrieren</Link></Typography>
         </Box>
     </Box>

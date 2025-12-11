@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {Container, Box, Button, Typography, Table, TableBody, 
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
   List, Dialog, Input, FormControl, IconButton,
-  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress, LinearProgress,
-  useTheme
+  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress,
+  useTheme, Stack
 } from '@mui/material'
 import { tableCellClasses } from '@mui/material/TableCell';
 import dayjs from 'dayjs';
@@ -14,14 +14,14 @@ import UndoIcon from '@mui/icons-material/Undo';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
-import Stack from '@mui/material/Stack';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
 import { useUserAuth } from '../context/userAuthConfig';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, where, arrayUnion, GeoPoint, Timestamp } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp } from "@firebase/firestore";
 import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
 import Confetti from 'react-confetti-boom';
-import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate, set, constructNow } from 'date-fns'
 import { Geolocation } from '@capacitor/geolocation';
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
@@ -60,6 +60,7 @@ export function TextGradient({children}) {
 
 function Counter() {
   const [count, setCount] = useState(0)
+  const [streak, setStreak] = useState(0)
   const [isExploding, setIsExploding] = useState(0)
   const [geolocation, setLocation] = useState([])
   const [nearbyStreet, setNearbyStreet] = useState([])
@@ -83,6 +84,7 @@ function Counter() {
   const theme = useTheme()
   const [displayWoo, setDisplayWoo] = useState('none')
   const [confettiType, setConfettiType] = useState('boom')
+  const streakRef = useRef(null)
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -94,7 +96,7 @@ function Counter() {
   
 
   const initiateCounter = async () => {
-    const docRef = await doc(db, "Users", uID)
+    const docRef = doc(db, "Users", uID)
     
     if (!(await getDoc(docRef)).data()) {
       await setDoc(doc(db, 'Users', uID), {
@@ -102,6 +104,21 @@ function Counter() {
       })
     }else{
       setCount((await getDoc(docRef)).data().counter)
+    }
+
+    const locDate = (await getDoc(docRef)).data().streak.lastIncrement
+
+    const today = dayjs();
+    const preYesterday = today.subtract(2, "day");
+    const date1 = dayjs(locDate.toDate())
+    console.log(Timestamp.fromDate(new Date(dayjs().subtract(1, 'day'))))
+    if (date1.isSame(preYesterday, 'day')) {
+      await updateDoc(docRef, {
+        streak: {
+          amount: 0,
+          lastIncrement: Timestamp.fromDate(new Date(dayjs().subtract(1, 'day')))
+        }
+      })
     }
   }
 
@@ -141,8 +158,21 @@ function Counter() {
 
   useEffect(() => {
     getSpendingHistory()
-    initiateCounter();
     getLatestCigs()
+    
+    const ref = doc(db, 'Users', user.uid)
+    
+    const unsubscribe = onSnapshot(ref, async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data().streak
+        console.log(data.lastIncrement.toDate())
+        setStreak(data)
+      }
+    });
+    
+    initiateCounter();
+    return () => unsubscribe();
+
   }, [])
 
   const handleAddCig = async () => {
@@ -151,7 +181,7 @@ function Counter() {
     setLoading(true)
     await incrementCounter()
     setCount(prev => prev + 1)
-    setTimeout(() => setLoading(false), 1600) 
+    setTimeout(() => setLoading(false), 500) 
   } 
 
   const incrementCounter = async () => {
@@ -159,11 +189,12 @@ function Counter() {
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
     //console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
-    var buffer2 = buffer(o, 80, {units: 'meters'});
+    var buffer2 = buffer(o, 100, {units: 'meters'});
     var bbox2 = bbox(buffer2);
     var cigUID = generateUUID()
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
+
     if (geoLocationsSnapshot.length < 1) {
       incrementAndNewGeopoint()
     } else {
@@ -183,8 +214,46 @@ function Counter() {
         bCreateNew = false
       }
     }
+
+    if (streak) {
+      const today = dayjs();
+      const yesterday = today.subtract(1, "day");
+      const date = dayjs(streak.lastIncrement.toDate())
+      
+      if (date.isSame(yesterday, 'day')) {
+          await updateDoc(docRef, {
+            streak: {
+              amount: streak.amount + 1,
+              lastIncrement: Timestamp.now()
+            }
+          })
+          streakRef.current.classList.add('glow-animate-streak')
+          setTimeout(() => {
+            streakRef.current.classList.remove('glow-animate-streak')
+          }, 800);
+      }else if(date.isSame(today, 'day')) {
+        await updateDoc(docRef, {
+            streak: {
+              amount: streak.amount,
+              lastIncrement: Timestamp.now()
+            }
+          })
+      }
+
+    }else{
+      await updateDoc(docRef, {
+        streak: {
+          amount: 1,
+          lastIncrement: Timestamp.now()
+        }
+      })
+      streakRef.current.classList.add('glow-animate-streak')
+      setTimeout(() => {
+        streakRef.current.classList.remove('glow-animate-streak')
+      }, 800);
+    }
     
-    
+
     const friendsRef = doc(db, "Users", uID)
     const friendIDArr = (await getDoc(friendsRef)).data().Friends
     friendIDArr.map(async (friendId) => {
@@ -597,6 +666,10 @@ function Counter() {
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
           <TextGradient>SmokeScore</TextGradient>
+          <Stack direction={'row'} alignItems={'center'} height={6}>
+            <WhatshotIcon ref={streakRef} sx={{fontSize: '50pt', filter: 'drop-shadow(6px 6px 10px rgba(0, 0, 0, 0.7))'}}/>
+            <Typography fontSize={40} sx={{fontFamily: "'Poppins'", fontWeight: '700', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}}>{streak?.amount > 0 ? streak?.amount : 0}</Typography>
+          </Stack>
           <Stack alignItems={'center'} justifyContent={'center'}>
               <AnimatedCounter digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}} includeDecimals={false} value={count} color='inherit' fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
@@ -605,21 +678,22 @@ function Counter() {
                 <Typography  className='animation-boom' display={displayWoo} variant='h6' fontWeight={1000} fontSize={100} color='primary' sx={{position: 'absolute', translate: '-50%', zIndex: 1000000}} left={'50%'} top={'25%'}>Woooh!</Typography>
               </Box>
           </Stack>
+          
           <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
-            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '60vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleAddCig() /*incrementCounter(); setCount(count + 1)*/}}>
+            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleAddCig() /*incrementCounter(); setCount(count + 1)*/}}>
               <AddIcon fontSize='large'/>
               {loading && (
-                <LinearProgress 
-                color='primary'
+                <CircularProgress 
+                color='#fff'
                 sx={{
-                  width: '100%',
-                  height: '100%',
+                  p: 0.4,
+                  width: '80%',
+                  height: '80%',
                   position: 'absolute',
-                  borderRadius: '10px'
                 }}/>
               )}
             </Button>
-            <Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>
+            {/*<Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>*/}
           </Stack>
         </Stack>
       </Box>

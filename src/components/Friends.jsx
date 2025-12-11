@@ -81,39 +81,36 @@ const Friends = () => {
   const [imgIndexGlobal, setImgIndexGlobal] = useState(0)
 
 
-  const handleSearch = async (e) => {
-    var searchInput = e.target.value
-    
-    if (searchInput) {
-      const colRef = collection(db, 'Users')
-      const queryResult = query(colRef, where('displayName', '==', searchInput))
-      const querySnapshot = await getDocs(queryResult);
-      console.log(querySnapshot)
+  async function initUserList() {
+    const colRef = collection(db, 'Users')
+    //const queryResult = query(colRef, where('displayName', '==', searchInput))
+    const querySnapshot = await getDocs(colRef);
+    // querySnapshot.forEach((doc) => {
+    //     console.log(doc.id, '=>', doc.data())
+    //   })
+
+    try {
+
+      setErrorMessage('User Found')
+      setSearchResult([])
       querySnapshot.forEach((doc) => {
-        console.log(doc.id, '=>', doc.data())
-      })
-      try {
-        if (querySnapshot.empty) {
-          return
+        if(doc.data().displayName === 'undefined'){
+          setSearchResult(oldArray => [...oldArray, [doc.id, 'Kein Name']])
         }else{
-          setErrorMessage('User Found')
-          setSearchResult([])
-          querySnapshot.forEach((doc) => {
-            setSearchResult(oldArray => [...oldArray, [doc.id, doc.data()]])
-            //searchResult.push([doc.id, doc.data()])
-            console.log(searchResult)
-          })
-          setReload(true)
-
-          //setErrorMessage('No User Found')
+          setSearchResult(oldArray => [...oldArray, [doc.id, doc.data().displayName]])
         }
-        
-      } catch (error) {
-        console.log(error)
-      }
+      })
+      setReload(true)
 
+      //setErrorMessage('No User Found')
+      
+      
+    } catch (error) {
+      
     }
   }
+
+  
 
   const handleRequestSend = async (e) => {
     const idForRequest = e.target.getAttribute('data-uid')
@@ -132,7 +129,8 @@ const Friends = () => {
     setAlertState(false)
   }
   
- function SearchResult() {
+ function SearchResult({records}) {
+
 
   if (!searchResult.length) {
     return(
@@ -143,17 +141,17 @@ const Friends = () => {
   }
   return (
     <>
-    {searchResult.map((result, i) => (
+    {records.map((result, i) => (
       //console.log(i, result[1].displayName)
       <>
-        <ListItem disablePadding key={i}>
-          <Box>
-            <ListItemText sx={{"& .MuiListItemText-primary": {color: 'inherit'}}}>{result[1].displayName}</ListItemText>
-            <ListItemText sx={{"& .MuiListItemText-primary": {color: 'gray'}}}>{result[0]}</ListItemText>
-            <ListItemButton disableRipple={false} sx={{textAlign: 'left', p: 0, paddingBottom: 2, color: 'primary.light'}} data-uid={result[0]} onClick={handleRequestSend}>
+        <ListItem disableGutters sx={{width: '100%'}} key={result[0]}>
+          <Paper elevation={5} sx={{width: '100%', p: 2, whiteSpace: 'nowrap', overflow: 'hidden'}}>
+            <ListItemText sx={{"& .MuiListItemText-primary": {color: 'inherit'}, m: 0}}>{result[1]}</ListItemText>
+            <Typography sx={{color: 'gray', width: '100%', display: 'inline-block', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}>{result[0]}</Typography>
+            <ListItemButton disableRipple={false} sx={{textAlign: 'left', p: 0, color: 'primary.light'}} data-uid={result[0]} onClick={handleRequestSend}>
               Anfragen
             </ListItemButton>
-          </Box>
+          </Paper>
         </ListItem>
       </>
     )) }
@@ -163,16 +161,25 @@ const Friends = () => {
 
 
   function FAddDialog ({children}) {
+
+    const [records, setRecords] = useState(searchResult)
+
+    const handleSearch = async (e) => {
+      setRecords(searchResult.filter(f => f[1].toLowerCase().includes(e.target.value)))
+    }
+
     return (
-      <Dialog sx={{backdropFilter: "blur(2px)"}} onClose={fAddDialogClose} open={openFAdd}>
-        <Paper sx={{color:'#fff', border: '1px solid #767676', p: 2}}>
-          <Input fullWidth={true} onChange={handleSearch} sx={{color:'#fff'}} placeholder="Benutzername" startAdornment={
-            <InputAdornment sx={{color: 'inherit'}} position='start'>
-              <SearchIcon />
-            </InputAdornment>
-          }/>
-          <List disablePadding>
-            <SearchResult />
+      <Dialog fullWidth sx={{backdropFilter: "blur(2px)", width: '100%'}} onClose={fAddDialogClose} open={openFAdd}>
+        <Paper sx={{color:'#fff', p: 0, position: 'relative', width: '100%'}}>
+          <Box sx={{position:'absolute', left: 0, width: '100%'}}>
+            <Input fullWidth={true} onChange={handleSearch} sx={{color:'#fff', position: 'absolute', background: theme.palette.background.paper, zIndex: 2, p: 2, width: '100%'}} placeholder="Benutzername" startAdornment={
+              <InputAdornment sx={{color: 'inherit'}} position='start'>
+                <SearchIcon />
+              </InputAdornment>
+            }/>
+          </Box>
+          <List sx={{height: '50vh', overflowY: 'scroll', mt: 9, px: 2}}>
+            <SearchResult records={records}/>
           </List>
         </Paper>
       </Dialog>
@@ -230,7 +237,7 @@ const Friends = () => {
   
   const fAddDialogClose = () => {
     setOpenFAdd(false);
-    setSearchResult([])
+    initUserList()
   };
 
     const fDelDialogOpen = () => {
@@ -284,6 +291,7 @@ const Friends = () => {
       const locations = (await getDoc(docRef)).data().geoLocations
       const currentPics = (await getDoc(docRef)).data().currentPics
       const isExcluded = (await getDoc(docRef)).data().excludeMoments?.includes(user.uid)
+      const streakAmount = (await getDoc(docRef)).data().streak?.amount
       let street
 
       locations.sort((a,b) => {
@@ -296,7 +304,7 @@ const Friends = () => {
       }
 
 
-      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded])
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount])
     }))
 
     setFriends(cacheFriends)
@@ -326,7 +334,6 @@ const Friends = () => {
         map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
       }
   
-      console.log(friendIndex)
   
       map.current = new maptilersdk.Map({
         container: mapContainer.current,
@@ -372,7 +379,6 @@ const Friends = () => {
     const filtered = localfreindsArr.filter(sub => 
       !sub.some(value => blackList?.includes(value))
     );
-    console.log(filtered)
     const promises = filtered.map(async (friend) => {
       const q = query(collection(db, 'smokeMoments'), where('userId', 'in', [friend[0]]));
       const querySnapshot = await getDocs(q);
@@ -469,6 +475,7 @@ const Friends = () => {
     getFriendsIDs().then((result) => {
       getFriendsFull(result)
     })
+    initUserList()
   
   }, [user])
 
@@ -923,7 +930,6 @@ const Friends = () => {
                       </Button> 
                       <Typography fontSize={13}>neu</Typography>
                     </Stack>
-                  {console.log(friendsMoments)}
                   {friendsMoments?.map((friend, i) => (
                     friendsMoments?.length > 0 ?
                     <Stack alignItems="center" justifyContent="center">
@@ -985,6 +991,9 @@ const Friends = () => {
               slotProps={{
                 legend: {
                   hidden: 'true'
+                },
+                popper: {
+                  placement: 'top'
                 }
               }}
               margin={{
@@ -1086,7 +1095,7 @@ const Friends = () => {
         </Stack>
 
       </Box>
-      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
+      <Box height={'100%'} maxHeight={'200vh'} width={'inherit'} mb={9} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
         <Box height={'75%'} width={'100%'} position={'relative'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'} sx={{
             background: theme.palette.background.gradient,
             borderRadius: '52px', 
@@ -1131,6 +1140,16 @@ const Friends = () => {
             <Stack direction={'column'} justifyContent={'center'} alignItems={'center'} sx={{justifyContent: 'space-between'}}>
               <Typography textAlign={'center'} fontWeight={800} lineHeight={'80%'} fontSize={'100pt'} sx={{textShadow: '6px 6px 4px rgba(0, 0, 0, 0.25)'}}>{friends.length != 0 ? friends[friendIndex][4] : 'loading'}</Typography>
               <Typography display={'flex'} textAlign={'center'}>Kippen insgesamt geraucht</Typography>
+              {friends[friendIndex][8] && (
+                <React.Fragment>
+                  <Divider sx={{height: 20}}/>
+                  <Stack direction={'row'} justifyContent={'center'} alignItems={'center'}>
+                    <WhatshotIcon sx={{fontSize: '50pt', filter: 'drop-shadow(6px 6px 4px rgba(0, 0, 0, 0.25))'}}/>
+                    <Typography textAlign={'center'} fontWeight={700} lineHeight={'80%'} fontSize={'50pt'} sx={{textShadow: '6px 6px 4px rgba(0, 0, 0, 0.25)'}}>{friends.length != 0 ? friends[friendIndex][8] : 'loading'}</Typography>
+                  </Stack>
+                  <Typography display={'flex'} textAlign={'center'}>Streak</Typography>
+                </React.Fragment>
+              )}
             </Stack>
             
             <Box height={'10rem'} width= {'90%'} display={'flex'} position={'relative'} borderRadius={'27px'} alignItems="center" justifyContent="center" marginBottom={'20px'} sx={
@@ -1163,7 +1182,6 @@ const Friends = () => {
               <img src="pin.svg" width={20} alt="pin" style={{position: 'absolute', transform: 'translateY(-50%)'}}/>
               <Stack direction={'row'} position={'absolute'} width={'90%'} sx={{justifyContent: 'space-between'}} bottom={'12%'} zIndex={2}>
                 <Typography display={'flex'} alignItems={'center'}><PersonPinCircleIcon/>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].street : 'noch kein Ort gespeichert' : 'loading...'}</Typography>
-                {console.log(friends[friendIndex][3])}
                 <Typography textAlign={'right'}>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].amount : '0' : 'loading...'}</Typography>
               </Stack>
             </Box>

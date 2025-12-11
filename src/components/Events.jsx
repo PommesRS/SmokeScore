@@ -81,7 +81,7 @@ export function ChatMessages({messages}) {
     function formatChatDate(date) {
         const d = dayjs(date);
         const today = dayjs();
-        const yesterday = dayjs().subtract(1, "day");
+        const yesterday = today.subtract(1, "day");
 
         if (d.isSame(today, "day")) return "Heute";
         if (d.isSame(yesterday, "day")) return "Gestern";

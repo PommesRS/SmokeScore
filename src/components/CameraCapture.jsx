@@ -175,11 +175,11 @@ export default function CameraCapture({ onClose }) {
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                 >
-                    <DialogTitle id="alert-dialog-title">PuffPic verwerfen</DialogTitle>
+                    <DialogTitle id="alert-dialog-title">Smokement verwerfen</DialogTitle>
                     <DialogContent>
                         <Stack direction={'row'} flex={'true'} alignItems={'center'}>
                             <Stack>
-                                <DialogContentText fontSize={15}>Willst du dieses PuffPic wirklich verwerfen?</DialogContentText>
+                                <DialogContentText fontSize={15}>Willst du diesen Smokement wirklich verwerfen?</DialogContentText>
                             </Stack>
                         </Stack>
                         

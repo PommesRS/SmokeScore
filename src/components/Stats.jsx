@@ -93,6 +93,9 @@ const Stats = () => {
                             sx: {
                                 fill: '#fff'
                             }
+                        },
+                        popper: {
+                            placement: 'top'
                         }
                     }}
                     yAxis={[
@@ -204,6 +207,9 @@ const Stats = () => {
                         sx: {
                             fill: '#fff'
                         }
+                    },
+                    popper: {
+                        placement: 'top'
                     }
                 }}
                 yAxis={[

@@ -12,11 +12,13 @@ import EditIcon from '@mui/icons-material/Edit';
 import SellIcon from '@mui/icons-material/Sell';
 import PaletteIcon from '@mui/icons-material/Palette';
 import EmailIcon from '@mui/icons-material/Email';
+import BadgeIcon from '@mui/icons-material/Badge';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { collection, doc, getDoc, updateDoc } from "@firebase/firestore";
-import { db } from '../firebase.js';
+import { updateProfile } from "firebase/auth";
+import { db, auth } from '../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { ThemeToggleButton } from './index.js'
 import {useNavigate} from 'react-router-dom';
@@ -38,6 +40,7 @@ const Settings = () => {
         if(data){
             setCigType(data.cigType)
             setTobacco(data.tobacco)
+            setUsername(user.displayName)
         }
         
         if(typeof notificationValue !== 'undefined'){
@@ -53,9 +56,13 @@ const Settings = () => {
     const [openNotificationSetting, setOpenNotificationSetting] = useState(false);
     const [cigType, setCigType] = useState('');
     const [tobacco, setTobacco] = useState('');
+    const [username, setUsername] = useState('');
     const [alertState, setAlertState] = useState(false)
+    const [alertText, setAlertText] = useState('')
     const [notificationSwitchValue, setNotificationSwitchValue] = useState(false)
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false)
+
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -89,17 +96,30 @@ const Settings = () => {
         setTobacco(event.target.value)
     }
 
+    const handleUsernameInput = (event) => {
+        setUsername(event.target.value)
+    }
+
     const handleTagSave = async () => {
         const docRef = doc(db, 'Users', user.uid)
         try {
+            setLoading(true)
             await updateDoc(docRef, {
                 tags: {
                     cigType: cigType,
                     tobacco: tobacco
-                }
+                },
+                displayName: username
             })
-            setAlertState(true)
-            handleClose()
+            updateProfile(user, {
+                displayName: username
+            }).then((result) => {
+                setLoading(false)
+                handleClose()
+                setAlertText('Einstellungen gespeichert!')
+                setAlertState(true)
+            })
+            
         } catch (error) {
             
         }
@@ -112,6 +132,7 @@ const Settings = () => {
             await updateDoc(docRef, {
                 canGetNotifications: notificationSwitchValue
             })
+            setAlertText('Einstellungen gespeichert!')
             setAlertState(true)
             handleClose()
         } catch (error) {
@@ -122,6 +143,16 @@ const Settings = () => {
 
     const handleCloseAlert = () => {
         setAlertState(false)
+    }
+
+    const handleCopyToClipboard = () => {
+        try {
+            navigator.clipboard.writeText(user.uid)
+            setAlertText('Id kopiert!')
+            setAlertState(true)
+            
+        } catch (error) {
+        }
     }
     
     return (
@@ -193,10 +224,13 @@ const Settings = () => {
                     <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
                         <TextField value={tobacco} onChange={handleTextInput} id="standard-basic" label="Tabak Sorte wählen" variant="standard" />
                     </FormControl>
+                    <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
+                        <TextField value={username} onChange={handleUsernameInput} id="standard-basic" label="Benutzernamen ändern" variant="standard" />
+                    </FormControl>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => {handleClose()}}>Abbrechen</Button>
-                    <Button onClick={() => {handleTagSave()}}>Speichern</Button>
+                    <Button loading={loading} onClick={() => {handleTagSave()}}>Speichern</Button>
                 </DialogActions> 
             </Dialog>
             
@@ -244,7 +278,7 @@ const Settings = () => {
                 onClose={handleCloseAlert}
             >
                 <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
-                    Einstellungen gespeichert!
+                    {alertText}
                 </Alert>
             </Snackbar>
             {/* <button onClick={sendNotification} style={{color: 'white'}}>Nachricht senden</button>
@@ -252,7 +286,7 @@ const Settings = () => {
             <button onClick={getAndroidPermission} style={{color: 'white'}}>Berechtigung für Nachrichten anfragen</button>
             <br />
             <button onClick={saveFCMToken} style={{color: 'white'}}>Dieses Gerät als Benachrichtungsgerät festlegen</button> */}
-            <List sx={{ width: '100%'}}>
+            <List sx={{ width: '100%', mb: 10}}>
                 <ListItemButton onClick={handleNotificationSettingsOpen}>
                     <ListItemAvatar>
                     <Avatar>
@@ -305,6 +339,15 @@ const Settings = () => {
                         </Avatar>
                         </ListItemAvatar>
                     <ListItemText primary="Support"/>
+                </ListItemButton>
+            <Divider />
+                <ListItemButton onClick={handleCopyToClipboard}>
+                    <ListItemAvatar>
+                        <Avatar>
+                            <BadgeIcon />
+                        </Avatar>
+                        </ListItemAvatar>
+                    <ListItemText primary='Nutzer Id' secondary={user.uid} slotProps={{secondary: {sx: { width: '100%',color:'gray', display: 'inline-block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}}}/>
                 </ListItemButton>
             <Divider />
             

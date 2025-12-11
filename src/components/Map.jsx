@@ -3,7 +3,7 @@ import * as maptilersdk from '@maptiler/sdk';
 import PropTypes from 'prop-types';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
-import { Box, SwipeableDrawer, Typography, Stack, IconButton, useTheme } from '@mui/material';
+import { Box, SwipeableDrawer, Typography, Stack, IconButton, useTheme, Paper } from '@mui/material';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
@@ -115,7 +115,6 @@ const Map = (props) => {
     }))
 
     setFriends(cacheFriends)
-    console.log(cacheFriends)
   }
 
   const handleFriendSwitch = (direction) => {
@@ -148,9 +147,15 @@ const Map = (props) => {
       ownMarker.style.width = '20px';
       ownMarker.style.height = '20px';
       
-      locMarker.current = new maptilersdk.Marker({element: ownMarker, draggable:true})
-      .setLngLat([coords.longitude, coords.latitude])
-      .addTo(map.current)
+      try{
+        locMarker.current = new maptilersdk.Marker({element: ownMarker, draggable:true})
+        .setLngLat([coords?.longitude, coords?.latitude])
+        .addTo(map.current)
+
+      }catch (err) {
+
+      }
+      
 
     }else {
 
@@ -158,7 +163,6 @@ const Map = (props) => {
 
     const docRef = await doc(db, "Users", user.uid)
     const g = (await getDoc(docRef)).data().geoLocations
-    console.log(g)
     g.sort((a,b) => {
       return b.amount - a.amount
     })
@@ -206,9 +210,11 @@ const Map = (props) => {
         console.log(error)
       }
     })
-    console.log(friends[i][0])
-    const docRefFriend = await doc(db, "Users", friends[i][0])
-    const t = (await getDoc(docRefFriend)).data().geoLocations
+
+    if (friends.length > 0) {
+      const docRefFriend = doc(db, "Users", friends[i][0])
+      const t = (await getDoc(docRefFriend)).data().geoLocations
+
 
     if (t.length > 0) {
       falkensee.lng = 13.091314 
@@ -238,6 +244,7 @@ const Map = (props) => {
         .addTo(map.current))
       });
     }
+  }
 
   }
     
@@ -269,23 +276,30 @@ const Map = (props) => {
 
       return (
         <>
-            <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
-              <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowBackIosIcon/></IconButton>
-              <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
-              friends.length > 0 ? friends[friendIndex][1] : 'no friends'
-              }</Typography>
-              <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
-             </Stack>
-             <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
-              <Stack gap={2}>
-                  <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
-                    <AdjustIcon  fontSize='large'/>
-                  </IconButton>
-                  <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
-                    <ModeOfTravelIcon  fontSize='large'/>
-                  </IconButton>
-              </Stack>
-              </Box>
+          <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
+            <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowBackIosIcon/></IconButton>
+            <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
+            friends.length > 0 ? friends[friendIndex][1] : 'no friends'
+            }</Typography>
+            <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
+          </Stack>
+            <Stack zIndex={'5'} position={'absolute'} top={80} left={20} sx={{pointerEvents: 'none', background: theme.palette.background.paper, borderRadius: 1, overflow: 'hidden',  maxWidth: '90vw'}}  pl={'40px'} pr={2} py={1} >
+              <Typography sx={{ position: 'relative', ':before': { zIndex: '100', width: '20px', height: '5px', content: '" "', background: 'linear-gradient(90deg, rgb(136, 120, 251) 0%, rgb(120, 252, 215) 100%)', position: 'absolute', left: '-30px', top:'50%', transform: 'translate(0px, -50%)', borderRadius: '100px' }}}>Du</Typography>
+              <Typography sx={{ position: 'relative',  ':before': { zIndex: '10', width: '20px', height: '5px', content: '" "', background: 'linear-gradient(90deg, rgb(133, 3, 37) 0%, rgb(186, 204, 3) 100%)', position: 'absolute', left: '-30px', top:'50%', transform: 'translate(0px, -50%)', borderRadius: '100px' }}}>
+                  
+                  <Typography component={'div'} sx={{whiteSpace:'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{friends.length > 0 ? friends[friendIndex][1]: 'Loading...'}</Typography>
+              </Typography>
+            </Stack>
+          <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
+            <Stack gap={2}>
+                <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
+                  <AdjustIcon  fontSize='large'/>
+                </IconButton>
+                <IconButton onClick={handleMapStyleSwitch} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
+                  <ModeOfTravelIcon  fontSize='large'/>
+                </IconButton>
+            </Stack>
+          </Box>
             <Box sx={{pointerEvents: 'none' ,zIndex: '3',left: '50%', transform: 'translate(-50%)', top: '-0%', height: '200px', width: '100%', position: 'absolute', background: theme.palette.background.transparentGradient}}></Box>
             <Box height={'100vh'} width={'100%'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
                 <div ref={mapContainer} className="map-wrapper" />

@@ -6,7 +6,8 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  updateProfile
+  updateProfile,
+  signInWithRedirect
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { db } from "../firebase";
@@ -21,6 +22,7 @@ export function UserAuthContextProvider({ children }) {
   function logIn(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
   }
+
   function signUp(email, password, Name) {
     return createUserWithEmailAndPassword(auth, email, password).then(async function (result) {
       await setDoc(doc(db, "Users", result.user.uid), {
@@ -42,13 +44,14 @@ export function UserAuthContextProvider({ children }) {
     })
 
   }
+  
   function logOut() {
     return signOut(auth);
   }
 
   function googleSignIn() {
     const googleAuthProvider = new GoogleAuthProvider();
-    return signInWithPopup(auth, googleAuthProvider).then(async function (result) {
+    return signInWithRedirect(auth, googleAuthProvider).then(async function (result) {
       const docRef = doc(db, 'Users', result.user.uid)
       if ((await docRef.getDoc()).exists()) {
         console.log('exists')
@@ -65,7 +68,8 @@ export function UserAuthContextProvider({ children }) {
         hasPremium: false,
         tags: {},
         canGetNotifications: true,
-        events: []
+        events: [],
+        streak: 0
       })
     })
   }

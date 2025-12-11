@@ -115,19 +115,21 @@ function App() {
         let fRequestsNamesLocal = []
         let fRequestLocal = 0
 
-        await Promise.all(
-            (data.events).map(async (event) => {
-              const eventDocRef = doc(db, "Events", event)
-              const eventData = (await getDoc(eventDocRef)).data()
-              console.log(await eventData)
-              if (eventData.status === 'pending' && eventData.sender !== user.uid) {
-                i++
-              }
-              if (eventData.newMsg === true && eventData.lastMsgSender !== user.uid){
-                i++
-              }
-            })
-        )
+        if (typeof data.events !== 'undefined'){
+          await Promise.all(
+              (data.events).map(async (event) => {
+                const eventDocRef = doc(db, "Events", event)
+                const eventData = (await getDoc(eventDocRef)).data()
+                console.log(await eventData)
+                if (eventData.status === 'pending' && eventData.sender !== user.uid) {
+                  i++
+                }
+                if (eventData.newMsg === true && eventData.lastMsgSender !== user.uid){
+                  i++
+                }
+              })
+          )
+        }
 
         await Promise.all(
           (data.FriendRequests).map(async (friend) => {
