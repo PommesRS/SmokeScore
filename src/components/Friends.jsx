@@ -10,7 +10,6 @@ import './map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
@@ -165,7 +164,7 @@ const Friends = () => {
     const [records, setRecords] = useState(searchResult)
 
     const handleSearch = async (e) => {
-      setRecords(searchResult.filter(f => f[1].toLowerCase().includes(e.target.value)))
+      setRecords(searchResult.filter(f => f[1].toLowerCase().includes(e.target.value.toLowerCase())))
     }
 
     return (
@@ -220,8 +219,12 @@ const Friends = () => {
     const friendToDelete = friends[friendIndex][0]
     console.log(friendToDelete)
     const userDocRef = doc(db, "Users", uid)
+    const friendDocRef = doc(db, "Users", friendToDelete)
     await updateDoc(userDocRef, {
       Friends: friends.filter((friend) => friend[0] !== friendToDelete).map((friend) => friend[0])
+    })
+    await updateDoc(friendDocRef, {
+      Friends: arrayRemove(user.uid)
     })
     setFriendIndex(0)
     setFriends(friends.filter((friend) => friend[0] !== friendToDelete).map((friend) => friend))
@@ -724,7 +727,7 @@ const Friends = () => {
                 ))}
               </Stack>
               <Stack mx={1} mt={0.5} direction={'row'} sx={{position: 'relative'}} alignItems={'center'} justifyContent={'space-between'} gap={2}>
-                <ArrowBackIosIcon onClick={handleStoryClose} sx={{':hover': {cursor: 'pointer'}}}/>
+                <ArrowBackIosNewIcon onClick={handleStoryClose} sx={{':hover': {cursor: 'pointer'}}}/>
                 <Typography fontSize={20} fontWeight={600} sx={{position: 'absolute', left: '50%', transform: 'translate(-50%)'}}>{sortedPics[0].name}</Typography>
                 <Stack direction={'row'} gap={2} justifyContent={'center'} alignItems={'center'}>
                   <Typography fontSize={10} fontWeight={400}>{dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') > 0 ? dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') + ' Std.' : dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'minute') + ' Min'}</Typography>
@@ -949,7 +952,7 @@ const Friends = () => {
               </Box>
           </Stack>
           <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
-            <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosIcon/></IconButton>
+            <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosNewIcon/></IconButton>
             <Stack justifyContent={'center'} alignItems={'center'} position={'relative'}>
               {friends[friendIndex][4] >= 1000 ? 
               <React.Fragment>

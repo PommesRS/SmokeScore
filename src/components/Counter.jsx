@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
+import {useNavigate} from 'react-router-dom';
 import {Container, Box, Button, Typography, Table, TableBody, 
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
   List, Dialog, Input, FormControl, IconButton,
   MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress,
-  useTheme, Stack
+  useTheme, Stack, Snackbar
 } from '@mui/material'
 import { tableCellClasses } from '@mui/material/TableCell';
 import dayjs from 'dayjs';
@@ -15,8 +16,9 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import { useUserAuth } from '../context/userAuthConfig';
-import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
 import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
 import '../index.css'
@@ -27,6 +29,7 @@ import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
 import * as maptilersdk from '@maptiler/sdk';
 import { styled } from '@mui/material/styles';
+import { Navigate } from 'react-router-dom';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -58,7 +61,7 @@ export function TextGradient({children}) {
     );
   }
 
-function Counter() {
+function Counter({callback}) {
   const [count, setCount] = useState(0)
   const [streak, setStreak] = useState(0)
   const [isExploding, setIsExploding] = useState(0)
@@ -67,6 +70,8 @@ function Counter() {
   const [bGetCoords, setBGetCoords] = useState(true)
   const [loading, setLoading] = useState(true)
   const [doesLatestCigExist, setDoesLatestCigExist] = useState(true)
+  const [badgeOpen, setBadgeOpen] = useState(false)
+  const [badgeMessage, setBadgeMessage] = useState('Neues Abzeichen Freigeschaltet!')
   //const [latestCigs, setLatestCigs] = useState([])
   const {coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
@@ -84,6 +89,7 @@ function Counter() {
   const theme = useTheme()
   const [displayWoo, setDisplayWoo] = useState('none')
   const [confettiType, setConfettiType] = useState('boom')
+  const navigate = useNavigate();
   const streakRef = useRef(null)
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
@@ -111,7 +117,6 @@ function Counter() {
     const today = dayjs();
     const preYesterday = today.subtract(2, "day");
     const date1 = dayjs(locDate.toDate())
-    console.log(Timestamp.fromDate(new Date(dayjs().subtract(1, 'day'))))
     if (date1.isSame(preYesterday, 'day')) {
       await updateDoc(docRef, {
         streak: {
@@ -136,6 +141,19 @@ function Counter() {
   async function location() {
     try {
       const results = await maptilersdk.geocoding.reverse([coords.longitude, coords.latitude]);
+      const height = await maptilersdk.elevation.at([coords.longitude, coords.latitude])
+      //const results = await maptilersdk.geocoding.reverse(['13.1431325', '52.5956696']);
+      // if (results.features.find(el => el.place_type[0] === 'municipality')) {
+      //   console.log(results.features.find(el => el.place_type[0] === 'municipality').text)
+        
+      // }else if (results.features.find(el => el.place_type[0] === 'county')) {
+      //   console.log(results.features.find(el => el.place_type[0] === 'county').text)
+      // }else if (results.features.find(el => el.place_type[0] === 'region')) {
+      //   console.log(results.features.find(el => el.place_type[0] === 'region').text)
+      // }
+      
+      //console.log(results.features.find(el => el.place_type[0] === 'region' ))
+      console.log(height)
       setNearbyStreet(results.features[0].text)
       setLocation([coords.latitude, coords.longitude,])
       setLoading(false)
@@ -165,7 +183,6 @@ function Counter() {
     const unsubscribe = onSnapshot(ref, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data().streak
-        console.log(data.lastIncrement.toDate())
         setStreak(data)
       }
     });
@@ -182,15 +199,21 @@ function Counter() {
     await incrementCounter()
     setCount(prev => prev + 1)
     setTimeout(() => setLoading(false), 500) 
-  } 
+  }
+
+  const handleBadgeAlertClose = () => {
+    setBadgeOpen(false)
+  }
 
   const incrementCounter = async () => {
     const docRef = doc(db, "Users", uID)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
     //console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
-    var buffer2 = buffer(o, 100, {units: 'meters'});
+    var buffer2 = buffer(o, 150, {units: 'meters'});
     var bbox2 = bbox(buffer2);
+    var bufferForFriendSmoke = buffer(o, 30, {units: 'meters'});
+    var bboxForFriendSmoke = bbox(bufferForFriendSmoke);
     var cigUID = generateUUID()
 
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
@@ -209,7 +232,6 @@ function Counter() {
         }
       });
       if (bCreateNew) {
-        console.log('new')
         incrementAndNewGeopoint()
         bCreateNew = false
       }
@@ -274,7 +296,6 @@ function Counter() {
           }),
           })
           .then(res => res.json())
-          .then((res) => {console.log(res)})
           .catch(console.error);
       }
     })
@@ -296,9 +317,184 @@ function Counter() {
       });
     }
 
+
+    async function badgeFlow(o) {
+      async function updateBadge(progress, level, badgeId, levelCap) {
+        await runTransaction(db, async(tx) => {
+          const docRef = doc(db, 'Users', user.uid, 'Badges', badgeId)
+          const badge = (await tx.get(docRef)).data()
+
+          if (typeof badge !== 'undefined') {
+            if (badge.level == 0 && level > 0) {
+              setBadgeOpen(true)
+              setBadgeMessage('Neues Abzeichen Freigeschaltet!')
+              console.log('new badge unlocked: ', badgeId)
+            }
+            else if(badge.level < level){
+              setBadgeOpen(true)
+              setBadgeMessage('Neues Abzeichen Level Freigeschaltet!')
+              console.log('new level on badge unlocked: ', badgeId)
+
+            }
+          }else {
+
+          }
+
+          tx.set(docRef, {
+            level: level,
+            progress: progress,
+            id: badgeId,
+            levelCap: levelCap
+          })
+        })
+      }
+
+      await runTransaction(db, async (tx) => {
+
+        const statRef = doc(db, "Users", user.uid, 'Stats', 'main')
+        const userRef = doc(db, "Users", user.uid)
+        const stats = (await tx.get(statRef)).data()
+        const friends = (await tx.get(userRef)).data().Friends
+        
+        const height = await maptilersdk.elevation.at([o.geometry.coordinates[1], o.geometry.coordinates[0]])
+        const smokeMetaData = await maptilersdk.geocoding.reverse([o.geometry.coordinates[1], o.geometry.coordinates[0]])
+        var city
+        if (smokeMetaData.features.find(el => el.place_type[0] === 'municipality')) {
+          city = smokeMetaData.features.find(el => el.place_type[0] === 'municipality').text
+        }else if (smokeMetaData.features.find(el => el.place_type[0] === 'county')) {
+          city = smokeMetaData.features.find(el => el.place_type[0] === 'county').text
+        }else if (smokeMetaData.features.find(el => el.place_type[0] === 'region')) {
+          city = smokeMetaData.features.find(el => el.place_type[0] === 'region').text
+        }
+
+        //const city = smokeMetaData.features.filter(el => {return el.place_type[0] === 'city'})[0].text
+        const country = smokeMetaData.features.filter(el => {return el.place_type[0] === 'country'})[0].text
+        
+        const isNewHeight = height[2] >= 150
+        const isNewCity = !stats?.visitedCities?.includes(city)
+        const isNewCountry = !stats?.visitedCountries?.includes(country)
+        const isNightCig = dayjs().format('HH') > 16 || dayjs().format('HH') < 5
+        console.log(stats)
+
+        let isNewFriendStat = false;
+        let friendStatArr = [];
+        let friendName;
+
+        for (const friend of friends) {
+          const friendData = (await tx.get(doc(db, "Users", friend))).data();
+          const friendLatestCigs = friendData.latestCigs;
+          friendName = friendData.displayName;
+
+          for (const point of friendLatestCigs) {
+            const lat = point.geoLocation._lat;
+            const lng = point.geoLocation._long;
+
+            const isInBBox =
+              bbox2[2] > lat &&
+              lat > bbox2[0] &&
+              bbox2[3] > lng &&
+              lng > bbox2[1];
+
+            const isRecent = dayjs(point.timestamp.toDate()).isAfter(
+              dayjs().subtract(5, "hours")
+            );
+
+            if (isInBBox && isRecent) {
+              isNewFriendStat = true;
+
+              if (!friendStatArr.includes(friendName)) {
+                friendStatArr.push(friendName);
+              }
+
+              break; // optional: wenn ein Treffer reicht
+            }
+          }
+        }
+
+        console.log(isNewFriendStat, friendStatArr)
+
+        if (typeof stats === 'undefined') {
+          tx.set(statRef, {
+            visitedCities: isNewCity ? [city] : [],
+            visitedCountries: isNewCountry ? [country] : [],
+            nightCigs: isNightCig ? 1 : 0,
+            withFriend: isNewFriendStat ? {friends: [...friendStatArr], amount: 1} : {friends: [], amount: 0},
+            over150M: isNewHeight ? 1 : 0 
+          })
+        }else{
+          tx.set(statRef, {
+            visitedCities: isNewCity ? [...stats?.visitedCities, city] : stats?.visitedCities,
+            visitedCountries: isNewCountry ? [...stats?.visitedCountries, country] : stats?.visitedCountries,
+            nightCigs: isNightCig ? stats?.nightCigs + 1 : stats?.nightCigs,
+            withFriend: typeof stats?.withFriend !== 'undefined' ? isNewFriendStat ? {friends: !stats?.withFriend?.friends?.includes(friendName) ? [...stats?.withFriend?.friends, friendName] : stats?.withFriend?.friends, amount: stats?.withFriend?.amount + 1} : stats?.withFriend : isNewFriendStat ? {friends: [...friendStatArr], amount: 1} : {friends: [], amount: 0},
+            over150M: typeof stats?.over150M !== 'undefined' ? isNewHeight ? stats?.over150M + 1 : stats?.over150M : isNewHeight ? 1 : 0
+          })
+        }
+
+        
+      })
+
+      await runTransaction(db, async (tx) => {
+        const docRef = doc(db, "Users", user.uid, 'Stats', 'main')
+        const statsNew = (await tx.get(docRef)).data()
+
+        const badgeSnap = await getDocs(collection(db, "Badges"))
+        
+        badgeSnap.forEach((doc) => {
+          const badge = doc.data()
+          const criteriaField = badge.criteriaField
+
+          
+          let criteriaFieldValue 
+          if (criteriaField.includes('.')) {
+            const criteriaFieldPath = criteriaField.split('.')
+            criteriaFieldValue = typeof statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] === 'number' ? statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] : statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]].length
+          }else{
+
+            criteriaFieldValue = typeof statsNew[criteriaField] === 'number' ? statsNew[criteriaField] : statsNew[criteriaField].length 
+          }
+
+
+          let newBadgeLevel = 0
+
+          badge.levels.forEach((level) => {
+            if (criteriaFieldValue >= level.value) {
+              newBadgeLevel = level.level
+            }
+          })
+          //console.log(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value )
+
+          if (criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue < badge.levels[badge.levels.length - 1].value) {
+            const progressSinceLevelUp = criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
+            const progressNeededForLevelUp = badge.levels[newBadgeLevel > 0 ? newBadgeLevel : 0].value - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
+            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
+            const badgeLevel = newBadgeLevel
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }else if (!newBadgeLevel){
+            const progressSinceLevelUp = criteriaFieldValue
+            const progressNeededForLevelUp = badge.levels[newBadgeLevel].value
+            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
+            const badgeLevel = newBadgeLevel
+
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }else if(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue >= badge.levels[badge.levels.length - 1].value) {
+            const progress = 0
+            const badgeLevel = newBadgeLevel
+
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }
+        })
+      })
+
+        
+      
+    }
+
+
+    
+
     async function addToHistory(cigID) {
       const history = (await getDoc(docRef)).data().latestCigs
-      console.log(history.length)
 
       if (history.length == 5) {
           history.pop()
@@ -306,7 +502,6 @@ function Counter() {
             geoLocation : geopoint,
             id: cigID,
             timestamp: Timestamp.fromDate(new Date())}].concat(history)
-          console.log(newHistory)
           await updateDoc(docRef, {
             latestCigs: newHistory
           })
@@ -326,7 +521,6 @@ function Counter() {
         id: cigID,
         timestamp: Timestamp.fromDate(new Date())}].concat(history)
 
-      console.log(newHistory)
       await updateDoc(docRef, {
         // latestCigs: arrayUnion({
         //                 geoLocation : geopoint,
@@ -350,6 +544,7 @@ function Counter() {
       })
       addToHistory(cigUID)
       incrementMonthStat()
+      badgeFlow(o)
     }
 
     async function incrementAndUpdateGeopoint(index) {
@@ -360,6 +555,7 @@ function Counter() {
       })
       addToHistory(geoLocationsSnapshot[index].id)
       incrementMonthStat()
+      badgeFlow(o)
     }
 
     async function incrementMonthStat(params) {
@@ -371,7 +567,6 @@ function Counter() {
       if(!monthsData){
         var monthArray = [0,0,0,0,0,0,0,0,0,0,0,0]
         monthArray[getMonth(new Date())] += 1
-        console.log(monthArray)
 
         await setDoc(monthDocRef, {
           months: monthArray
@@ -445,7 +640,6 @@ function Counter() {
     const geoLocationsSnapshot = (await getDoc(docRef)).data().geoLocations
     var geoLocIndex = null
 
-    console.log(latestCigsLocal[0])
     
 
     geoLocationsSnapshot.forEach((element, i) => {
@@ -483,7 +677,7 @@ function Counter() {
         days : daysArr
     })
 
-    console.log(latestCigsLocal)
+
 
     setCount(count - 1)
     await updateDoc(docRef, {
@@ -616,11 +810,11 @@ function Counter() {
     const formJson = Object.fromEntries(formData.entries());
     const price = Number(formJson.email.slice(0,5).replace(',', '.'));
     const product = formJson.product;
-    console.log(price, product);
+
 
     const docRef = doc(db, "Users", uID)
     historyArr.unshift({name: product, price: price, date: Timestamp.fromDate(new Date())})
-    console.log(historyArr)
+
 
     calculateTotalSpendAmount(price)
     appendToHistory(docRef)
@@ -657,11 +851,27 @@ function Counter() {
 
   const handleChange = (event) => {
     setProduct(event.target.value || '');
-    console.log(event.target.value)
+
   }
 
   return (
     <>
+      <Snackbar
+        open={badgeOpen}
+        onClose={handleBadgeAlertClose}
+        message={
+          <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} justifyContent={'space-between'} sx={{width: '100%'}}>
+            <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} sx={{color: theme.palette.text.primary}}>
+              <MilitaryTechIcon/>  {badgeMessage}
+            </Stack>
+            <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/stats'); callback()}}>ansehen</Button>
+          </Stack>
+        }
+        autoHideDuration={5000}
+        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+        sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
+        />
+
       <AddPurchase></AddPurchase>
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>

@@ -9,7 +9,7 @@ import {
   Paper,
   Popper,
   ClickAwayListener,
-  Grid2
+  Grid
 } from '@mui/material'
 import { Check, Add } from '@mui/icons-material'
 import { LineChart, lineElementClasses, markElementClasses } from '@mui/x-charts/LineChart'
@@ -88,22 +88,22 @@ const Style = () => {
 
       <ClickAwayListener onClickAway={handleClose}>
         <Stack direction="row" spacing={5} justifyContent="center">
-          <Grid2 container spacing={5} justifyContent="center">
-            <Grid2 item>
+          <Grid container spacing={5} justifyContent="center">
+            <Grid item>
               <ColorButton onClick={() => {setThemeName('blue'); handleClose()}} uID="blue" color="#53b0ee" selected={themeName === 'blue'} />
-            </Grid2>
-            <Grid2 item>
+            </Grid>
+            <Grid item>
               <ColorButton onClick={() => {setThemeName('green'); handleClose()}} uID="green" color="#187" selected={themeName === 'green'} />
-            </Grid2>
-            <Grid2 item>
+            </Grid>
+            <Grid item>
               <ColorButton onClick={() => {setThemeName('sunset'); handleClose()}} uID="sunset" color="#C7784A" selected={themeName === 'sunset'} />
-            </Grid2>
+            </Grid>
           
           
           
 
           {/* Popper-Button 1 */}
-          <Grid2 item>
+          <Grid item>
             <Box position="relative">
               <ColorButton
                 onClick={handlePopperToggle('purple')}
@@ -144,7 +144,7 @@ const Style = () => {
               </Popper>
           </Box>
 
-          </Grid2>
+          </Grid>
 
           {/* Popper-Button 2 */}
             <Box position="relative">
@@ -186,7 +186,7 @@ const Style = () => {
                 </Paper>
               </Popper>
             </Box>
-          </Grid2>
+          </Grid>
         </Stack>
       </ClickAwayListener>
 

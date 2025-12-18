@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, 
-  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support } from './index.js';
+  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support, Badges } from './index.js';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -11,6 +11,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import MenuIcon from '@mui/icons-material/Menu';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider } from '@mui/material';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
@@ -78,10 +79,11 @@ function App() {
   let uID;
 
   const getSubscriptionStatus = async () => {
-    const docRef = doc(db, "Users", user.uid)
-    if ((await getDoc(docRef)).data().hasPremium) {
-      setSubscriptionStatus(true)
-    } 
+    // const docRef = doc(db, "Users", user.uid)
+    // if ((await getDoc(docRef)).data().hasPremium) {
+    //   setSubscriptionStatus(true)
+    // }
+    setSubscriptionStatus(true) 
   }
 
   useEffect(() => {
@@ -108,9 +110,7 @@ function App() {
 
     const unsubscribe = onSnapshot(ref, async (snapshot) => {
     if (snapshot.exists()) {
-        console.log("Current data: ", snapshot.data());
         const data = snapshot.data()
-        console.log(data.events)
         let i = 0
         let fRequestsNamesLocal = []
         let fRequestLocal = 0
@@ -120,7 +120,7 @@ function App() {
               (data.events).map(async (event) => {
                 const eventDocRef = doc(db, "Events", event)
                 const eventData = (await getDoc(eventDocRef)).data()
-                console.log(await eventData)
+
                 if (eventData.status === 'pending' && eventData.sender !== user.uid) {
                   i++
                 }
@@ -136,7 +136,7 @@ function App() {
             const friendDocRef = doc(db, "Users", friend)
             const friendData = (await getDoc(friendDocRef)).data()
             fRequestsNamesLocal.push({displayName: friendData.displayName, uid: friend})
-            console.log(fRequestsNamesLocal)
+
             fRequestLocal++
           })
         )
@@ -152,13 +152,9 @@ function App() {
   }, [user?.uid])
 
   const saveFCMToken = async () => {
-    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hK'})
+    navigator.serviceWorker.getRegistrations().then(r => console.log(r))
 
-    try {
-      uID = await user.uid
-    } catch (error) {
-
-    }
+    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
 
     if (!user) {
     console.warn("Kein eingeloggter Benutzer");
@@ -167,7 +163,7 @@ function App() {
 
 
     try {
-      const tokenRef = doc(db, 'Users', uID);
+      const tokenRef = doc(db, 'Users', user.uid);
       await updateDoc(tokenRef, {
         fcmToken: token
       });
@@ -202,7 +198,6 @@ function App() {
       await updateDoc(docRef, {
         FriendRequests: arrayRemove(friend)
       })
-      console.log(fRequestsNames.indexOf(friend))
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
       setfRequestsNames(fRequestsNames.splice(fRequestsNames.indexOf(friend)))
       setFRequests(fRequests - 1)
@@ -231,7 +226,7 @@ function App() {
         FriendRequests: arrayRemove(friend)
       })
 
-      console.log(fRequestsNames.indexOf(friend))
+
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
 
       console.log(fRequestsNames)
@@ -294,7 +289,6 @@ function App() {
   };
 
 
-
   const DrawerList = (
     <Box sx={{width: 250, height: '100vh', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
@@ -326,13 +320,14 @@ function App() {
   const handleLogout = async () => {
     try {
       await logOut()
+      return <Navigate to='/login'/>
     } catch (error) {
       console.log(error.message)
     }
   }
 
   function handleNavigate(to){
-    return <Navigate to='/tracker'/>
+    return <Navigate to={to}/>
   }
 
   const handlePopupClose = () => {
@@ -343,6 +338,11 @@ function App() {
     setOpenEventPopup(true)
     console.log(openEventPopup)
   }
+
+  const callBack = () => {
+    setValue('stats')
+  }
+
 
   return (
     <>
@@ -440,14 +440,15 @@ function App() {
           <Route path='/about' element={<ProtectedRoute><About/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/> */}
 
-          <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
+          <Route path='/tracker' element={<ProtectedRoute><Counter callback={callBack}/></ProtectedRoute>}/>
           <Route path='/stats' element={<ProtectedRoute><Stats displayName={'Stats'}/></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Friends displayName={'Friends'}/></ProtectedRoute>}/>
-          <Route path='/map' element={<ProtectedRoute><Map displayName={'Map'}/></ProtectedRoute>}/>
+          <Route path='/map' element={<ProtectedRoute><Map callback={callBack} displayName={'Map'}/></ProtectedRoute>}/>
           <Route path='/style' element={<ProtectedRoute><Style/></ProtectedRoute>}/>
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
           <Route path='/support' element={<ProtectedRoute><Support/></ProtectedRoute>}/>
+          <Route path='/badges' element={<ProtectedRoute><Badges metaData={{level: 1, progression: 4}}/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

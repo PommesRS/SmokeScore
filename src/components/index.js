@@ -20,6 +20,7 @@ import Events from "./Events";
 import CameraCapture from "./CameraCapture";
 import Support from "./Support";
 import ImageEditor from './ImageEditor';
+import Badges from "./Badges";
 
 export{
     App,
@@ -43,5 +44,6 @@ export{
     Events,
     CameraCapture,
     Support,
-    ImageEditor
+    ImageEditor,
+    Badges
 }
