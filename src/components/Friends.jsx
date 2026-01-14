@@ -295,6 +295,7 @@ const Friends = () => {
       const currentPics = (await getDoc(docRef)).data().currentPics
       const isExcluded = (await getDoc(docRef)).data().excludeMoments?.includes(user.uid)
       const streakAmount = (await getDoc(docRef)).data().streak?.amount
+      const fcmToken = (await getDoc(docRef)).data().fcmToken
       let street
 
       locations.sort((a,b) => {
@@ -307,7 +308,7 @@ const Friends = () => {
       }
 
 
-      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount])
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount, fcmToken])
     }))
 
     setFriends(cacheFriends)
@@ -977,47 +978,65 @@ const Friends = () => {
           </Stack> */}
           {friends.length > 0 ?
             <LineChart
-              grid={{ horizontal: false }}
               series={[
                   {
-                    id:'',
+                    id:'main',
                     label: 'Du',
                     data: ownStats,
                     area: true,
+                    showMark: false,
+                    yAxisId: 'main',
+                    color: theme.palette.primary.main
                   },
                   {
+                    id: 'friend',
                     label: friends[friendIndex][1],
                     data: friends[friendIndex][2] ? friends[friendIndex][2].days : [0,0,0,0,0,0,0],
                     area: true,
+                    showMark: false,
+                    yAxisId: 'friend',
+                    color: theme.palette.secondary.main
                   }
                   ]}
-              slotProps={{
-                legend: {
-                  hidden: 'true'
-                },
-                popper: {
-                  placement: 'top'
-                }
-              }}
               margin={{
                   top: 10,
                   bottom: 20,
+                  left: -20,
+                  right: 0
                   }}
               yAxis={[
+                // {
+                //     // colorMap:
+                //     // {
+                //     //   type: 'continuous',
+                //     //   min: 0,
+                //     //   max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
+                //     //   color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
+                //     // }
+                // },
                 {
-                    colorMap:
-                    {
-                      id: '',
-                      type: 'continuous',
-                      min: 0,
-                      max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
-                      color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
-                    }
+                  id: 'main',
+                  colorMap: {
+                    type: 'continuous',
+                    min: 0,
+                    max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
+                    color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
+                  },
+                },
+                {
+                  id: 'friend',
+                  colorMap: {
+                    type: 'continuous',
+                    min: 0,
+                    max: 1,
+                    color:  [theme.palette.secondary.transparent02, theme.palette.secondary.transparent05],
+                  },
                 },
               ]}
               xAxis={[
                   {
-                      scaleType: 'band',
+                      zoom: true,
+                      scaleType: 'point',
                       data: [
                           'Mo',
                           'Di',
@@ -1034,33 +1053,18 @@ const Friends = () => {
                   pointerEvents: 'all',
                   borderRadius: 4,
                   py: 0,
+                  width: '100%',
                   //change left yAxis label styles
-                  "& .MuiAreaElement-root":{
-                      pointerEvents: 'all'
-                  },
-                  "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
-                      strokeWidth: 0.4,
-                      fill:"#ffff"
-                  },
+
+
                   // change all labels fontFamily shown on both xAxis and yAxis
-                  "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
-                  fontFamily: "Roboto",
-                  },
+
                   // change bottom label styles
-                  "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
-                      strokeWidth:"0.5",
-                      fill:"#ffff",
-                  },
+
                   // bottomAxis Line Styles
-                  "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
-                  stroke:"#ffff",
-                  strokeWidth:0
-                  },
+
                   // leftAxis Line Styles
-                  "& .MuiChartsAxis-left .MuiChartsAxis-line":{
-                  stroke:"#22",
-                  strokeWidth: 0
-                  },
+
                   "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
                   stroke:"#ffff",
                   strokeWidth: 0
@@ -1073,23 +1077,20 @@ const Friends = () => {
                       stroke: '#222',
                       strokeWidth: 0
                   },
-                  "& .MuiChartsAxis-directionX": {
-                      stroke: '#fff',
-                      strokeWidth: 1
-                  },
+
                   "& .MuiChartsAxisHighlight-root": {
                       stroke: '#fff',
                   },
-                  [`& .${lineElementClasses.root}`]: {
+                  "& .MuiLineElement-series-main": {
+                      stroke: theme.palette.primary.main,
+                  },
+                  "& .MuiLineElement-series-friend": {
+                      stroke: theme.palette.secondary.main,
+                  },
+                  [`& .${lineElementClasses.series.main}`]: {
                       stroke: theme.palette.primary.main,
                       strokeWidth: 2,
                   },
-                  [`& .${markElementClasses.root}`]: {
-                      stroke: theme.palette.primary.main,
-                      scale: '0.6',
-                      fill: 'transparent',
-                      strokeWidth: 0,
-                  }
               }}
             />
           :

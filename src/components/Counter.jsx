@@ -99,7 +99,7 @@ function Counter({callback}) {
   const { user } = useUserAuth();
 
   const uID = user.uid;
-  
+
 
   const initiateCounter = async () => {
     const docRef = doc(db, "Users", uID)
@@ -107,7 +107,7 @@ function Counter({callback}) {
     if (!(await getDoc(docRef)).data()) {
       await setDoc(doc(db, 'Users', uID), {
         counter: 0
-      })
+      }, {merge: true})
     }else{
       setCount((await getDoc(docRef)).data().counter)
     }
@@ -153,7 +153,6 @@ function Counter({callback}) {
       // }
       
       //console.log(results.features.find(el => el.place_type[0] === 'region' ))
-      console.log(height)
       setNearbyStreet(results.features[0].text)
       setLocation([coords.latitude, coords.longitude,])
       setLoading(false)
@@ -171,7 +170,6 @@ function Counter({callback}) {
   
   useEffect(() => {
     location()
-    
   }, [coords])
 
   useEffect(() => {
@@ -183,7 +181,9 @@ function Counter({callback}) {
     const unsubscribe = onSnapshot(ref, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data().streak
+        const count = snapshot.data().counter
         setStreak(data)
+        setCount(count)
       }
     });
     
@@ -197,7 +197,7 @@ function Counter({callback}) {
 
     setLoading(true)
     await incrementCounter()
-    setCount(prev => prev + 1)
+    //setCount(prev => prev + 1)
     setTimeout(() => setLoading(false), 500) 
   }
 
@@ -355,6 +355,7 @@ function Counter({callback}) {
         const userRef = doc(db, "Users", user.uid)
         const stats = (await tx.get(statRef)).data()
         const friends = (await tx.get(userRef)).data().Friends
+        const latestCigs = (await tx.get(userRef)).data().latestCigs
         
         const height = await maptilersdk.elevation.at([o.geometry.coordinates[1], o.geometry.coordinates[0]])
         const smokeMetaData = await maptilersdk.geocoding.reverse([o.geometry.coordinates[1], o.geometry.coordinates[0]])
@@ -382,12 +383,15 @@ function Counter({callback}) {
 
         for (const friend of friends) {
           const friendData = (await tx.get(doc(db, "Users", friend))).data();
-          const friendLatestCigs = friendData.latestCigs;
-          friendName = friendData.displayName;
+          const friendStats = (await tx.get(doc(db, "Users", friend, 'Stats', 'main'))).data();
+          const friendLastPos = friendData.lastKnownPos;
+          friendName = friend;
 
-          for (const point of friendLatestCigs) {
-            const lat = point.geoLocation._lat;
-            const lng = point.geoLocation._long;
+          console.log(friendLastPos)
+          if(typeof friendLastPos !== 'undefined'){
+            const lat = friendLastPos._lat;
+            const lng = friendLastPos._long;
+
 
             const isInBBox =
               bbox2[2] > lat &&
@@ -395,20 +399,16 @@ function Counter({callback}) {
               bbox2[3] > lng &&
               lng > bbox2[1];
 
-            const isRecent = dayjs(point.timestamp.toDate()).isAfter(
-              dayjs().subtract(5, "hours")
-            );
-
-            if (isInBBox && isRecent) {
+            if (isInBBox) {
               isNewFriendStat = true;
 
               if (!friendStatArr.includes(friendName)) {
                 friendStatArr.push(friendName);
               }
-
-              break; // optional: wenn ein Treffer reicht
             }
           }
+
+
         }
 
         console.log(isNewFriendStat, friendStatArr)
@@ -430,8 +430,6 @@ function Counter({callback}) {
             over150M: typeof stats?.over150M !== 'undefined' ? isNewHeight ? stats?.over150M + 1 : stats?.over150M : isNewHeight ? 1 : 0
           })
         }
-
-        
       })
 
       await runTransaction(db, async (tx) => {
@@ -450,8 +448,7 @@ function Counter({callback}) {
             const criteriaFieldPath = criteriaField.split('.')
             criteriaFieldValue = typeof statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] === 'number' ? statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] : statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]].length
           }else{
-
-            criteriaFieldValue = typeof statsNew[criteriaField] === 'number' ? statsNew[criteriaField] : statsNew[criteriaField].length 
+            criteriaFieldValue = typeof statsNew[criteriaField] === 'number' ? statsNew[criteriaField] : statsNew[criteriaField].length
           }
 
 
@@ -462,7 +459,7 @@ function Counter({callback}) {
               newBadgeLevel = level.level
             }
           })
-          //console.log(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value )
+          console.log(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value )
 
           if (criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue < badge.levels[badge.levels.length - 1].value) {
             const progressSinceLevelUp = criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
@@ -480,7 +477,7 @@ function Counter({callback}) {
           }else if(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue >= badge.levels[badge.levels.length - 1].value) {
             const progress = 0
             const badgeLevel = newBadgeLevel
-
+            const progressNeededForLevelUp = 0
             updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
           }
         })
@@ -535,7 +532,7 @@ function Counter({callback}) {
 
     async function incrementAndNewGeopoint(params) {
       await updateDoc(docRef, {
-        counter: increment(1),
+        counter: count + 1,
         geoLocations: arrayUnion({
                         amount: 1,
                         point : geopoint,
@@ -550,7 +547,7 @@ function Counter({callback}) {
     async function incrementAndUpdateGeopoint(index) {
       geoLocationsSnapshot[index].amount += 1
       await updateDoc(docRef, {
-        counter: increment(1),
+        counter: count + 1,
         geoLocations: geoLocationsSnapshot
       })
       addToHistory(geoLocationsSnapshot[index].id)
@@ -911,12 +908,12 @@ function Counter({callback}) {
       {/* Ausgabentracker */}
 
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
-        <Typography variant='h2' fontWeight={500}>Kaufhistorie</Typography>
+        <Typography variant='h3' fontWeight={500}>Kaufhistorie</Typography>
         <br />
         { historyArr?.length > 0 ? 
 
         
-        <TableContainer sx={{ background: theme.palette.background.chartGradient, border: 0, marginBottom: 10, color: 'var(--color)', boxShadow: '4px 4px 28px 8px rgba(0,0,0,0.41)'}}>
+        <TableContainer sx={{ background: theme.palette.background.gradient, border: 0, marginBottom: 10, color: 'var(--color)', boxShadow: '4px 4px 28px 8px rgba(0,0,0,0.41)'}}>
           <Table sx={{ Width: 650}} aria-label="simple table">
             <TableHead>
               <TableRow >
@@ -973,49 +970,17 @@ function Counter({callback}) {
         </TableContainer> 
         : 
         
-        <TableContainer component={Paper} elevation={5} sx={{background: 'linear-gradient(180deg, rgba(19, 8, 58, 0.5), rgba(170, 20, 240, 0))', filter: 'blur(0px)', border: 0}}>
+        <TableContainer component={Paper} elevation={5} sx={{background: theme.palette.background.chartGradient, filter: 'blur(0px)', border: 0}}>
           <Table aria-label="simple table">
             <TableBody>
               <TableRow>
-                <TableCell align='center' colSpan={3}><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: 'var(--button-gradient)'}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
+                <TableCell align='center'><Button sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={pAddDialogOpen}><AddIcon fontSize='large'/></Button></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
-                <TableCell sx={{borderBottom: 'none'}}></TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell colSpan={3} sx={{borderBottom: 'none'}} align='center'>Du hast noch keine Kaufhistorie. Erstelle noch heute deinen ersten eintrag!</TableCell>
+                <TableCell  sx={{borderBottom: 'none', height: 120}} align='center'>Du hast noch keine Kaufhistorie. <br /> Erstelle oben deinen ersten Eintrag!</TableCell>
               </TableRow>
             </TableBody>
           </Table>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={0} // alle Einträge
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Zeilen pro Seite"
-          />
-
-           <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              p: 2,
-              background: "rgba(0,0,0,0.1)",
-              borderTop: "1px solid rgba(255,255,255,0.1)"
-            }}
-          >
-            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-              Insgesamt Ausgeben:
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-              0 €
-            </Typography>
-          </Box>
         </TableContainer> 
 }   
       </Box>

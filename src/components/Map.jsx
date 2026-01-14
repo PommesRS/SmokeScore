@@ -158,7 +158,7 @@ const Map = (props) => {
       ownMarker.style.height = '20px';
       
       try{
-        locMarker.current = new maptilersdk.Marker({element: ownMarker, draggable:true})
+        locMarker.current = new maptilersdk.Marker({element: ownMarker})
         .setLngLat([coords?.longitude, coords?.latitude])
         .addTo(map.current)
 
@@ -396,26 +396,25 @@ const Map = (props) => {
         })
         //console.log(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value )
 
-        if (criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue < badge.levels[badge.levels.length - 1].value) {
-          const progressSinceLevelUp = criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
-          const progressNeededForLevelUp = badge.levels[newBadgeLevel > 0 ? newBadgeLevel : 0].value - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
-          const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
-          const badgeLevel = newBadgeLevel
+          if (criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue < badge.levels[badge.levels.length - 1].value) {
+            const progressSinceLevelUp = criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
+            const progressNeededForLevelUp = badge.levels[newBadgeLevel > 0 ? newBadgeLevel : 0].value - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
+            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
+            const badgeLevel = newBadgeLevel
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }else if (!newBadgeLevel){
+            const progressSinceLevelUp = criteriaFieldValue
+            const progressNeededForLevelUp = badge.levels[newBadgeLevel].value
+            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
+            const badgeLevel = newBadgeLevel
 
-          updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-        }else if (!newBadgeLevel){
-          const progressSinceLevelUp = criteriaFieldValue
-          const progressNeededForLevelUp = badge.levels[newBadgeLevel].value
-          const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
-          const badgeLevel = newBadgeLevel
-
-          updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-        }else if(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue >= badge.levels[badge.levels.length - 1].value) {
-          const progress = 0
-          const badgeLevel = newBadgeLevel
-
-          updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-        }
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }else if(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue >= badge.levels[badge.levels.length - 1].value) {
+            const progress = 0
+            const badgeLevel = newBadgeLevel
+            const progressNeededForLevelUp = 0
+            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
+          }
       })
     })
   }

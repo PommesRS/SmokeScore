@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { useTheme } from '@mui/material/styles';
 import { LineChart } from '@mui/x-charts/LineChart';
-import {Container, Box, Button, Typography, List, Tabs, Tab, Stack, Paper} from '@mui/material';
+import {Container, Box, IconButton, Typography, List, Tabs, Tab, Stack, Paper} from '@mui/material';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import {TabContext, TabPanel, TabList} from '@mui/lab'
-import { ResponsiveChartContainer } from '@mui/x-charts';
 import {
     lineElementClasses,
     markElementClasses,
@@ -11,9 +14,11 @@ import {
 import { db } from '../firebase';
 import { collection, doc, getDoc, getDocs } from "@firebase/firestore";
 import { useUserAuth } from '../context/userAuthConfig';
-import { startOfWeek, endOfWeek, format, getYear } from 'date-fns'
+import { startOfWeek, endOfWeek, format, getYear, subDays, min, set } from 'date-fns'
 import { Badges } from './index.js'
 import { grey } from '@mui/material/colors';
+import dayjs from 'dayjs';
+import { HighlightTwoTone } from '@mui/icons-material';
 
 const chartBottomColor = getComputedStyle(document.documentElement)
       .getPropertyValue("--chart-bottom")
@@ -30,7 +35,14 @@ const Stats = () => {
     const [initiateMonth, setInitiateMonth] = useState(true)
     const [badges, setBadges] = useState(null)
     const [tabValue, setTabValue] = useState('1')
-
+    const [data, setData] = useState(weeklyData)
+    const [dataType, setDataType] = useState('loading')
+    const [changePercent, setChangePercent] = useState('0')
+    const [weeklyTotal, setWeeklyTotal] = useState(null)
+    const [prevWeeklyTotal, setPrevWeeklyTotal] = useState(null)
+    const [hoveredPoint, setHoveredPoint] = useState(null)
+    let hoveredPointCache = null
+    
     const { user } = useUserAuth()
     const theme = useTheme()
 
@@ -44,9 +56,26 @@ const Stats = () => {
         var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
         endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
         
+        var startOfPrevWeek = startOfWeek(subDays(new Date(), 7), {weekStartsOn: 1})
+        startOfPrevWeek = format(startOfPrevWeek, 'dd.MM.yy')
+        var endOfPrevWeek = endOfWeek(subDays(new Date(), 7), {weekStartsOn: 1})
+        endOfPrevWeek = format(endOfPrevWeek, 'dd.MM.yy')
+
+        const prevWeek = startOfPrevWeek + '-' + endOfPrevWeek
+
         try {
             const docRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
-            setWeeklyData((await getDoc(docRef)).data().days)            
+            const prevWeekDocRef = doc(db, "Users", uid, 'weekly', prevWeek)
+            const weeklyData = (await getDoc(docRef)).data().days
+            
+            const weeklyTotal = weeklyData?.reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+            setWeeklyTotal(weeklyTotal)
+            setWeeklyData(weeklyData)   
+            setData((await getDoc(docRef)).data().days)
+            if(!prevWeekDocRef) return
+            const prevWeekData = (await getDoc(prevWeekDocRef)).data().days 
+            const prevWeekTotal = prevWeekData?.reduce((accumulator, currentValue) => accumulator + currentValue, 0) 
+            setPrevWeeklyTotal(prevWeekTotal) 
         } catch (error) {
             console.log(error)
 
@@ -64,10 +93,32 @@ const Stats = () => {
         try {
             const docRef = doc(db, "Users", uid, 'monthly', `${year}`)
             setMonthlyData((await getDoc(docRef)).data().months)
+            setData(monthlyData)
+            setDataType('Wöchentlich')
         } catch (error) {
             return
         }
 
+    }
+
+    function calcChangePercent(params) {
+        let prevDataPoint
+        let currentDataPoint
+        if (dataType === 'Wöchentlich') {
+            const currentDay = dayjs().day()
+            console.log(prevWeeklyTotal)
+            if (prevWeeklyTotal) {
+                setChangePercent(Math.round(((weeklyTotal - prevWeeklyTotal) / prevWeeklyTotal) * 100))
+            }
+            setData(weeklyData)
+        }else {
+            const currentMonth = dayjs().month()
+            prevDataPoint = !hoveredPoint ? monthlyData[currentMonth - 1] == 0 ? 1 : monthlyData[currentMonth - 1] : monthlyData[hoveredPoint[0].dataIndex - 1]
+            currentDataPoint = monthlyData[currentMonth - 1] == 0 ? monthlyData[currentMonth] + 1 : monthlyData[currentMonth]
+            console.log(currentDataPoint)
+            setChangePercent(Math.round(((currentDataPoint - prevDataPoint) / prevDataPoint) * 100))
+            setData(monthlyData)
+        }
     }
 
     async function getBadges() {
@@ -109,6 +160,10 @@ const Stats = () => {
         getBadges()
     }, [user])
 
+    useEffect(() => {
+        calcChangePercent()
+    }, [dataType, prevWeeklyTotal, hoveredPoint])
+
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue)
     }
@@ -125,11 +180,141 @@ const Stats = () => {
         badge => badge.level > 0 && (badge.id === 'notalone')
     );
 
+    const handleChartChange = (newValue) => {
+        console.log('huso')
+        setDataType(newValue)
+        if (newValue === 'Monatlich') {
+            setData(monthlyData)
+        }else {
+            setData(weeklyData)
+        }
+    }
+
   return (
      <>
-        <Box height={'100%'} pt={8} mb={10} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: 5, left: '50%', translate: '-50%', borderRadius: '10px'}}}>Abzeichen</Typography>
-            <Typography color={grey[500]} variant='h10' textAlign={'center'}>Hier werden gesammelte abzeichen angezeigt!</Typography>
+        <Box height={'100%'} pt={8} mb={5} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+
+            <Stack height={'60vh'} width={'100%'} mt={2} alignItems={'center'} justifyContent={'space-between'} gap={1} >
+
+                <Stack alignItems={'center'}>
+                    <Typography color={grey[500]}>{dataType === 'Wöchentlich' ? 'Wochensumme' : 'Monatssumme'}</Typography>
+                    <Stack direction={'row'} gap={1} position={'relative'}>
+                        <Typography color={theme.palette.background.default} fontWeight={500}>Kippen</Typography>
+                        <Typography sx={{fontWeight: 500, fontSize: '30pt', position: 'relative', lineHeight: 1}}>{dataType === 'Wöchentlich' ? weeklyTotal : hoveredPoint ? monthlyData[hoveredPoint[0].dataIndex] : monthlyData[dayjs().month()]}</Typography>
+                        <Typography alignSelf={'flex-end'} color={grey[500]} fontWeight={500}>Kippen</Typography>
+                    </Stack>
+                </Stack>
+
+                <Stack display={'flex'} alignItems={'center'}>
+                    <Typography color={grey[500]}>{dataType === 'Wöchentlich' ? 'Vergleich zu letzte Woche' : hoveredPoint ? 'Vergleich zu ausgewähltem Monat' : 'Vergleich zu letztem Monat'}</Typography>
+                    <Paper sx={{px: 1, py: 0.5, display: 'flex', gap: 1, }}>
+                        {changePercent >= 0 ? 
+                            (
+                                <TrendingUpIcon sx={{color: 'green'}} color='green' />
+                            ) 
+                        : 
+                            (
+                                <TrendingDownIcon sx={{color: 'red'}} color='red'/>
+                            )
+                        }
+                        <Typography sx={{color: changePercent >= 0 ? 'green' : 'red'}}>{changePercent}%</Typography>                    
+                    </Paper>
+
+                </Stack>
+
+                <LineChart
+                    series={[
+                        {
+                            data: data,
+                            area: true,
+                            showMark: false,
+                        }
+                    ]}
+                    margin={{
+                        top: 10,
+                        bottom: 0,
+                        right: 20,
+                        left: 0
+                        }}
+                    yAxis={[
+                        {
+                            colorMap:
+                            {
+                                type: 'continuous',
+                                min: 0,
+                                max: dataType === 'Wöchentlich' ? Math.max(...weeklyData) : Math.max(...monthlyData),
+                                color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
+                            }
+                        },
+                        ]}
+                    xAxis={[
+                        {
+                            zoom: true,
+                            scaleType: 'point',
+                            data: dataType !== 'Wöchentlich' ? 
+                            [
+                            'Jan',
+                            'Feb',
+                            'Mär',
+                            'Apr',
+                            'Mai',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Okt',
+                            'Nov',
+                            'Dez',
+                            ] 
+                            : 
+                            [
+                            'Mo',
+                            'Di',
+                            'Mi',
+                            'Do',
+                            'Fr',
+                            'Sa',
+                            'So'
+                            ]
+                        },
+                        
+                    ]}
+                    sx={{
+                        background: 'transparent',
+                        borderRadius: 0,
+                        py: 0,
+                        width: '100%',
+                        "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
+                        stroke:"#ffff",
+                        strokeWidth: 0
+                        },
+                        "& .MuiChartsAxis-left .MuiChartsAxis-tick":{
+                        strokeWidth: 0
+                        },
+                        "& .MuiChartsAxis-root .MuiChartsAxis-line": {
+                            strokeWidth: 0
+                        },
+                        [`& .${lineElementClasses.root}`]: {
+                            stroke: theme.palette.primary.main,
+                            strokeWidth: 2,
+                        },
+                    }}
+                />
+
+                <Stack direction={'row'} display={'flex'} justifyContent={'center'} alignItems={'center'} sx={{mt: -3}}>
+                    <IconButton disabled={dataType === 'Wöchentlich'} sx={{':focus': {outline: 'none'}}} onClick={() => {handleChartChange('Wöchentlich')}}>
+                        <ArrowBackIosNewIcon />
+                    </IconButton>
+                    <Typography sx={{fontWeight: 'Bold', fontSize: '25pt', position: 'relative'}}>{dataType}</Typography>
+                    <IconButton disabled={dataType === 'Monatlich'} sx={{':focus': {outline: 'none'}}} onClick={() => {handleChartChange('Monatlich')}}>
+                        <ArrowForwardIosIcon />
+                    </IconButton>
+                </Stack>
+
+            </Stack>
+            <Box height={'100%'} width={'100%'} p={2} pb={5} alignItems="center" justifyContent="center" display={'flex'} flexDirection={'column'} mt={3} sx={{borderTopLeftRadius: 10, borderTopRightRadius: 10, boxShadow: '0px -4px 15px 5px rgba(0,0,0,0.3)'}}>
+                <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: 5, left: '50%', translate: '-50%', borderRadius: '10px'}}}>Abzeichen</Typography>
+                <Typography color={grey[500]} variant='h10' textAlign={'center'}>Hier werden gesammelte abzeichen angezeigt</Typography>
 
                 <TabContext value={tabValue}>
                     <TabList variant='scrollable' scrollButtons allowScrollButtonsMobile sx={{width: '100%'}} onChange={handleTabChange}>
@@ -140,7 +325,6 @@ const Stats = () => {
 
                     <TabPanel sx={{width: '100%', p: 0}} value='1'>
                         <Stack direction={'row'} gap={3} sx={{py: 2, overflowX: 'scroll'}}>
-                            {console.log(socialBadges)}
                             {postitionBadges && postitionBadges.length > 0 ?
                                 postitionBadges?.map((badge) => {
                                     return <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, levelCap: badge.levelCap }}/>   
@@ -174,232 +358,7 @@ const Stats = () => {
                         </Stack>
                     </TabPanel>
                 </TabContext>
-                    
-
-
-            <Stack height={'80vh'} width={'inherit'} px={2} alignItems={'center'} justifyContent={'space-between'} gap={'5vh'}>
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Monatlich</Typography>
-
-                <LineChart
-                    grid={{ horizontal: false }}
-                    series={[{
-                        data: monthlyData,
-                        area: true,
-                        color: '#fff',
-                        }
-                    ]}
-                    margin={{
-                        top: 10,
-                        bottom: 20,
-                        }}
-                    slotProps={{
-                        noDataOverlay: {
-                            sx: {
-                                fill: '#fff'
-                            }
-                        },
-                        popper: {
-                            placement: 'top'
-                        }
-                    }}
-                    yAxis={[
-                        {
-                            colorMap:
-                            {
-                                type: 'continuous',
-                                min: 0,
-                                max: Math.max(...monthlyData),
-                                color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
-                            }
-                        },
-                        ]}
-                    xAxis={[
-                        {
-                            scaleType: 'band',
-                            data: [
-                                'Jan',
-                                'Feb',
-                                'Mär',
-                                'Apr',
-                                'Mai',
-                                'Jun',
-                                'Jul',
-                                'Aug',
-                                'Sep',
-                                'Okt',
-                                'Nov',
-                                'Dez',
-                            ]
-                        },
-                    ]}
-                    sx={{
-                        background: 'transparent',
-                        borderRadius: 4,
-                        py: 0,
-                        //change left yAxis label styles
-                        "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
-                            fill:"var(--color)"
-                        },
-                        // change all labels fontFamily shown on both xAxis and yAxis
-                        "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
-                        fontFamily: "Roboto",
-                        },
-                        // change bottom label styles
-                        "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
-                            strokeWidth: 0,
-                            fill:"var(--color)",
-                        },
-                        // bottomAxis Line Styles
-                        "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
-                        stroke:"#ffff",
-                        strokeWidth:0
-                        },
-                        // leftAxis Line Styles
-                        "& .MuiChartsAxis-left .MuiChartsAxis-line":{
-                        stroke:"#22",
-                        strokeWidth: 0
-                        },
-                        "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
-                        stroke:"#ffff",
-                        strokeWidth: 0
-                        },
-                        "& .MuiChartsAxis-left .MuiChartsAxis-tick":{
-                        stroke:"#ffff",
-                        strokeWidth: 0
-                        },
-                        "& .MuiChartsAxis-root .MuiChartsAxis-line": {
-                            stroke: '#222',
-                            strokeWidth: 0
-                        },
-                        "& .MuiChartsAxis-directionX": {
-                            stroke: '#fff',
-                            strokeWidth: 1
-                        },
-                        "& .MuiChartsAxisHighlight-root": {
-                            stroke: '#fff',
-                        },
-                        [`& .${lineElementClasses.root}`]: {
-                            stroke: theme.palette.primary.main,
-                            strokeWidth: 2,
-                        },
-                        [`& .${markElementClasses.root}`]: {
-                            stroke: theme.palette.primary.main,
-                            scale: '0.6',
-                            fill: 'transparent',
-                            strokeWidth: 0,
-                        }
-                    }}
-                />
- 
-            <Typography sx={{fontWeight: 'Bold', fontSize: '30pt', position: 'relative', ":after": {width: '100px', height: '3px', bgcolor: 'var(--color)', position: 'absolute', content: '" "', bottom: '-0', left: '50%', translate: '-50%', borderRadius: '10px'}}}>Wöchentlich</Typography>
-            <LineChart
-                grid={{ horizontal: false }}
-                series={[
-                    {
-                        data: weeklyData,
-                        area: true,
-                        color: '#fff',
-                    },
-                    ]}
-                margin={{
-                    top: 10,
-                    bottom: 20,
-                    }}
-                slotProps={{
-                    noDataOverlay: {
-                        sx: {
-                            fill: '#fff'
-                        }
-                    },
-                    popper: {
-                        placement: 'top'
-                    }
-                }}
-                yAxis={[
-                    {
-                        colorMap:
-                        {
-                            type: 'continuous',
-                            min: 0,
-                            max: Math.max(...weeklyData),
-                            color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
-                        }
-                    },
-                    ]}
-                xAxis={[
-                    {
-                        scaleType: 'band',
-                        data: [
-                            'Mo',
-                            'Di',
-                            'Mi',
-                            'Do',
-                            'Fr',
-                            'Sa',
-                            'So'
-                        ]
-                    },
-                ]}
-                sx={{
-                    background: 'transparent',
-                    borderRadius: 4,
-                    py: 0,
-                    //change left yAxis label styles
-                    "& .MuiChartsAxis-left .MuiChartsAxis-tickLabel":{
-                        fill:"var(--color)"
-                    },
-                    // change all labels fontFamily shown on both xAxis and yAxis
-                    "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
-                    fontFamily: "Roboto",
-                    },
-                    // change bottom label styles
-                    "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
-                        strokeWidth: 0,
-                        fill:"var(--color)",
-                    },
-                    // bottomAxis Line Styles
-                    "& .MuiChartsAxis-bottom .MuiChartsAxis-line":{
-                    stroke:"#ffff",
-                    strokeWidth:0
-                    },
-                    // leftAxis Line Styles
-                    "& .MuiChartsAxis-left .MuiChartsAxis-line":{
-                    stroke:"#22",
-                    strokeWidth: 0
-                    },
-                    "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
-                    stroke:"#ffff",
-                    strokeWidth: 0
-                    },
-                    "& .MuiChartsAxis-left .MuiChartsAxis-tick":{
-                    stroke:"#ffff",
-                    strokeWidth: 0
-                    },
-                    "& .MuiChartsAxis-root .MuiChartsAxis-line": {
-                        stroke: '#222',
-                        strokeWidth: 0
-                    },
-                    "& .MuiChartsAxis-directionX": {
-                        stroke: '#fff',
-                        strokeWidth: 1
-                    },
-                    "& .MuiChartsAxisHighlight-root": {
-                        stroke: '#fff',
-                    },
-                    [`& .${lineElementClasses.root}`]: {
-                        stroke: theme.palette.primary.main,
-                        strokeWidth: 2,
-                    },
-                    [`& .${markElementClasses.root}`]: {
-                        stroke: theme.palette.primary.main,
-                        scale: '0.6',
-                        fill: 'transparent',
-                        strokeWidth: 0,
-                    }
-                }}
-            />
-
-            </Stack>
+            </Box> 
         </Box>
     </>
   )

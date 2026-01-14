@@ -71,6 +71,32 @@ const Style = () => {
     setOpenPopperId(null)
   }
 
+  const colorList = 
+  [
+    {
+      color: 'blue',
+      colorCode: '#53b0ee'
+    },
+    {
+      color: 'green',
+      colorCode: '#187'
+    },
+    {
+      color: 'sunset',
+      colorCode: '#C7784A'
+    },
+    {
+      color: 'purple',
+      colorCode: '#aa14f0'
+    },
+    {
+      color: 'red',
+      colorCode: '#861f1f'
+    },
+    
+    
+  ]
+
   return (
     <Box
       pt={8}
@@ -89,31 +115,18 @@ const Style = () => {
       <ClickAwayListener onClickAway={handleClose}>
         <Stack direction="row" spacing={5} justifyContent="center">
           <Grid container spacing={5} justifyContent="center">
+          {colorList.map((color) => (
             <Grid item>
-              <ColorButton onClick={() => {setThemeName('blue'); handleClose()}} uID="blue" color="#53b0ee" selected={themeName === 'blue'} />
-            </Grid>
-            <Grid item>
-              <ColorButton onClick={() => {setThemeName('green'); handleClose()}} uID="green" color="#187" selected={themeName === 'green'} />
-            </Grid>
-            <Grid item>
-              <ColorButton onClick={() => {setThemeName('sunset'); handleClose()}} uID="sunset" color="#C7784A" selected={themeName === 'sunset'} />
-            </Grid>
-          
-          
-          
-
-          {/* Popper-Button 1 */}
-          <Grid item>
             <Box position="relative">
               <ColorButton
-                onClick={handlePopperToggle('purple')}
-                uID="purple"
-                color="#aa14f0"
-                selected={themeName === 'purple' || themeName === 'grayPurple'}
+                onClick={handlePopperToggle(color.color)}
+                uID={color.color}
+                color={color.colorCode}
+                selected={themeName === color.color || themeName === 'gray' + color.color[0].toUpperCase() + color.color.slice(1)}
               />
               <Popper
-                open={openPopperId === 'purple'}
-                anchorEl={anchorEls['purple']}
+                open={openPopperId === color.color}
+                anchorEl={anchorEls[color.color]}
                 placement="bottom"
                 sx={{ zIndex: 100 }}
               >
@@ -137,55 +150,15 @@ const Style = () => {
                   }}
                 >
                   <Stack direction="row" gap={2}>
-                    <ColorButton onClick={() => setThemeName('purple')} uID="purple" color="#aa14f0" />
-                    <ColorButton onClick={() => setThemeName('grayPurple')} uID="grayPurple" color="linear-gradient(135deg, #aa14f0 50%, #252525 50%)"/>
+                    <ColorButton onClick={() => setThemeName(color.color)} uID={color.color} color={color.colorCode} />
+                    <ColorButton onClick={() => setThemeName('gray' + color.color[0].toUpperCase() + color.color.slice(1))} uID={'gray' + color.color.toUpperCase()} color={`linear-gradient(135deg, ${color.colorCode} 50%, #252525 50%)`}/>
                   </Stack>
                 </Paper>
               </Popper>
           </Box>
 
-          </Grid>
-
-          {/* Popper-Button 2 */}
-            <Box position="relative">
-              <ColorButton
-                onClick={handlePopperToggle('red')}
-                uID="red"
-                color="#861f1f"
-                selected={ themeName === 'red' || themeName === 'grayRed'}
-              />
-              <Popper
-                open={openPopperId === 'red'}
-                anchorEl={anchorEls['red']}
-                placement="bottom"
-                sx={{ zIndex: 100 }}
-              >
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    position: 'relative',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      width: 16,
-                      height: 16,
-                      top: -8,
-                      left: '50%',
-                      transform: 'translateX(-50%) rotate(45deg)',
-                      bgcolor: 'background.paper'
-                    },
-                    boxShadow : '2px 5px 40px #000'
-                  }}
-                >
-                  <Stack direction="row" gap={2}>
-                    <ColorButton onClick={() => setThemeName('red')} uID="red" color="#861f1f" />
-                    <ColorButton onClick={() => setThemeName('grayRed')} uID="grayRed" color="linear-gradient(135deg, #861f1f 50%, #252525 50%)" />
-                  </Stack>
-                </Paper>
-              </Popper>
-            </Box>
+            </Grid>
+          ))}
           </Grid>
         </Stack>
       </ClickAwayListener>

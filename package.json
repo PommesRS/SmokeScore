@@ -25,7 +25,7 @@
     "@mui/lab": "^7.0.1-beta.20",
     "@mui/material": "^7.3.6",
     "@mui/styled-engine-sc": "^7.3.6",
-    "@mui/x-charts": "^7.29.1",
+    "@mui/x-charts": "^8.0.0",
     "@mui/x-date-pickers": "^8.22.0",
     "@turf/turf": "^7.3.1",
     "date-fns": "^4.1.0",

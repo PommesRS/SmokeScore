@@ -88,6 +88,14 @@ messaging.onMessage((payload) => {
             });
             });
         })
+    }else if(payload.data.msgType === 'getPosition'){
+      self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+            clients.forEach(client => {
+            client.postMessage({
+                data: data
+            });
+            });
+        })
     }
 
 })

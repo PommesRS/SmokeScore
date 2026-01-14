@@ -35,12 +35,14 @@ import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-do
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { onMessage, getToken } from 'firebase/messaging';
 import { db, messaging } from '../firebase.js';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot, GeoPoint } from "@firebase/firestore";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { onBackgroundMessage } from 'firebase/messaging/sw';
 import dayjs from 'dayjs';
 import { TheaterComedy } from '@mui/icons-material';
+import { useGeolocated } from "react-geolocated";
+
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -76,6 +78,13 @@ function App() {
   const [eventText, setEventText] = useState(null)
   const [eventDate, setEventDate] = useState(null)
   const [eventSenderName, setEventSenderName] = useState(null)
+  const {coords, isGeolocationAvailable, isGeolocationEnabled } =
+    useGeolocated({
+        positionOptions: {
+            enableHighAccuracy: true,
+        },
+        userDecisionTimeout: 0,
+  });
   let uID;
 
   const getSubscriptionStatus = async () => {
@@ -83,7 +92,7 @@ function App() {
     // if ((await getDoc(docRef)).data().hasPremium) {
     //   setSubscriptionStatus(true)
     // }
-    setSubscriptionStatus(true) 
+    setSubscriptionStatus(false) 
   }
 
   useEffect(() => {
@@ -97,7 +106,7 @@ function App() {
         setEventSenderName(event.data.data.senderName)
         setOpenEventPopup(true);
       }else {
-        console.log('anus')
+          console.log('notification')
       }
     })
     
@@ -151,6 +160,21 @@ function App() {
     return () => {unsubscribe()}; // wichtig: Listener beim Unmount entfernen
   }, [user?.uid])
 
+  const saveLastPosition = async () => {
+    if (!coords || !user) return
+    const geopoint = new GeoPoint(coords.latitude, coords.longitude)
+
+     try {
+      const userRef = doc(db, 'Users', user.uid);
+      //const geopoint = new GeoPoint(coords.latitude)
+      await updateDoc(userRef, {
+        lastKnownPos: geopoint,
+      });
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   const saveFCMToken = async () => {
     navigator.serviceWorker.getRegistrations().then(r => console.log(r))
 
@@ -165,7 +189,7 @@ function App() {
     try {
       const tokenRef = doc(db, 'Users', user.uid);
       await updateDoc(tokenRef, {
-        fcmToken: token
+        fcmToken: token,
       });
     } catch (error) {
       console.log(error)
@@ -178,6 +202,10 @@ function App() {
     saveFCMToken()
     getSubscriptionStatus()
   }, [user])
+
+  useEffect(() => {
+    saveLastPosition()
+  }, [user, coords])
 
   const fRequestDialogOpen = () => {
     setOpenFRequests(true);
@@ -354,7 +382,7 @@ function App() {
       </ClickAwayListener> */}
 
       {/*   */}
-      <Container sx={ value != 'map' ? {zIndex: '5000000'} : {p: '0'}}>  
+      <Container sx={value != 'map' ? value === 'stats' ? {p: 0 } : {zIndex: '5000000'} : {p: 0}}>  
 
       {user ? 
       <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
