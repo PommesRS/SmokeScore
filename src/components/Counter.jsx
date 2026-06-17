@@ -4,7 +4,7 @@ import {Container, Box, Button, Typography, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
   List, Dialog, Input, FormControl, IconButton,
   MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress,
-  useTheme, Stack, Snackbar
+  useTheme, Stack, Snackbar, Switch
 } from '@mui/material'
 import { tableCellClasses } from '@mui/material/TableCell';
 import dayjs from 'dayjs';
@@ -18,6 +18,7 @@ import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import { useUserAuth } from '../context/userAuthConfig';
+import { useAppState } from '../context/appState';
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
 import { db } from '../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
@@ -30,6 +31,7 @@ import { point, buffer, bbox } from '@turf/turf';
 import * as maptilersdk from '@maptiler/sdk';
 import { styled } from '@mui/material/styles';
 import { Navigate } from 'react-router-dom';
+import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -63,6 +65,7 @@ export function TextGradient({children}) {
 
 function Counter({callback}) {
   const [count, setCount] = useState(0)
+  const [jointCount, setJointCount] = useState(null)
   const [streak, setStreak] = useState(0)
   const [isExploding, setIsExploding] = useState(0)
   const [geolocation, setLocation] = useState([])
@@ -91,6 +94,8 @@ function Counter({callback}) {
   const [confettiType, setConfettiType] = useState('boom')
   const navigate = useNavigate();
   const streakRef = useRef(null)
+  const { counterVariant, setCounterVariantCig, setCounterVariantJoint } = useAppState()
+
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -102,15 +107,23 @@ function Counter({callback}) {
 
 
   const initiateCounter = async () => {
+    if(!user) return
     const docRef = doc(db, "Users", uID)
-    
-    if (!(await getDoc(docRef)).data()) {
-      await setDoc(doc(db, 'Users', uID), {
+    const isCounter = (await getDoc(docRef)).exists()
+
+    if (!(await getDoc(docRef)).exists()) {
+      await setDoc(docRef, {
         counter: 0
       }, {merge: true})
     }else{
       setCount((await getDoc(docRef)).data().counter)
     }
+
+    if((await getDoc(docRef)).data().jointCounter > 0) {
+      let localJointCount = (await getDoc(docRef)).data().jointCounter
+      setJointCount(localJointCount)
+    }
+
 
     const locDate = (await getDoc(docRef)).data().streak.lastIncrement
 
@@ -182,8 +195,10 @@ function Counter({callback}) {
       if (snapshot.exists()) {
         const data = snapshot.data().streak
         const count = snapshot.data().counter
+        const jointCount = snapshot.data().jointCount
         setStreak(data)
         setCount(count)
+        setJointCount(jointCount)
       }
     });
     
@@ -201,12 +216,31 @@ function Counter({callback}) {
     setTimeout(() => setLoading(false), 500) 
   }
 
+  const handleAddJoint = async () => {
+    if (loading) return
+    setLoading(true)
+
+    const docRef = doc(db, "Users", user.uid)
+    console.log((await getDoc(docRef)).data().jointCount)
+    if(jointCount < 1 || !jointCount) {
+      await setDoc(docRef, {
+        jointCount: 1
+      }, {merge: true})
+    } else {
+      await setDoc(docRef, {
+        jointCount: jointCount + 1
+      }, {merge: true})
+    }
+
+    setLoading(false)
+  }
+
   const handleBadgeAlertClose = () => {
     setBadgeOpen(false)
   }
 
   const incrementCounter = async () => {
-    const docRef = doc(db, "Users", uID)
+    const docRef = doc(db, "Users", user.uid)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
     //console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
@@ -546,6 +580,7 @@ function Counter({callback}) {
 
     async function incrementAndUpdateGeopoint(index) {
       geoLocationsSnapshot[index].amount += 1
+      
       await updateDoc(docRef, {
         counter: count + 1,
         geoLocations: geoLocationsSnapshot
@@ -868,26 +903,40 @@ function Counter({callback}) {
         anchorOrigin={{vertical: 'top', horizontal: 'center'}}
         sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
         />
+        
 
       <AddPurchase></AddPurchase>
       <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
+        <Stack direction={'row'} justifyContent={'center'} alignItems={'center'} zIndex={100}>
+          <SmokingRoomsIcon fontSize='large' />
+          <Switch
+            sx={{ alignSelf: 'center'}}
+            checked={counterVariant !== 1}
+            onChange={() => {counterVariant === 1 ? setCounterVariantJoint() : setCounterVariantCig() }}
+          />
+          <img src="./jointIcon.svg" alt="jointIcon" width={35} height={35} style={{ filter: 'invert(1)'}} />
+
+        </Stack>
         <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
-          <TextGradient>SmokeScore</TextGradient>
+          
+          <TextGradient>{counterVariant === 1 ? 'SmokeScore' : 'JointScore'}</TextGradient>
+
           <Stack direction={'row'} alignItems={'center'} height={6}>
             <WhatshotIcon ref={streakRef} sx={{fontSize: '50pt', filter: 'drop-shadow(6px 6px 10px rgba(0, 0, 0, 0.7))'}}/>
             <Typography fontSize={40} sx={{fontFamily: "'Poppins'", fontWeight: '700', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}}>{streak?.amount > 0 ? streak?.amount : 0}</Typography>
           </Stack>
+          
           <Stack alignItems={'center'} justifyContent={'center'}>
-              <AnimatedCounter digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}} includeDecimals={false} value={count} color='inherit' fontSize="100pt"/>
+              <img src={counterVariant === 1 ? "./smokeTop.png" : "./weedTop.png"} style={{padding: 0, margin: 0, opacity: 0.2, left: 0, position: 'absolute', top: 0, width: '100%'}}/>
+              <AnimatedCounter digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}} includeDecimals={false} value={counterVariant === 1 ? count : jointCount ? jointCount : 0} color='inherit' fontSize="100pt"/>
               <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
                 {isExploding ? <Confetti style={{overflow: 'hidden'}} fadeOutHeight={1} mode={confettiType}/> : <></>}
               <Box position={'absolute'} overflow={'hidden'} width={'100%'} height={'100%'}>
                 <Typography  className='animation-boom' display={displayWoo} variant='h6' fontWeight={1000} fontSize={100} color='primary' sx={{position: 'absolute', translate: '-50%', zIndex: 1000000}} left={'50%'} top={'25%'}>Woooh!</Typography>
               </Box>
           </Stack>
-          
-          <Stack gap={2} direction={'row'} sx={{width: '70vw'}}>
-            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleAddCig() /*incrementCounter(); setCount(count + 1)*/}}>
+          <Stack gap={2} direction={'row'} sx={{width: '80vw'}}>
+            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {counterVariant === 1 ? handleAddCig() : handleAddJoint()}}>
               <AddIcon fontSize='large'/>
               {loading && (
                 <CircularProgress 
@@ -899,9 +948,10 @@ function Counter({callback}) {
                   position: 'absolute',
                 }}/>
               )}
-            </Button>
+            </Button>            
             {/*<Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>*/}
           </Stack>
+          
         </Stack>
       </Box>
 

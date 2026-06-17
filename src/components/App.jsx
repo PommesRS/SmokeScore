@@ -85,7 +85,6 @@ function App() {
         },
         userDecisionTimeout: 0,
   });
-  let uID;
 
   const getSubscriptionStatus = async () => {
     // const docRef = doc(db, "Users", user.uid)
@@ -217,15 +216,13 @@ function App() {
 
   const handleRequestAccept = async (friend) => {
     try {
-      uID = await user.uid;
-      const docRef = await doc(db, "Users", uID)
+      const docRef = await doc(db, "Users", user.uid)
       //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
       await updateDoc(docRef, {
-        Friends: arrayUnion(friend)
-      })
-      await updateDoc(docRef, {
+        Friends: arrayUnion(friend),
         FriendRequests: arrayRemove(friend)
       })
+
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
       setfRequestsNames(fRequestsNames.splice(fRequestsNames.indexOf(friend)))
       setFRequests(fRequests - 1)
@@ -238,7 +235,7 @@ function App() {
       const docRef = await doc(db, "Users", friend)
       //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
       await updateDoc(docRef, {
-        Friends: arrayUnion(uID)
+        Friends: arrayUnion(user.uid)
       })
     } catch (error) {
       console.log(error)
@@ -247,8 +244,7 @@ function App() {
   
   const handleRequestDeny = async (friend) => {
     try {
-      uID = await user.uid;
-      const docRef = doc(db, "Users", uID)
+      const docRef = doc(db, "Users", user.uid)
       //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
       await updateDoc(docRef, {
         FriendRequests: arrayRemove(friend)
@@ -269,7 +265,7 @@ function App() {
       const docRef = await doc(db, "Users", friend)
       //const snapshot = await getCountFromServer((await getDoc(docRef)).data().FriendRequests);
       await updateDoc(docRef, {
-        Friends: arrayUnion(uID)
+        Friends: arrayUnion(user.uid)
       })
     } catch (error) {
       console.log(error)
@@ -385,7 +381,7 @@ function App() {
       <Container sx={value != 'map' ? value === 'stats' ? {p: 0 } : {zIndex: '5000000'} : {p: 0}}>  
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : value == 'tracker' ? {zIndex: '4'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
         <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests + newInvites} color="primary"><MenuIcon/></Badge></Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} elevation={0} open={open} onClose={toggleDrawer(false)}>
@@ -460,8 +456,8 @@ function App() {
           <Route path='/signup' element={<SignUp/>}/>
 
           
-          {/* Einkommentieren um Paywall zu aktivieren // folgenden Block auskommentieren!
-          <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
+          {/* Einkommentieren um Paywall zu aktivieren // folgenden Block auskommentieren! */}
+          {/* <Route path='/tracker' element={<ProtectedRoute><Counter/></ProtectedRoute>}/>
           <Route path='/stats' element={<ProtectedRoute><Paywall><Stats displayName={'Stats'}/></Paywall></ProtectedRoute>}/>
           <Route path='/friends' element={<ProtectedRoute><Paywall><Friends displayName={'Friends'}/></Paywall></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Paywall><Map displayName={'Map'}/></Paywall></ProtectedRoute>}/>
@@ -476,7 +472,7 @@ function App() {
           <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
           <Route path='/support' element={<ProtectedRoute><Support/></ProtectedRoute>}/>
-          <Route path='/badges' element={<ProtectedRoute><Badges metaData={{level: 1, progression: 4}}/></ProtectedRoute>}/>
+          <Route path='/badges' element={<ProtectedRoute><Badges metaData={{level: 1, progression: 4}}/></ProtectedRoute>}/> 
 
           {/* 404 Fallback Route */}
           <Route path="*" element={
@@ -487,16 +483,16 @@ function App() {
         </Routes>
 
         {user ? 
-        <Box sx={{position:'fixed', bottom: '0', left: '0', right: '0', borderTop: '1px solid rgba(155,155,155,0.5)', zIndex: '2'}}>
+        <Box sx={{position:'fixed', bottom: 13, left: 10, right: 10, zIndex: '2'}}>
           <BottomNavigation
-            sx={{color: '#767676'}}
+            sx={{color: '#767676', borderRadius: 100, height: 50,  boxShadow: '0px 5px 10px rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center'}}
             value={value}
             onChange={handleChange}
             display={'flex'} justify-content={'space-between'}>
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'friends'} label={'Freunde'} icon={<GroupIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'tracker'} label={'Tracker'} icon={<HomeIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'stats'} label={'Stats'} icon={<BarChartIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}}} value={'map'} label={'Karte'} icon={<LocationOnIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'friends'} label={'Freunde'} icon={<GroupIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'tracker'} label={'Tracker'} icon={<HomeIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'stats'} label={'Stats'} icon={<BarChartIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'map'} label={'Karte'} icon={<LocationOnIcon />} />
           </BottomNavigation> 
         </Box> :
         <></>}

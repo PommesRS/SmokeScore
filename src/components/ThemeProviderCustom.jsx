@@ -309,8 +309,9 @@ export const ThemeProviderCustom = ({ children }) => {
 
   
 
-  const handleSetTheme = (name) => {
+  const handleSetTheme = (name, shouldNotWriteToStorage) => {
     setThemeName(name);
+    if(shouldNotWriteToStorage) return
     localStorage.setItem('themeName', name);
   };
 

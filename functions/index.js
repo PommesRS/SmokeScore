@@ -17,11 +17,65 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const cors = require("cors")({ origin: true }); // erlaubt alle Ursprünge
 const stripe_webhook_Key = 'whsec_XQwzCRN8WANTp5Ri834FtGjOPh6UOhA9'
 const stripe_Key = 'sk_test_51RQ5OQBNmgSWwkDy5BSkGRzSDcAgpj61UUE5boAnLva42cYBBvf4UJMDxWx6uudbZ1j7J3nrLpxsIf3OHepX8YDn00AYjrIK86'
+const { Expo } = require("expo-server-sdk");
 
 admin.initializeApp();
 const db = getFirestore();
+const expo = new Expo();
 
+exports.sendPushToExpoToken = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      // Preflight-Anfrage, CORS antworten
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      return res.status(204).send('');
+    }
 
+    console.log("📥 Anfrage erhalten:", req.method, req.body);
+
+    const { token, title, body, msgType, eventDate, senderName } = req.body;
+
+    if (!Expo.isExpoPushToken(token)) {
+      return res.status(400).json({ error: "Invalid Expo push token" });
+    }
+
+    if (!token || !title || !body) {
+      console.warn("❌ Fehlende Parameter:", req.body);
+      return res.status(400).json({ error: "token, title, and body required" });
+    }
+
+    try{
+      const messages = [{
+        to: token,
+        sound: 'default',
+        title: title,
+        body: body,
+        data: { 
+          msgType, 
+          eventDate, 
+          senderName 
+        },
+      }]
+
+      console.log("📤 Sende Push an: ", token);
+
+      const chunks = expo.chunkPushNotifications(messages);
+
+      for (let chunk of chunks) {
+        await expo.sendPushNotificationsAsync(chunk)
+
+      }
+
+      console.log("✅ Push erfolgreich:");
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("🔥 Fehler beim Push:", err.message);
+      return res.status(500).json({ error: err.message });
+    }
+
+  })
+})
 
 exports.sendPushToToken = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {

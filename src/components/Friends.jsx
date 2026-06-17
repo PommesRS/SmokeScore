@@ -462,7 +462,7 @@ const Friends = () => {
     const userRef = doc(db, 'Users', user.uid)
 
     const unsubscribe = onSnapshot(momentsRef, () => {
-        getMoments()
+      getMoments()
     });
 
     const unsubscribe2 = onSnapshot(userRef, () => {
@@ -1035,6 +1035,7 @@ const Friends = () => {
               ]}
               xAxis={[
                   {
+                      dataKey: 'date',
                       zoom: true,
                       scaleType: 'point',
                       data: [

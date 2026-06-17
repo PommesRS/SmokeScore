@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
+import RestoreIcon from '@mui/icons-material/Restore';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import EditIcon from '@mui/icons-material/Edit';
@@ -16,7 +17,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import { messaging } from '../firebase'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { collection, doc, getDoc, updateDoc } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc, getDocs } from "@firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { db, auth } from '../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -35,7 +36,18 @@ const Settings = () => {
 
     const initSettings = async () => {
         const docRef = doc(db, 'Users', user.uid)
+        const statsSnap = await getDocs(collection(db, 'Users', user.uid, 'monthly'))
         const data = (await getDoc(docRef)).data().tags
+
+        let months = 0
+
+        statsSnap.forEach((doc) => {
+            doc.data().months.forEach((month) => {
+                months += month
+            })
+        });
+        setMonthlySum(months)
+
         const notificationValue = (await getDoc(docRef)).data().canGetNotifications
         if(data){
             setCigType(data.cigType)
@@ -54,6 +66,7 @@ const Settings = () => {
     const [open, setOpen] = useState(false);
     const [openCustomization, setCustomizationOpen] = useState(false);
     const [openNotificationSetting, setOpenNotificationSetting] = useState(false);
+    const [openRestore, setOpenRestore] = useState(false)
     const [cigType, setCigType] = useState('');
     const [tobacco, setTobacco] = useState('');
     const [username, setUsername] = useState('');
@@ -62,10 +75,15 @@ const Settings = () => {
     const [notificationSwitchValue, setNotificationSwitchValue] = useState(false)
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false)
+    const [monthlySum, setMonthlySum] = useState(null)
 
 
     const handleClickOpen = () => {
         setOpen(true);
+    };
+
+    const handleRestorenOpen = () => {
+        setOpenRestore(true);
     };
 
     const handleCustomizationOpen = () => {
@@ -78,6 +96,7 @@ const Settings = () => {
 
     const handleClose = () => {
         setOpen(false);
+        setOpenRestore(false)
         setCustomizationOpen(false);
         setOpenNotificationSetting(false)
         initSettings()
@@ -122,6 +141,26 @@ const Settings = () => {
             
         } catch (error) {
             
+        }
+        
+    }
+
+    const handleRestore = async () => {
+        const docRef = doc(db, 'Users', user.uid)
+        if(!monthlySum || monthlySum < 1) return
+        try {
+            setLoading(true)
+            await updateDoc(docRef, {
+                counter: monthlySum
+            }).then((result) => {
+                setLoading(false)
+                handleClose()
+                setAlertText('Counter gespeichert!')
+                setAlertState(true)
+            })
+            
+        } catch (error) {
+            console.log(error)
         }
         
     }
@@ -184,6 +223,38 @@ const Settings = () => {
                 <DialogActions>
                     <Button onClick={handleClose}>Abbrechen</Button>
                     <Button>Zustimmen</Button>
+                </DialogActions> 
+            </Dialog>
+
+            {/* Restore Counter Dialog */}
+            <Dialog
+                slotProps={
+                    {paper: 
+                        {sx: 
+                            {background: '#0B0B12'}
+                        }
+                    }
+                }
+                sx={
+                    {backdropFilter: "blur(2px)"}
+                }
+                open={openRestore}
+                onClose={handleClose}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{"Counter neu berechnen"}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Wenn du auf 'Wiederherstellen' tippst wird dein Counter auf den unten stehenden Wert gesetzt! 
+                    </DialogContentText>
+                    <DialogContentText sx={{color: 'gray'}}>
+                        Monatssumme: {!monthlySum ? '...loading' : monthlySum }
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Abbrechen</Button>
+                    <Button onClick={handleRestore} loading={loading}>Wiederherstellen</Button>
                 </DialogActions> 
             </Dialog>
             
@@ -321,6 +392,17 @@ const Settings = () => {
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Zurücksetzen" secondary="Alle Daten auf diesem Account werden Zurückgesetzt!" sx={{ color: 'red'}} />
+                </ListItemButton>
+            <Divider />
+                <ListItemButton onClick={handleRestorenOpen}>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <RestoreIcon />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Counter neu berechnen" secondary="Der Counter wird aus deinen Monatlichen Statitiken neu berechnet"
+                        slotProps={{ secondary: {sx: {color: 'gray'}}}}
+                    />
                 </ListItemButton>
             <Divider />
                 <ListItemButton onClick={() => {navigate(`/style`)}}>

@@ -11,15 +11,18 @@ import { HashRouter } from 'react-router-dom';
 import { UserAuthContextProvider } from './context/userAuthConfig';
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import { ThemeProviderCustom } from './components/ThemeProviderCustom';
+import { AppStateContextProvider } from './context/appState';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProviderCustom>
       <HashRouter>
-      <UserAuthContextProvider>
-        <CssBaseline/>
-        <App />
-      </UserAuthContextProvider>
+        <UserAuthContextProvider>
+          <AppStateContextProvider>
+            <CssBaseline/>
+            <App />
+          </AppStateContextProvider>
+        </UserAuthContextProvider>
       </HashRouter>
     </ThemeProviderCustom>
   </StrictMode>

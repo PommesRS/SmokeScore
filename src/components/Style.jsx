@@ -78,10 +78,6 @@ const Style = () => {
       colorCode: '#53b0ee'
     },
     {
-      color: 'green',
-      colorCode: '#187'
-    },
-    {
       color: 'sunset',
       colorCode: '#C7784A'
     },
