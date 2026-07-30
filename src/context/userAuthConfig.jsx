@@ -27,6 +27,7 @@ export function UserAuthContextProvider({ children }) {
     return createUserWithEmailAndPassword(auth, email, password).then(async function (result) {
       await setDoc(doc(db, "Users", result.user.uid), {
         counter: 0,
+        jointCount: 0,
         displayName: Name,
         Friends: [],
         FriendRequests: [],

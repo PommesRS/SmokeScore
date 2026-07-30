@@ -21,6 +21,7 @@ import CameraCapture from "./CameraCapture";
 import Support from "./Support";
 import ImageEditor from './ImageEditor';
 import Badges from "./Badges";
+import SpendingHistory from './SpendingHistory'
 
 export{
     App,
@@ -45,5 +46,6 @@ export{
     CameraCapture,
     Support,
     ImageEditor,
-    Badges
+    Badges,
+    SpendingHistory
 }

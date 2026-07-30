@@ -12,16 +12,28 @@ import { UserAuthContextProvider } from './context/userAuthConfig';
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import { ThemeProviderCustom } from './components/ThemeProviderCustom';
 import { AppStateContextProvider } from './context/appState';
+import { NotificationContextProvider } from './context/notificationContext'
+import { CounterContextProvider } from './context/counterContext';
+import { UserDataContextProvider } from './context/userData';
+import { UserStreakContextProvider } from './context/userStreak';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProviderCustom>
       <HashRouter>
         <UserAuthContextProvider>
-          <AppStateContextProvider>
-            <CssBaseline/>
-            <App />
-          </AppStateContextProvider>
+          <NotificationContextProvider>
+            <UserDataContextProvider>
+              <UserStreakContextProvider>
+                <CounterContextProvider>
+                  <AppStateContextProvider>
+                      <CssBaseline/>
+                      <App />
+                  </AppStateContextProvider>
+                </CounterContextProvider>
+              </UserStreakContextProvider>
+            </UserDataContextProvider>
+          </NotificationContextProvider>
         </UserAuthContextProvider>
       </HashRouter>
     </ThemeProviderCustom>
