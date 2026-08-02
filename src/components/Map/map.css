@@ -1,3 +1,7 @@
+body::-webkit-scrollbar{
+  width: 0;
+}
+
 .map-wrapper{
   position: relative;
   height: 100%;
@@ -20,4 +24,8 @@
   display: none;
   color: rgba(11, 11, 18, 0.233);
 
+}
+
+.hide-scrollbar{
+  overflow: scroll;
 }

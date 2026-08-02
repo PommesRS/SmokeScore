@@ -6,11 +6,11 @@ import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import React, { useEffect, useState } from 'react'
-import { db } from '../firebase.js';
+import { db } from '../../firebase.js';
 import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
 import { format } from 'date-fns';
 import dayjs from 'dayjs';
-import { useUserAuth } from '../context/userAuthConfig.jsx';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
 
 const EventPopup = ({open, eventId, onTrigger, inviteText, eventDate, senderName}) => {
     const [eventData, setEventData] = useState(null)

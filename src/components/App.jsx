@@ -35,14 +35,13 @@ import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-do
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { onMessage, getToken } from 'firebase/messaging';
 import { db, messaging } from '../firebase.js';
-import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot, GeoPoint } from "@firebase/firestore";
+import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot, GeoPoint, Timestamp } from "@firebase/firestore";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { onBackgroundMessage } from 'firebase/messaging/sw';
 import dayjs from 'dayjs';
-import { TheaterComedy } from '@mui/icons-material';
 import { useGeolocated } from "react-geolocated";
-
+import WhatsNew from './WhatsNew/WhatsNew.jsx';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -156,7 +155,7 @@ function App() {
     });
 
 
-    return () => {unsubscribe()}; // wichtig: Listener beim Unmount entfernen
+    return () => {unsubscribe()};
   }, [user?.uid])
 
   const saveLastPosition = async () => {
@@ -167,7 +166,10 @@ function App() {
       const userRef = doc(db, 'Users', user.uid);
       //const geopoint = new GeoPoint(coords.latitude)
       await updateDoc(userRef, {
-        lastKnownPos: geopoint,
+        lastKnownPos: {
+          point: geopoint,
+          timestamp: Timestamp.now()
+        },
       });
     } catch (error) {
       console.log(error)
@@ -344,7 +346,6 @@ function App() {
   const handleLogout = async () => {
     try {
       await logOut()
-      return <Navigate to='/login'/>
     } catch (error) {
       console.log(error.message)
     }
@@ -363,15 +364,15 @@ function App() {
     console.log(openEventPopup)
   }
 
-  const callBack = () => {
-    setValue('stats')
+  const callBack = (name) => {
+    setValue(name)
   }
-
 
   return (
     <>
 
       <FRequestsDialog></FRequestsDialog>
+      <WhatsNew></WhatsNew>
 
       {/* <ClickAwayListener onClickAway={handlePopupClose}>
           <EventPopup open={openEventPopup} onTrigger={() => setOpenEventPopup(false)} senderName={eventSenderName} eventDate={eventDate} inviteText={eventText} eventId={eventId != null ? eventId : '4NMD0tUW93XjV9ITOYYZ' }>{openEventPopup}</EventPopup>
@@ -469,10 +470,9 @@ function App() {
           <Route path='/friends' element={<ProtectedRoute><Friends displayName={'Friends'}/></ProtectedRoute>}/>
           <Route path='/map' element={<ProtectedRoute><Map callback={callBack} displayName={'Map'}/></ProtectedRoute>}/>
           <Route path='/style' element={<ProtectedRoute><Style/></ProtectedRoute>}/>
-          <Route path='/settings' element={<ProtectedRoute><Settings/></ProtectedRoute>}/>
+          <Route path='/settings' element={<ProtectedRoute><Settings callback={callBack}/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
           <Route path='/support' element={<ProtectedRoute><Support/></ProtectedRoute>}/>
-          <Route path='/badges' element={<ProtectedRoute><Badges metaData={{level: 1, progression: 4}}/></ProtectedRoute>}/> 
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

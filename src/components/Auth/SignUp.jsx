@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import TextField from '@mui/material/TextField';
 import GoogleButton from 'react-google-button';
 import Divider from '@mui/material/Divider';
-import { useUserAuth } from '../context/userAuthConfig';
+import { useUserAuth } from '../../context/userAuthConfig';
 import { doc, setDoc } from "@firebase/firestore";
-import { db } from '../firebase';
+import { db } from '../../firebase';
 
 const SignUp = () => {
     const [email, setEmail] = useState('');

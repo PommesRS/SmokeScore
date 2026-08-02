@@ -10,12 +10,13 @@ import { CssBaseline } from '@mui/material';
 import { HashRouter } from 'react-router-dom';
 import { UserAuthContextProvider } from './context/userAuthConfig';
 import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
-import { ThemeProviderCustom } from './components/ThemeProviderCustom';
+import { ThemeProviderCustom } from './components/Settings/ThemeProviderCustom';
 import { AppStateContextProvider } from './context/appState';
 import { NotificationContextProvider } from './context/notificationContext'
 import { CounterContextProvider } from './context/counterContext';
 import { UserDataContextProvider } from './context/userData';
 import { UserStreakContextProvider } from './context/userStreak';
+import { UserBadgesContextProvider } from './context/userBadges';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -25,12 +26,14 @@ createRoot(document.getElementById('root')).render(
           <NotificationContextProvider>
             <UserDataContextProvider>
               <UserStreakContextProvider>
-                <CounterContextProvider>
-                  <AppStateContextProvider>
-                      <CssBaseline/>
-                      <App />
-                  </AppStateContextProvider>
-                </CounterContextProvider>
+                <UserBadgesContextProvider>
+                    <CounterContextProvider>
+                      <AppStateContextProvider>
+                          <CssBaseline/>
+                          <App />
+                      </AppStateContextProvider>
+                    </CounterContextProvider>
+                </UserBadgesContextProvider>
               </UserStreakContextProvider>
             </UserDataContextProvider>
           </NotificationContextProvider>

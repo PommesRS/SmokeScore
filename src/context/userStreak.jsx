@@ -12,7 +12,7 @@ import {
 import { auth } from "../firebase";
 import { db } from "../firebase";
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
-import { useAppTheme } from '../components/ThemeProviderCustom'
+import { useAppTheme } from '../components/Settings/ThemeProviderCustom'
 import { useUserAuth } from "./userAuthConfig";
 import { useUserData } from "./userData";
 import dayjs from 'dayjs';

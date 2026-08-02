@@ -11,14 +11,13 @@ import {
     lineElementClasses,
     markElementClasses,
   } from '@mui/x-charts/LineChart';
-import { db } from '../firebase';
+import { db } from '../../firebase.js';
 import { collection, doc, getDoc, getDocs } from "@firebase/firestore";
-import { useUserAuth } from '../context/userAuthConfig';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
 import { startOfWeek, endOfWeek, format, getYear, subDays, min, set } from 'date-fns'
-import { Badges } from './index.js'
+import { Badges } from '../index.js'
 import { grey } from '@mui/material/colors';
 import dayjs from 'dayjs';
-import { HighlightTwoTone } from '@mui/icons-material';
 
 const chartBottomColor = getComputedStyle(document.documentElement)
       .getPropertyValue("--chart-bottom")
@@ -137,14 +136,15 @@ const Stats = () => {
                     params = stats.visitedCountries
                 }else if(badge.id === 'urbanexplorer'){
                     params = stats.visitedCities
-                }else if(badge.id === 'notalone'){
-                    params = stats.withFriend.friends
+                }else if (badge.id === 'highestStreak'){
+                    params = ["Letzter Tag der Streak: " + dayjs(stats.streak.lastIncrement.toDate()).format('DD.MM.YYYY')]
                 }
 
                 return {
                     ...badge.data(),
                     name: docData?.name,
                     desc: docData?.desc,
+                    type: docData?.type,
                     params: params
                 }
             })
@@ -169,7 +169,7 @@ const Stats = () => {
     }
 
     const timeBadges = badges?.filter(
-        badge => badge.level > 0 && badge.id === 'nightowl'
+        badge => badge.level > 0 && (badge.id === 'nightowl' || badge.id === 'highestStreak')
     );
 
     const postitionBadges = badges?.filter(
@@ -320,14 +320,14 @@ const Stats = () => {
                     <TabList variant='scrollable' scrollButtons allowScrollButtonsMobile sx={{width: '100%'}} onChange={handleTabChange}>
                         <Tab sx={{':focus': {outline: 'none'}}} label='Positions abhängig' value='1'/>
                         <Tab sx={{':focus': {outline: 'none'}}} label='Zeit abhängig' value='2'/>
-                        <Tab sx={{':focus': {outline: 'none'}}} label='Mit Freunden' value='3'/>
+                        {/* <Tab sx={{':focus': {outline: 'none'}}} label='Mit Freunden' value='3'/> */}
                     </TabList>
 
                     <TabPanel sx={{width: '100%', p: 0}} value='1'>
                         <Stack direction={'row'} gap={3} sx={{py: 2, overflowX: 'scroll'}}>
                             {postitionBadges && postitionBadges.length > 0 ?
                                 postitionBadges?.map((badge) => {
-                                    return <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, levelCap: badge.levelCap }}/>   
+                                    return <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, type: badge.type, category: 'position' }}/>   
                             }) : (
                                 <Typography component={Paper} elevation={3} sx={{background: theme.palette.background.paper}} p={2} textAlign={'center'}>Du hast noch keine Abzeichen für diese Kategorie gesammelt</Typography>
 
@@ -339,18 +339,19 @@ const Stats = () => {
                         <Stack direction={'row'} gap={3} sx={{py: 2, overflowX: 'scroll'}}>
                             {timeBadges && timeBadges.length > 0 ?
                                 timeBadges?.map((badge) => {
-                                    return  <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, levelCap: badge.levelCap }}/>   
+                                    return  <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, type: badge.type, category: 'time' }}/>   
                             }) : (
                                 <Typography component={Paper} elevation={3} sx={{background: theme.palette.background.paper}} p={2} textAlign={'center'}>Du hast noch keine Abzeichen für diese Kategorie gesammelt</Typography>
                             )
                             }
                         </Stack>
                     </TabPanel>
+
                     <TabPanel sx={{width: '100%', p: 0}} value='3'>
                         <Stack direction={'row'} gap={3} sx={{py: 2, overflowX: 'scroll'}}>
                             {socialBadges && socialBadges.length > 0 ?
                                 socialBadges?.map((badge) => {
-                                    return  <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, levelCap: badge.levelCap }}/>   
+                                    return  <Badges key={badge.id} metaData={{level: badge.level, progression: badge.progress, id: badge.id, name: badge.name, desc: badge.desc, params: badge.params, type: badge.type, category: 'social' }}/>   
                             }) : (
                                 <Typography component={Paper} elevation={3} sx={{background: theme.palette.background.paper}} p={2} textAlign={'center'}>Du hast noch keine Abzeichen für diese Kategorie gesammelt</Typography>
                             )

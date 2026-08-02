@@ -19,6 +19,7 @@ import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate, set,
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
 
+
 const counterContext = createContext();
 
 export function CounterContextProvider({ children }) {
@@ -29,10 +30,11 @@ export function CounterContextProvider({ children }) {
     const { sendNotification } = useNotification()
 
   const incrementCounter = async (geolocation, isJoint) => {
-    if (isJoint){
-        incrementJoint(geolocation);
-        return
-    }
+    // if (isJoint){
+    //     incrementJoint(geolocation);
+    //     sendNotification(user, true)
+    //     return
+    // }
     const docRef = doc(db, "Users", user.uid)
     console.log(geolocation)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
@@ -46,27 +48,30 @@ export function CounterContextProvider({ children }) {
     var cigUID = generateUUID()
 
     const geoLocationsSnapshot = userData.geoLocations
+    const jointLocationsSnapshot = userData.jointLocations
+    
+    const locationsArrayToCheck = !isJoint ? geoLocationsSnapshot : jointLocationsSnapshot
 
-    if (geoLocationsSnapshot.length < 1) {
-      incrementAndNewGeopoint()
+    if (locationsArrayToCheck?.length < 1 || typeof locationsArrayToCheck === 'undefined') {
+      await incrementAndNewGeopoint()
     } else {
       var bCreateNew = true
-      geoLocationsSnapshot.forEach((element, i) => {
-        const lat = element.point._lat
-        const lng = element.point._long
+      for (let i = 0; i < locationsArrayToCheck.length; i++) {
+        const lat = locationsArrayToCheck[i].point._lat
+        const lng = locationsArrayToCheck[i].point._long
         if (bbox2[2] > lat && lat > bbox2[0] && bbox2[3] > lng && lng > bbox2[1]) {
           incrementAndUpdateGeopoint(i)
           bCreateNew = false
-          return
+          break;
         }
-      });
+      };
       if (bCreateNew) {
-        incrementAndNewGeopoint()
+        await incrementAndNewGeopoint()
         bCreateNew = false
       }
     }
 
-    sendNotification(user)
+    sendNotification(user, isJoint)
     
     function generateUUID() { // Public Domain/MIT
       var d = new Date().getTime();//Timestamp
@@ -105,41 +110,64 @@ export function CounterContextProvider({ children }) {
         await updateDoc(docRef, {
           latestCigs: newHistory
         })
+      }else {
+        const newHistory = [{
+          geoLocation : geopoint,
+          id: cigID,
+          timestamp: Timestamp.fromDate(new Date())}].concat(history)
+  
+        await updateDoc(docRef, {
+          latestCigs: newHistory
+        })
       }
 
-      const newHistory = [{
-        geoLocation : geopoint,
-        id: cigID,
-        timestamp: Timestamp.fromDate(new Date())}].concat(history)
-
-      await updateDoc(docRef, {
-        latestCigs: newHistory
-      })
     }
 
     async function incrementAndNewGeopoint(params) {
-      await updateDoc(docRef, {
-        counter: increment(1),
-        geoLocations: arrayUnion({
-                        amount: 1,
-                        point : geopoint,
-                        id: cigUID
-                      })
-      })
-      addToHistory(cigUID)
-      incrementMonthStat()
+
+      if(!isJoint){
+        await updateDoc(docRef, {
+          counter: increment(1),
+          geoLocations: arrayUnion({
+                          amount: 1,
+                          point : geopoint,
+                          id: cigUID
+                        })
+        })
+  
+        addToHistory(cigUID)
+        incrementMonthStat()
+      }else{
+        await setDoc(docRef, {
+          jointCount: increment(1),
+          jointLocations: arrayUnion({
+                          amount: 1,
+                          point : geopoint,
+                          id: cigUID
+                        })
+        }, {merge:true})
+      }
     }
 
     async function incrementAndUpdateGeopoint(index) {
-      geoLocationsSnapshot[index].amount += 1
-      
-      await updateDoc(docRef, {
-        counter: increment(1),
-        geoLocations: geoLocationsSnapshot
-      })
-      addToHistory(geoLocationsSnapshot[index].id)
-      incrementMonthStat()
+      if (!isJoint) {
+        geoLocationsSnapshot[index].amount += 1
+        await updateDoc(docRef, {
+          counter: increment(1),
+          geoLocations: geoLocationsSnapshot
+        })
+        addToHistory(geoLocationsSnapshot[index].id)
+        incrementMonthStat()
+      } else{
+        jointLocationsSnapshot[index].amount += 1
+        await setDoc(docRef, {
+          jointCount: increment(1),
+          jointLocations: jointLocationsSnapshot
+        }, {merge: true})
+      }
     }
+
+    if(isJoint) return;
 
     async function incrementMonthStat(params) {
 
@@ -203,8 +231,6 @@ export function CounterContextProvider({ children }) {
         jointCount: increment(1),
       })
     }
-
-    sendNotification(user, true)
   }
 
     useEffect(() => {

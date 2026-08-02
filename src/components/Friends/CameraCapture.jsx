@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
-import { ImageEditor } from './index.js'
+import { ImageEditor } from '../index.js'
 import { Button, Card, Dialog, Typography, Box, Stack, useTheme, IconButton, DialogActions, DialogTitle, DialogContentText, DialogContent } from "@mui/material";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { getFirestore, doc, setDoc, Timestamp, getDoc } from "firebase/firestore";
@@ -11,8 +11,8 @@ import FlipCameraIosOutlinedIcon from '@mui/icons-material/FlipCameraIosOutlined
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
-import { db, storage } from '../firebase.js';
-import { useUserAuth } from "../context/userAuthConfig";
+import { db, storage } from '../../firebase.js';
+import { useUserAuth } from "../../context/userAuthConfig.jsx";
 
 
 export default function CameraCapture({ onClose }) {

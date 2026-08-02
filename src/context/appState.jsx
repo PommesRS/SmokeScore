@@ -12,7 +12,7 @@ import {
 import { auth } from "../firebase";
 import { db } from "../firebase";
 import { doc, setDoc, query, collection, getDoc } from "@firebase/firestore";
-import { useAppTheme } from '../components/ThemeProviderCustom'
+import { useAppTheme } from '../components/Settings/ThemeProviderCustom'
 
 
 const appStateContext = createContext();

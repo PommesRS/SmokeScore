@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom';
-import { useUserAuth } from '../context/userAuthConfig';
-import { db } from '../firebase.js';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
+import { db } from '../../firebase.js';
 import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc } from "@firebase/firestore";
-import { PaywallStats, PaywallFriends, PaywallMap } from './index.js';
+import { PaywallStats, PaywallFriends, PaywallMap } from '../index.js';
 
 const ProtectedRoute = ({ children }) => {
     const [loading, setLoading] = useState(true)

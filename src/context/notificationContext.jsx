@@ -7,7 +7,6 @@ const notificationContext = createContext();
 export function NotificationContextProvider({children}) {
 
     async function sendNotification(user, isJoint) {
-        console.log(user.displayName)
         const friendsRef = doc(db, "Users", user.uid)
         const friendIDArr = (await getDoc(friendsRef)).data().Friends
         friendIDArr.map(async (friendId) => {

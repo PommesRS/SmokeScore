@@ -2,30 +2,21 @@ import React, { useEffect, useState } from 'react'
 import {
     Box, List, ListItem, ListItemButton, Avatar, ListItemAvatar, ListItemText, Divider, Dialog, 
     DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Select, FormControl, InputLabel, TextField,
-    Alert, Snackbar, Switch, Stack, Typography
+    Alert, Snackbar, Switch, Stack, Typography, useTheme
 } from '@mui/material'
-import ImageIcon from '@mui/icons-material/Image';
-import WorkIcon from '@mui/icons-material/Work';
-import RestoreIcon from '@mui/icons-material/Restore';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import EditIcon from '@mui/icons-material/Edit';
-import SellIcon from '@mui/icons-material/Sell';
-import PaletteIcon from '@mui/icons-material/Palette';
-import EmailIcon from '@mui/icons-material/Email';
-import BadgeIcon from '@mui/icons-material/Badge';
-import { messaging } from '../firebase'
+import {Image, Work, Restore, DeleteForever, NotificationsActive, Edit, Sell, Palette, Email, Badge, FiberNew, MyLocation} from '@mui/icons-material'
+import { messaging } from '../../firebase.js'
 import { getMessaging, getToken } from "firebase/messaging"
-import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { collection, doc, getDoc, updateDoc, getDocs } from "@firebase/firestore";
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
+import { collection, doc, getDoc, updateDoc, getDocs, setDoc } from "@firebase/firestore";
 import { updateProfile } from "firebase/auth";
-import { db, auth } from '../firebase.js';
+import { db, auth } from '../../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { ThemeToggleButton } from './index.js'
+import { ThemeToggleButton } from '../index.js'
 import {useNavigate} from 'react-router-dom';
 
 
-const Settings = () => {
+const Settings = ({callback}) => {
       const { user } = useUserAuth();
       let TokenGlobal
     // const [token, setToken] = useState();
@@ -49,6 +40,7 @@ const Settings = () => {
         setMonthlySum(months)
 
         const notificationValue = (await getDoc(docRef)).data().canGetNotifications
+        const postionValue = (await getDoc(docRef)).data().sharesPostion
         if(data){
             setCigType(data.cigType)
             setTobacco(data.tobacco)
@@ -61,11 +53,18 @@ const Settings = () => {
             setNotificationSwitchValue(true)
         }
 
+        if(typeof postionValue !== 'undefined'){
+            setPostitionSwitchValue(postionValue)
+        }else{
+            setPostitionSwitchValue(true)
+        }
+
     }
 
     const [open, setOpen] = useState(false);
     const [openCustomization, setCustomizationOpen] = useState(false);
     const [openNotificationSetting, setOpenNotificationSetting] = useState(false);
+    const [openPositionSetting, setOpenPositionSetting] = useState(false);
     const [openRestore, setOpenRestore] = useState(false)
     const [cigType, setCigType] = useState('');
     const [tobacco, setTobacco] = useState('');
@@ -73,10 +72,11 @@ const Settings = () => {
     const [alertState, setAlertState] = useState(false)
     const [alertText, setAlertText] = useState('')
     const [notificationSwitchValue, setNotificationSwitchValue] = useState(false)
+    const [positionSwitchValue, setPostitionSwitchValue] = useState(false)
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false)
     const [monthlySum, setMonthlySum] = useState(null)
-
+    const theme = useTheme()
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -94,11 +94,16 @@ const Settings = () => {
         setOpenNotificationSetting(true);
     };
 
+    const handlePositionSettingsOpen = () => {
+        setOpenPositionSetting(true);
+    };
+
     const handleClose = () => {
         setOpen(false);
         setOpenRestore(false)
         setCustomizationOpen(false);
         setOpenNotificationSetting(false)
+        setOpenPositionSetting(false)
         initSettings()
     };
 
@@ -109,6 +114,10 @@ const Settings = () => {
 
     const handleNotificationSwitch = (event) => {
         setNotificationSwitchValue(event.target.checked);
+    }
+
+    const handlePostionSwitch = (event) => {
+        setPostitionSwitchValue(event.target.checked);
     }
 
     const handleTextInput = (event) => {
@@ -165,6 +174,16 @@ const Settings = () => {
         
     }
 
+    const handleShowWhatsNew = async () => {
+        navigate(`/tracker`)
+        callback('tracker')
+        const docRef = doc(db, 'Users', user.uid)
+
+        await setDoc(docRef, {
+            currentAppVersion: 1
+        }, {merge: true})
+    }
+
     const handleNotificationSave = async () => {
         const docRef = doc(db, 'Users', user.uid)
         try {
@@ -177,7 +196,20 @@ const Settings = () => {
         } catch (error) {
             
         }
-        
+    }
+
+    const handlePositionSave = async () => {
+        const docRef = doc(db, 'Users', user.uid)
+        try {
+            await updateDoc(docRef, {
+                sharesPostion: positionSwitchValue
+            })
+            setAlertText('Einstellungen gespeichert!')
+            setAlertState(true)
+            handleClose()
+        } catch (error) {
+            
+        }
     }
 
     const handleCloseAlert = () => {
@@ -202,7 +234,7 @@ const Settings = () => {
                 slotProps={
                     {paper: 
                         {sx: 
-                            {background: '#0B0B12'}
+                            {background: theme.palette.background.paper}
                         }
                     }
                 }
@@ -231,7 +263,7 @@ const Settings = () => {
                 slotProps={
                     {paper: 
                         {sx: 
-                            {background: '#0B0B12'}
+                            {background: theme.palette.background.paper}
                         }
                     }
                 }
@@ -263,7 +295,7 @@ const Settings = () => {
                 slotProps={
                     {paper: 
                         {sx: 
-                            {background: '#0B0B12'}
+                            {background: theme.palette.background.paper}
                         }
                     }
                 }
@@ -275,8 +307,12 @@ const Settings = () => {
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
-                <DialogTitle id="alert-dialog-title">{'Hier kannst du dein Profil anpassen. Die Informationen werden deinen Freunden auf der "Freunde" Seite angezeigt.'}</DialogTitle>
+                <DialogTitle id="alert-dialog-title">{'Profil anpassen'}</DialogTitle>
                 <DialogContent>
+                    <DialogContentText>
+                        Die Informationen werden deinen Freunden auf der "Freunde" Seite angezeigt.
+                    </DialogContentText>
+                    <Divider />
                     <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
                         <InputLabel htmlFor="demo-dialog-native">Zigaretten Typ wählen</InputLabel>
                         <Select
@@ -310,7 +346,7 @@ const Settings = () => {
                 slotProps={
                     {paper: 
                         {sx: 
-                            {background: '#0B0B12'}
+                            {background: theme.palette.background.paper}
                         }
                     }
                 }
@@ -322,7 +358,7 @@ const Settings = () => {
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
-                <DialogTitle id="alert-dialog-title">{'Benachrichtigungen anpassen.'}</DialogTitle>
+                <DialogTitle id="alert-dialog-title">{'Benachrichtigungen anpassen'}</DialogTitle>
                 <DialogContent>
                     <Stack direction={'row'} flex={'true'} alignItems={'center'}>
                         <Switch
@@ -331,6 +367,7 @@ const Settings = () => {
                             />
                         <Stack>
                             <Typography>Benarichtigungen aktivieren</Typography>
+                            <Divider />
                             <DialogContentText fontSize={15}>Du wirst {!notificationSwitchValue ? 'nicht' : ''} benachrichtigt wenn ein Freund eine Zigarette einträgt.</DialogContentText>
                         </Stack>
                     </Stack>
@@ -339,6 +376,44 @@ const Settings = () => {
                 <DialogActions>
                     <Button onClick={() => {handleClose()}}>Abbrechen</Button>
                     <Button onClick={() => {handleNotificationSave()}}>Speichern</Button>
+                </DialogActions> 
+            </Dialog>
+
+            {/* last known position Dialog */}
+            <Dialog
+                slotProps={
+                    {paper: 
+                        {sx: 
+                            {background: theme.palette.background.paper}
+                        }
+                    }
+                }
+                sx={
+                    {backdropFilter: "blur(2px)"}
+                }
+                open={openPositionSetting}
+                onClose={handleClose}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">{'Position teilen'}</DialogTitle>
+                <DialogContent>
+                    <Stack direction={'row'} flex={'true'} alignItems={'center'}>
+                        <Switch
+                            checked={positionSwitchValue}
+                            onChange={handlePostionSwitch}
+                            />
+                        <Stack>
+                            <Typography>Position teilen aktivieren</Typography>
+                            <Divider />
+                            <DialogContentText fontSize={15}>Deine Freunde können die Position {!positionSwitchValue ? 'nicht' : ''} sehen, an der du warst als du das letzte mal SmokeScore benutzt hast.</DialogContentText>
+                        </Stack>
+                    </Stack>
+                    
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {handleClose()}}>Abbrechen</Button>
+                    <Button onClick={() => {handlePositionSave()}}>Speichern</Button>
                 </DialogActions> 
             </Dialog>
 
@@ -361,7 +436,7 @@ const Settings = () => {
                 <ListItemButton onClick={handleNotificationSettingsOpen}>
                     <ListItemAvatar>
                     <Avatar>
-                        <NotificationsActiveIcon />
+                        <NotificationsActive />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Benachrichtigungen" />
@@ -370,16 +445,25 @@ const Settings = () => {
                 <ListItemButton onClick={handleCustomizationOpen}>
                     <ListItemAvatar>
                     <Avatar>
-                        <EditIcon />
+                        <Edit />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Profil Anpassen" />
                 </ListItemButton>
             <Divider />
+                <ListItemButton onClick={handlePositionSettingsOpen}>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <MyLocation />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Position teilen" />
+                </ListItemButton>
+            <Divider />
                 <ListItemButton disabled href={'https://billing.stripe.com/p/login/test_aFa3cugMoeqz8pv4Qld3i00' + '?prefilled_email=' + user.email} sx={{':hover': {color: 'inherit'}}}>
                     <ListItemAvatar>
                     <Avatar>
-                        <SellIcon />
+                        <Sell />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Abonnement Optionen" secondary='Zum Kundenportal' />
@@ -388,7 +472,7 @@ const Settings = () => {
                 <ListItemButton disabled onClick={handleClickOpen}>
                     <ListItemAvatar>
                     <Avatar>
-                        <DeleteForeverIcon />
+                        <DeleteForever />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Zurücksetzen" secondary="Alle Daten auf diesem Account werden Zurückgesetzt!" sx={{ color: 'red'}} />
@@ -397,7 +481,7 @@ const Settings = () => {
                 <ListItemButton onClick={handleRestorenOpen}>
                     <ListItemAvatar>
                     <Avatar>
-                        <RestoreIcon />
+                        <Restore />
                     </Avatar>
                     </ListItemAvatar>
                     <ListItemText primary="Counter neu berechnen" secondary="Der Counter wird aus deinen Monatlichen Statitiken neu berechnet"
@@ -405,10 +489,22 @@ const Settings = () => {
                     />
                 </ListItemButton>
             <Divider />
+                <ListItemButton onClick={handleShowWhatsNew}>
+                    <ListItemAvatar>
+                    <Avatar>
+                        <FiberNew />
+                    </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary="Neuheiten" secondary="'Was ist neu?' erneut anzeigen lassen."
+                        slotProps={{ secondary: {sx: {color: 'gray'}}}}
+                    />
+                    
+                </ListItemButton>
+            <Divider />
                 <ListItemButton onClick={() => {navigate(`/style`)}}>
                     <ListItemAvatar>
                         <Avatar>
-                            <PaletteIcon />
+                            <Palette />
                         </Avatar>
                         </ListItemAvatar>
                     <ListItemText primary="Farbstil ändern"/>
@@ -417,7 +513,7 @@ const Settings = () => {
                 <ListItemButton onClick={() => {navigate(`/support`)}}>
                     <ListItemAvatar>
                         <Avatar>
-                            <EmailIcon />
+                            <Email />
                         </Avatar>
                         </ListItemAvatar>
                     <ListItemText primary="Support"/>
@@ -426,7 +522,7 @@ const Settings = () => {
                 <ListItemButton onClick={handleCopyToClipboard}>
                     <ListItemAvatar>
                         <Avatar>
-                            <BadgeIcon />
+                            <Badge />
                         </Avatar>
                         </ListItemAvatar>
                     <ListItemText primary='Nutzer Id' secondary={user.uid} slotProps={{secondary: {sx: { width: '100%',color:'gray', display: 'inline-block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}}}/>

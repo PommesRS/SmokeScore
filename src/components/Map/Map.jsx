@@ -1,15 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { createRoot } from 'react-dom/client'
 import {useNavigate} from 'react-router-dom';
 import * as maptilersdk from '@maptiler/sdk';
 import PropTypes from 'prop-types';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
-import { Box, SwipeableDrawer, Typography, Stack, IconButton, useTheme, Paper, Button, Divider, Snackbar} from '@mui/material';
+import { PersonPinCircle } from '@mui/icons-material';
+import { Box, SwipeableDrawer, Typography, Stack, IconButton, useTheme, Paper, Button, Divider, Snackbar, Switch, CircularProgress} from '@mui/material';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import CheckIcon from '@mui/icons-material/Check';
-import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { db } from '../firebase.js';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
+import { db } from '../../firebase.js';
 import { collection, getCountFromServer, doc, getDoc, getDocs, runTransaction} from "@firebase/firestore";
 import { point, buffer, bbox } from '@turf/turf';
 import { styled } from '@mui/material/styles';
@@ -20,8 +22,16 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import { useGeolocated } from "react-geolocated";
 import dayjs from 'dayjs';
+import { useUserBadges } from '../../context/userBadges.jsx';
+import { useAppState } from '../../context/appState.jsx';
+import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
+import { useUserData } from '../../context/userData.jsx';
+import MapMarkerOwnershipIndicator from './MapMarkerOwnershipIndicator.jsx';
+import MapTopScroll from './MapTopScroll.jsx';
 
 var friendMarkers = []
+var ownMarkers = []
+var friendLocationMarker
 
 export const drawerBleeding = 56;
 
@@ -60,6 +70,7 @@ const Map = (props) => {
   const map = useRef(null);
   const [drawerProps, setDrawerProps] = useState({})
   const { user } = useUserAuth();
+  const { userData } = useUserData();
   const theme = useTheme()
   const falkensee = { lng: 13.091315, lat: 52.560042 };
   const { coords, isGeolocationAvailable, isGeolocationEnabled } =
@@ -74,10 +85,11 @@ const Map = (props) => {
   var mapStyle = '59d38153-6ea3-464a-b3c9-2e869c449863'
   const [badgeCalcLoading, setBadgeCalcLoading] = useState(false)
   const [badgeCalcError, setBadgeCalcError] = useState('')
-  const [badgeOpen, setBadgeOpen] = useState(false)
-  const [badgeMessage, setBadgeMessage] = useState('Neues Abzeichen Freigeschaltet!')
+  const badgeContext = useUserBadges();
   const navigate = useNavigate();
-  
+  const { counterVariant, setCounterVariantCig, setCounterVariantJoint } = useAppState()
+  const [friendMarkerLoading, setFriendMarkerLoading] = useState(true)
+  const [ownMarkerLoading, setOwnMarkerLoading] = useState(true)
 
   useEffect(() => {
       if (map.current) return; // stops map from intializing more than once
@@ -91,9 +103,15 @@ const Map = (props) => {
         navigationControl: false
       });
 
-      getMarkers()
-
   }, [falkensee.lng, falkensee.lat, zoom]);
+
+  useEffect(() => {
+    getMarkers()
+  }, [])
+
+  useEffect(() => {
+    getMarkers()
+  },[counterVariant])
 
   useEffect(() => {
     setFriends([])
@@ -103,6 +121,7 @@ const Map = (props) => {
   }, [user])
 
   useEffect(() => {
+    
     getMarkers(true)
   }, [coords])
 
@@ -119,9 +138,12 @@ const Map = (props) => {
     await Promise.all(friendArr.map(async (friend) => {
       const uid = friend
       const docRef = doc(db, "Users", uid)
+      const friendData = (await getDoc(docRef)).data()
 
-      const friendName = (await getDoc(docRef)).data().displayName
-      cacheFriends.push([friend, friendName])
+      const friendName = friendData.displayName
+      const friendPos = friendData.lastKnownPos
+      const friendSharesPos = typeof friendData.sharesPostion === 'undefined' ? true : friendData.sharesPostion
+      cacheFriends.push([friend, friendName, friendPos, friendSharesPos])
     }))
 
     setFriends(cacheFriends)
@@ -141,6 +163,7 @@ const Map = (props) => {
   }
 
   async function getMarkers(isOwnMarker) {
+    setOwnMarkerLoading(true)
 
     /* Intialize position marker */
     
@@ -169,14 +192,26 @@ const Map = (props) => {
 
     }else {
 
-          /* other Markers */
+    /* other Markers */
+    
+    ownMarkers.forEach(marker => {
+      try {
+        marker.remove()
+      } catch (error) {
+        console.log(error)
+      }
+    })
+    
+    const g = counterVariant === 1 ? userData?.geoLocations  : userData?.jointLocations
+    
+    if(typeof g === 'undefined') {
+      setOwnMarkerLoading(false)
+      return
+    }
 
-    const docRef = await doc(db, "Users", user.uid)
-    const g = (await getDoc(docRef)).data().geoLocations
     g.sort((a,b) => {
       return b.amount - a.amount
     })
-    
 
     g.forEach((loc, index) => {
 
@@ -198,21 +233,20 @@ const Map = (props) => {
           })
       });
 
-      new maptilersdk.Marker({element: el})
+      ownMarkers.push(new maptilersdk.Marker({element: el})
       .setLngLat([loc.point._long,loc.point._lat])
-      .addTo(map.current)
-
+      .addTo(map.current))
     });
-
     }
-
+    setOwnMarkerLoading(false)
   }
 
   useEffect(() => {
     getFriendMarkers(friendIndex)
-  }, [friendIndex, friends])
+  }, [friendIndex, friends, counterVariant])
 
   async function getFriendMarkers(i) {
+    setFriendMarkerLoading(true)
     friendMarkers.forEach(marker => {
       try {
         marker.remove()
@@ -223,39 +257,43 @@ const Map = (props) => {
 
     if (friends.length > 0) {
       const docRefFriend = doc(db, "Users", friends[i][0])
-      const t = (await getDoc(docRefFriend)).data().geoLocations
-
-
-    if (t.length > 0) {
-      falkensee.lng = 13.091314 
-      t.forEach(loc => {
-        var elDiv = document.createElement('div');
-  
-        var el = document.createElement('img');
-        elDiv.appendChild(el)
-        el.src = 'pinFriend.svg';
-        el.style.width = '40px';
-        el.style.height = '40px';
-        el.style.translate= '0px -50%'
-        el.style.filter = 'invert(100%)'
-  
-        el.addEventListener('click', function () {
-            setOpen(true)
-            setDrawerProps({
-              friend: friends[i][1],
-              lat: loc.point._lat,
-              lng: loc.point._long,
-              amount: loc.amount
-            })
-        });
-  
-        friendMarkers.push(new maptilersdk.Marker({element: el})
-        .setLngLat([loc.point._long,loc.point._lat])
-        .addTo(map.current))
-      });
+      const t = counterVariant === 1 ? (await getDoc(docRefFriend)).data().geoLocations : (await getDoc(docRefFriend)).data().jointLocations
+      
+      if(typeof t === 'undefined') {
+      setFriendMarkerLoading(false)
+      return
     }
-  }
 
+      if (t.length > 0) {
+        falkensee.lng = 13.091314 
+        t.forEach(loc => {
+          var elDiv = document.createElement('div');
+    
+          var el = document.createElement('img');
+          elDiv.appendChild(el)
+          el.src = 'pinFriend.svg';
+          el.style.width = '40px';
+          el.style.height = '40px';
+          el.style.translate= '0px -50%'
+          el.style.filter = 'invert(100%)'
+    
+          el.addEventListener('click', function () {
+              setOpen(true)
+              setDrawerProps({
+                friend: friends[i][1],
+                lat: loc.point._lat,
+                lng: loc.point._long,
+                amount: loc.amount
+              })
+          });
+    
+          friendMarkers.push(new maptilersdk.Marker({element: el}).setLngLat([loc.point._long,loc.point._lat]).addTo(map.current))
+
+        });
+      }
+    }
+
+    setFriendMarkerLoading(false)
   }
     
   /*
@@ -287,174 +325,98 @@ const Map = (props) => {
 
   async function badgeFlow(o) {
     setBadgeCalcLoading(true)
-    async function updateBadge(progress, level, badgeId, levelCap) {
-      await runTransaction(db, async(tx) => {
-        const docRef = doc(db, 'Users', user.uid, 'Badges', badgeId)
-        const badge = (await tx.get(docRef)).data()
-
-        if (typeof badge !== 'undefined') {
-          if (badge.level == 0 && level > 0) {
-            setBadgeOpen(true)
-            setBadgeMessage('Neues Abzeichen Freigeschaltet!')
-            console.log('new badge unlocked: ', badgeId)
-          }
-          else if(badge.level < level){
-            setBadgeOpen(true)
-            setBadgeMessage('Neues Abzeichen Level Freigeschaltet!')
-            console.log('new level on badge unlocked: ', badgeId)
-
-          }
-        }else {
-
-        }
-
-        tx.set(docRef, {
-          level: level,
-          progress: progress,
-          id: badgeId,
-          levelCap: levelCap
-        })
-        setBadgeCalcLoading(false)
-        setBadgeCalcError('Punkt wurde erfolgreich zu der Statistik hinzugefügt!')
-      })
-    }
-
-    await runTransaction(db, async (tx) => {
-      const docRef = doc(db, "Users", user.uid, 'Stats', 'main')
-      const stats = (await tx.get(docRef)).data()
-      const smokeMetaData = await maptilersdk.geocoding.reverse([o.lng, o.lat])
-      const height = await maptilersdk.elevation.at([o.lng, o.lat])
-
-      var city
-      if (smokeMetaData.features.find(el => el.place_type[0] === 'municipality')) {
-        city = smokeMetaData.features.find(el => el.place_type[0] === 'municipality').text
-      }else if (smokeMetaData.features.find(el => el.place_type[0] === 'county')) {
-        city = smokeMetaData.features.find(el => el.place_type[0] === 'county').text
-      }else if (smokeMetaData.features.find(el => el.place_type[0] === 'region')) {
-        city = smokeMetaData.features.find(el => el.place_type[0] === 'region').text
-      }
-
-      //const city = smokeMetaData.features.filter(el => {return el.place_type[0] === 'city'})[0].text
-      const country = smokeMetaData.features.filter(el => {return el.place_type[0] === 'country'})[0].text
-      
-      const isNewHeight = height[2] >= 150
-      const isNewCity = !stats?.visitedCities?.includes(city)
-      const isNewCountry = !stats?.visitedCountries?.includes(country)
-      const isNightCig = dayjs().format('HH') > 16 || dayjs().format('HH') < 5
-      console.log(stats)
-
-      if (typeof stats === 'undefined') {
-        tx.set(docRef, {
-          visitedCities: isNewCity ? [city] : [],
-          visitedCountries: isNewCountry ? [country] : [],
-          nightCigs: isNightCig ? 1 : 0,
-          withFriend: {friends: [], amount: 0},
-          over150M: 0,
-        })
-
-        // tx.set(docRef, {
-        //   visitedCities: isNewCity ? arrayUnion(city) : stats?.visitedCities,
-        //   visitedCountries: isNewCountry ? arrayUnion(country) : stats?.visitedCountries,
-        //   nightCigs: isNightCig ? stats?.nightCigs + 1 : stats?.nightCigs
-        // })
-      }else{
-        tx.update(docRef, {
-          visitedCities: isNewCity ? [...stats?.visitedCities, city] : stats?.visitedCities,
-          visitedCountries: isNewCountry ? [...stats?.visitedCountries, country] : stats?.visitedCountries,
-          over150M: typeof stats?.over150M !== 'undefined' ? isNewHeight ? stats?.over150M + 1 : stats?.over150M : isNewHeight ? 1 : 0,
-        })
-      }
-
-      
-    })
-
-    await runTransaction(db, async (tx) => {
-      const docRef = doc(db, "Users", user.uid, 'Stats', 'main')
-      const statsNew = (await tx.get(docRef)).data()
-
-      const badgeSnap = await getDocs(collection(db, "Badges"))
-      
-      badgeSnap.forEach((doc) => {
-        const badge = doc.data()
-        const criteriaField = badge.criteriaField
-        //if(badge.id != 'nightowl') return
-
-        let criteriaFieldValue 
-        if (criteriaField.includes('.')) {
-          const criteriaFieldPath = criteriaField.split('.')
-          criteriaFieldValue = typeof statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] === 'number' ? statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]] : statsNew[criteriaFieldPath[0]][criteriaFieldPath[1]].length
-        }else{
-
-          criteriaFieldValue = typeof statsNew[criteriaField] === 'number' ? statsNew[criteriaField] : statsNew[criteriaField].length 
-        }
-        let newBadgeLevel = 0
-
-        badge.levels.forEach((level) => {
-          if (criteriaFieldValue >= level.value) {
-            newBadgeLevel = level.level
-          }
-        })
-        //console.log(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value )
-
-          if (criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue < badge.levels[badge.levels.length - 1].value) {
-            const progressSinceLevelUp = criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
-            const progressNeededForLevelUp = badge.levels[newBadgeLevel > 0 ? newBadgeLevel : 0].value - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value
-            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
-            const badgeLevel = newBadgeLevel
-            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-          }else if (!newBadgeLevel){
-            const progressSinceLevelUp = criteriaFieldValue
-            const progressNeededForLevelUp = badge.levels[newBadgeLevel].value
-            const progress = Math.round((progressSinceLevelUp / progressNeededForLevelUp) * 100)
-            const badgeLevel = newBadgeLevel
-
-            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-          }else if(criteriaFieldValue - badge.levels[newBadgeLevel > 0 ? newBadgeLevel - 1 : 0 ].value >= 0 && criteriaFieldValue >= badge.levels[badge.levels.length - 1].value) {
-            const progress = 0
-            const badgeLevel = newBadgeLevel
-            const progressNeededForLevelUp = 0
-            updateBadge(progress, badgeLevel, badge.id, progressNeededForLevelUp)
-          }
-      })
-    })
+    await badgeContext.updateStats([o?.lat, o?.lng])
+    setBadgeCalcLoading(false)
+    setBadgeCalcError('Punkt wurde erfolgreich zu der Statistik hinzugefügt!')
   }
   
   const handleBadgeAlertClose = () => {
     setBadgeOpen(false)
-  }        
+  }
+  
+  const handleJumpToFriend = () => {
+    console.log('sack')
+
+    var elDiv = document.createElement('div');
+    
+    createRoot(elDiv).render(
+      <>
+        <Stack justifyContent={'center'} alignItems={'center'} sx={{transform: 'translateY(-50%)'}}>
+          <Typography>{friends[friendIndex][1]}</Typography>
+          <PersonPinCircle fontSize='large'/>
+        </Stack>
+      
+      </>
+    )
+
+    var time = "Fehler beim Laden der Zeit";
+
+    if(typeof friends[friendIndex][2].timestamp !== 'undefined'){
+      const isToday = dayjs(friends[friendIndex][2].timestamp.toDate()).get('date') == dayjs().get('date')
+      const isYesterday = dayjs(friends[friendIndex][2].timestamp.toDate()).get('date') == dayjs().subtract(1, 'day').get('date')
+      //dayjs(friends[friendIndex][2].timestamp.toDate())
+  
+      
+      if(isToday){
+        time = "Zuletzt heute um " + dayjs(friends[friendIndex][2].timestamp.toDate()).format('HH:mm')  + " aktualisiert."
+      }else if(isYesterday){
+        time = "Zuletzt gestern um " + dayjs(friends[friendIndex][2].timestamp.toDate()).format('HH:mm')  + " aktualisiert."
+      } else {
+        time = "Zuletzt am " + dayjs(friends[friendIndex][2].timestamp.toDate()).format('DD.MM.') + " um " + dayjs(friends[friendIndex][2].timestamp.toDate()).format('HH:mm')  + " aktualisiert."
+      }
+    }
+
+    elDiv.addEventListener('click', function () {
+      setOpen(true)
+      setDrawerProps({
+        friend: friends[friendIndex][1],
+        lat: friends[friendIndex][2].point?._lat || friends[friendIndex][2]._lat,
+        lng: friends[friendIndex][2].point?._long || friends[friendIndex][2]._long,
+        amount: 1,
+        additionalInfo: {
+          time: time
+        }
+      })
+    })
+
+    if(friendLocationMarker){
+      friendLocationMarker.remove()
+    }
+
+    if (map.current) {
+      map.current.flyTo({ center: [friends[friendIndex][2].point?._long || friends[friendIndex][2]._long, friends[friendIndex][2].point?._lat || friends[friendIndex][2]._lat], zoom: 16, speed: 2})
+      friendLocationMarker = new maptilersdk.Marker({element: elDiv}).setLngLat([friends[friendIndex][2].point?._long || friends[friendIndex][2]._long, friends[friendIndex][2].point?._lat || friends[friendIndex][2]._lat]).addTo(map.current)
+    }
+  }
 
 
       return (
         <>
           <Snackbar
-            open={badgeOpen}
-            onClose={handleBadgeAlertClose}
+            open={badgeContext.badgeOpen}
+            onClose={badgeContext.handleBadgeAlertClose}
             message={
               <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} justifyContent={'space-between'} sx={{width: '100%'}}>
                 <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} sx={{color: theme.palette.text.primary}}>
-                  <MilitaryTechIcon /> {badgeMessage}
+                  <MilitaryTechIcon /> {badgeContext.badgeMessage}
                 </Stack>
-                <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/stats'); callback()}}>ansehen</Button>
+                <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/stats'); callback('stats')}}>ansehen</Button>
               </Stack>
             }
             autoHideDuration={5000}
             anchorOrigin={{vertical: 'top', horizontal: 'center'}}
             sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
             />
-          <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
+          <Stack zIndex={'4'} top={15} left={0} right={0} position={'absolute'} direction={'row'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'} sx={{pointerEvents: 'none'}}>
             <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowBackIosIcon/></IconButton>
             <Typography height={'auto'} maxWidth={'40vw'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative', }}>{
             friends.length > 0 ? friends[friendIndex][1] : 'no friends'
             }</Typography>
             <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}, pointerEvents: 'all'}}><ArrowForwardIosIcon/></IconButton>
           </Stack>
-            <Stack zIndex={'5'} position={'absolute'} top={80} left={20} sx={{pointerEvents: 'none', background: theme.palette.background.paper, borderRadius: 1, overflow: 'hidden',  maxWidth: '90vw'}}  pl={'40px'} pr={2} py={1} >
-              <Typography sx={{ position: 'relative', ':before': { zIndex: '100', width: '20px', height: '5px', content: '" "', background: 'linear-gradient(90deg, rgb(136, 120, 251) 0%, rgb(120, 252, 215) 100%)', position: 'absolute', left: '-30px', top:'50%', transform: 'translate(0px, -50%)', borderRadius: '100px' }}}>Du</Typography>
-              <Typography sx={{ position: 'relative',  ':before': { zIndex: '10', width: '20px', height: '5px', content: '" "', background: 'linear-gradient(90deg, rgb(133, 3, 37) 0%, rgb(186, 204, 3) 100%)', position: 'absolute', left: '-30px', top:'50%', transform: 'translate(0px, -50%)', borderRadius: '100px' }}}>
-                  
-                  <Typography component={'span'} sx={{whiteSpace:'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{friends.length > 0 ? friends[friendIndex][1]: 'Loading...'}</Typography>
-              </Typography>
-            </Stack>
+
+          <MapTopScroll ownMarkerLoading={ownMarkerLoading} handleJumpToFriend={handleJumpToFriend} friendMarkerLoading={friendMarkerLoading} friendName={friends.length > 0 ? friends[friendIndex][1]: 'Loading...'} canJumpToFriend={friends.length > 0 ? friends[friendIndex][3] : true}/>
+
           <Box zIndex={'5'} position={'absolute'} bottom={80} right={20}>
             <Stack gap={2}>
                 <IconButton loading={!coords} onClick={jumpToLoc} size='large' sx={{":hover": {backgroundColor: (theme) => theme.palette.primary.main} ,":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} color='white' aria-label="addFriend">
@@ -498,7 +460,17 @@ const Map = (props) => {
                 <Stack paddingTop={3} gap={2}>
                   
                   <Typography color='#fff'>{drawerProps.lat} // {drawerProps.lng}</Typography>
-                  <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
+                  {typeof drawerProps?.additionalInfo === 'undefined' ? 
+                    (
+                      <>
+                        <Typography color='#fff'>{drawerProps.amount > 1 ? `${drawerProps.friend ? drawerProps.friend + ' hat' : 'Du hast'} an diesem Ort bis jetzt ${drawerProps.amount} Zigaretten geraucht.` : `An diesem Ort wurde bis jetzt eine Zigarette geraucht.`}</Typography>
+                      </>
+                    ) : (
+                      <>
+                      <Typography color='#fff'>An diesem Ort hat {drawerProps.friend} zuletzt Smokescore benutzt.</Typography>
+                      </>
+                    )
+                  }
                   <Divider></Divider>
                   {!drawerProps.friend && (
                     <>
@@ -510,6 +482,11 @@ const Map = (props) => {
                           <Typography color={'success'}>{badgeCalcError}</Typography>
                         </Stack>
                       )}
+                    </>
+                  )}
+                  {typeof drawerProps?.additionalInfo !== 'undefined' && (
+                    <>
+                      <Typography textAlign={'center'} color={grey[500]}>{drawerProps.additionalInfo?.time}</Typography>
                     </>
                   )}
                 </Stack>

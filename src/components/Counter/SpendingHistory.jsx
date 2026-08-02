@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import {useNavigate} from 'react-router-dom';
-import { useUserAuth } from '../context/userAuthConfig';
+import { useUserAuth } from '../../context/userAuthConfig';
 import {Container, Box, Button, Typography, Table, TableBody, 
   TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
   List, Dialog, Input, FormControl, IconButton,
@@ -9,7 +9,7 @@ import {Container, Box, Button, Typography, Table, TableBody,
 } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';

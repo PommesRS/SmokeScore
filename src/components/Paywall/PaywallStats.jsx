@@ -3,7 +3,7 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import {Box, Button, Typography} from '@mui/material'
 import Stack from '@mui/material/Stack';
 import { lineElementClasses, markElementClasses,} from '@mui/x-charts/LineChart';
-import { PaywallRender } from './index.js'
+import { PaywallRender } from '../index.js'
 
 
 

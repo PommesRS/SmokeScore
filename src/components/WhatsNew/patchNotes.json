@@ -1,0 +1,16 @@
+{
+    "notes": 
+    [
+        {
+            "title": "Standort mit Freunden Teilen",
+            "body" : "Es kann von nun an der Standort von Freunden angesehen werden. Dieser Standort bezieht sich auf die Position, an der SmokeScore das letzte Mal von der Person geöffnet wurde. Durch technische Limitationen einer Progressive-Web-App ist ein dauerhaftes Teilen des Standortes nicht möglich. Das Feature ist standardmäßig eingeschaltet, kann jedoch über 'Einstellungen->Postition teilen' ausgeschaltet werden, sodass Freunde den Standort auf der Karte nicht mehr einsehen können.",
+            "imgPath": "./pn1.png"
+        },
+        {
+            "title": "Update für die Karte",
+            "body": "Oben, unterhalb des Freunde-Switchers, ist nun, ähnlich wie bei Google Maps, eine vertikale Scroll-Leiste. Die Farblegende spielt ab sofort eine Animation während des Ladevorgangs für die jeweiligen Pins.",
+            "imgPath": "./pn2.gif"
+        }
+    ],
+    "version": "1.3"
+}

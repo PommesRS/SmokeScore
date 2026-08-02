@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-
+import CustomBadgeAvatar from './CustomBadgeAvatar';
 
 const Badges = ({metaData}) => {
     const theme = useTheme()
@@ -79,9 +79,13 @@ const Badges = ({metaData}) => {
                         <Divider></Divider>
                         <Stack sx={{minHeight: '20vh', p: 0}} gap={1} textAlign={'center'} display={'flex'} flexDirection={'column'} justifyContent={'space-around'}>
                             <Typography variant='h2' fontWeight={700} lineHeight={0.8}>{metaData.level}</Typography>
-                            <Typography variant='h7'>nächstes Abzeichen Level</Typography>
-                            <LinearProgress sx={{borderRadius: 50, width: '100%', height: 8}} variant='determinate' value={metaData.progression}/>
-                            <Typography>{Math.round(metaData.progression / 100 * metaData.levelCap)} / {metaData.levelCap}</Typography>
+                            {metaData.type === "LEVEL" && (
+                                <>
+                                    <Typography variant='h7'>Abzeichen Level</Typography>
+                                    <LinearProgress sx={{borderRadius: 50, width: '100%', height: 8}} variant='determinate' value={metaData.progression * 100}/>
+                                    <Typography>{Math.round(metaData.progression * 100)}%</Typography>
+                                </>
+                            )}
                         </Stack>
                         <List>
                             <ListItemButton onClick={() => {setListOpen((prev) => !prev)}}>
@@ -100,25 +104,28 @@ const Badges = ({metaData}) => {
                     
                 </StyledBox>
                 </SwipeableDrawer>
-                    <ListItemButton  onClick={toggleDrawer(true)} sx={{ background: theme.palette.background.paper, borderRadius: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 200, minWidth: 200, overflow: 'hidden', ':hover': {background: theme.palette.background.paper}, p: 2, boxShadow: 5}}>
+                    <ListItemButton  onClick={toggleDrawer(true)} sx={{ background: theme.palette.background.paper, borderRadius: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 200, minWidth: 200, maxHeight: 110, overflow: 'hidden', ':hover': {background: theme.palette.background.paper}, p: 2, boxShadow: 5}}>
                         <ListItemText primary={metaData.name} sx={{mb: 2}} slotProps={{secondary: {sx: { width: '100%',color:'gray', display: 'inline-block', overflow: 'hidden', whiteSpace: 'wrap', textOverflow: 'ellipsis'}}}}></ListItemText>
                         
                         <Stack sx={{width: '100%'}} direction={'row'} gap={2} display={'flex'} alignItems="center" justifyContent="center">
-                            {(metaData.id === 'urbanexplorer' || metaData.id === 'globetrotter') && (  
-                                <Avatar sx={{position: 'relative', '::after': {position: 'absolute', content: `"${metaData.level}"`, bottom: -5, right: 0, fontSize: '20pt', fontWeight: 800, transform: 'rotate(10deg)'}, overflow: 'visible'}} display={'flex'} alignItems="center" justifyContent="center" src='BadgeLocation48.png'/>
+                            {metaData.category === 'position' && (  
+                                <CustomBadgeAvatar metaData={metaData} src='BadgeLocation48.png'/>
                             )}
-                            {metaData.id === 'nightowl' && (
-                                <Avatar sx={{position: 'relative', '::after': {position: 'absolute', content: `"${metaData.level}"`, bottom: -5, right: 0, fontSize: '20pt', fontWeight: 800, transform: 'rotate(10deg)'}, overflow: 'visible'}} display={'flex'} alignItems="center" justifyContent="center" src='BadgeTime48.png'/>
+                            {metaData.category === 'time' && (
+                                <CustomBadgeAvatar metaData={metaData} src='BadgeTime48.png'/>
                             )}
-                            {metaData.id === 'notalone' && (
-                                <Avatar sx={{position: 'relative', '::after': {position: 'absolute', content: `"${metaData.level}"`, bottom: -5, right: 0, fontSize: '20pt', fontWeight: 800, transform: 'rotate(10deg)'}, overflow: 'visible'}} display={'flex'} alignItems="center" justifyContent="center" src='BadgeSocial48.png'/>
+                            {metaData.category === 'social' && (
+                                <CustomBadgeAvatar metaData={metaData} src='BadgeSocial48.png'/>
                             )}
-                            <Stack sx={{width: '100%', overflow: 'hidden'}} gap={0} display={'flex'} justifyContent={'center'}>
-                                <Stack gap={1} justifyContent={'space-between'} alignItems={'center'} display={'flex'}>
-                                    <Typography>{Math.round(metaData.progression / 100 * metaData.levelCap)} / {metaData.levelCap}</Typography>
-                                    <LinearProgress sx={{borderRadius: 2, width: '100%'}} variant='determinate' value={metaData.progression}/>
+
+                            {metaData.progression && (
+                                <Stack sx={{width: '100%', overflow: 'hidden'}} gap={0} display={'flex'} justifyContent={'center'}>
+                                        <Stack gap={1} justifyContent={'space-between'} alignItems={'center'} display={'flex'}>
+                                            <Typography>{Math.round(metaData.progression * 100)}%</Typography>
+                                            <LinearProgress sx={{borderRadius: 2, width: '100%'}} variant='determinate' value={metaData.progression * 100}/> 
+                                        </Stack>
                                 </Stack>
-                            </Stack>
+                            )}
                         </Stack>
                     </ListItemButton>
             </>

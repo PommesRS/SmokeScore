@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useState } from 'react'
 import * as maptilersdk from '@maptiler/sdk';
 import PropTypes from 'prop-types';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import './map.css';
+import '../Map/map.css';
 import { Box, SwipeableDrawer, Typography, Stack, IconButton } from '@mui/material';
 import ModeOfTravelIcon from '@mui/icons-material/ModeOfTravel';
-import { useUserAuth } from '../context/userAuthConfig.jsx';
-import { db } from '../firebase.js';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
+import { db } from '../../firebase.js';
 import { collection, getCountFromServer, doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "@firebase/firestore";
 import { point, buffer, bbox } from '@turf/turf';
 import { styled } from '@mui/material/styles';

@@ -17,15 +17,16 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
-import { useUserAuth } from '../context/userAuthConfig';
-import { useAppState } from '../context/appState';
-import { useCounter } from '../context/counterContext.jsx';
-import { useStreak } from '../context/userStreak.jsx';
-import { useNotification } from '../context/notificationContext';
+import { useUserAuth } from '../../context/userAuthConfig';
+import { useAppState } from '../../context/appState';
+import { useCounter } from '../../context/counterContext.jsx';
+import { useUserBadges } from '../../context/userBadges.jsx';
+import { useStreak } from '../../context/userStreak.jsx';
+import { useNotification } from '../../context/notificationContext';
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
-import '../index.css'
+import '../../index.css'
 import Confetti from 'react-confetti-boom';
 //import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate, set, constructNow } from 'date-fns'
 import { Geolocation } from '@capacitor/geolocation';
@@ -35,7 +36,7 @@ import * as maptilersdk from '@maptiler/sdk';
 import { styled } from '@mui/material/styles';
 import { Navigate } from 'react-router-dom';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
-import {SpendingHistory} from './index.js'
+import {SpendingHistory} from '../index.js'
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -77,8 +78,9 @@ function Counter({callback}) {
   const [bGetCoords, setBGetCoords] = useState(true)
   const [loading, setLoading] = useState(true)
   const [doesLatestCigExist, setDoesLatestCigExist] = useState(true)
-  const [badgeOpen, setBadgeOpen] = useState(false)
+  const { badgeOpen, handleBadgeAlertClose } = useUserBadges()
   const [badgeMessage, setBadgeMessage] = useState('Neues Abzeichen Freigeschaltet!')
+  const badgesContext = useUserBadges();
   const counterContext = useCounter();
   const streakContext = useStreak();
   //const [latestCigs, setLatestCigs] = useState([])
@@ -102,7 +104,6 @@ function Counter({callback}) {
   const streakRef = useRef(null)
   const { counterVariant, setCounterVariantCig, setCounterVariantJoint } = useAppState()
   const { sendNotification } = useNotification()
-
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -167,6 +168,7 @@ function Counter({callback}) {
     await counterContext.incrementCounter(geolocation, false);
     const isStreakIncrement = await streakContext.calculateStreak();
     animateStreak(isStreakIncrement)
+    badgesContext.updateStats(geolocation, await isStreakIncrement)
     checkForAnimations(counterContext.counter)
     setTimeout(() => setLoading(false), 500) 
   }
@@ -185,13 +187,7 @@ function Counter({callback}) {
     if (loading) return
     setLoading(true)
     await counterContext.incrementCounter(geolocation, true);
-    sendNotification(user, true)
-
     setLoading(false)
-  }
-
-  const handleBadgeAlertClose = () => {
-    setBadgeOpen(false)
   }
 
   const checkForAnimations = async (count) => {
@@ -227,7 +223,7 @@ function Counter({callback}) {
             <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} sx={{color: theme.palette.text.primary}}>
               <MilitaryTechIcon/>  {badgeMessage}
             </Stack>
-            <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/stats'); callback()}}>ansehen</Button>
+            <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/stats'); callback('stats')}}>ansehen</Button>
           </Stack>
         }
         autoHideDuration={5000}

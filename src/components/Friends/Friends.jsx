@@ -6,7 +6,7 @@ import {
   Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
   getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider
 } from '@mui/material'
-import './map.css';
+import '../Map/map.css';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
@@ -17,9 +17,9 @@ import WhatshotIcon from '@mui/icons-material/Whatshot';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import { db, storage } from '../firebase.js';
+import { db, storage } from '../../firebase.js';
 import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp } from "@firebase/firestore";
-import { useUserAuth } from '../context/userAuthConfig';
+import { useUserAuth } from '../../context/userAuthConfig.jsx';
 import {
   LinePlot,
   MarkPlot,
@@ -33,8 +33,11 @@ import { startOfWeek, endOfWeek, format, getDay, set } from 'date-fns'
 import * as maptilersdk from '@maptiler/sdk';
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import dayjs from 'dayjs';
-import { CameraCapture } from './index.js';
+import { CameraCapture } from '../index.js';
 import { deleteObject, ref } from 'firebase/storage';
+import FriendBadge from './FriendBadge.jsx';
+import FriendChart from './FriendChart.jsx';
+import StoryDialog from './StoryDialog.jsx';
 
 export const CustomTag = ({value}) => {
   const theme = useTheme()
@@ -285,17 +288,18 @@ const Friends = () => {
       
       const uid = friend
       const docRef = doc(db, "Users", uid)
+      const friendData = (await getDoc(docRef)).data()
       const weekStatsRef = doc(db, "Users", uid, 'weekly', startOfCurrentWeek + '-' + endOfCurrentWeek)
 
-      const friendName = (await getDoc(docRef)).data().displayName
+      const friendName = friendData.displayName
       const weekStats = (await getDoc(weekStatsRef)).data()
-      const totalAmount = (await getDoc(docRef)).data().counter
-      const tags = (await getDoc(docRef)).data().tags
-      const locations = (await getDoc(docRef)).data().geoLocations
-      const currentPics = (await getDoc(docRef)).data().currentPics
-      const isExcluded = (await getDoc(docRef)).data().excludeMoments?.includes(user.uid)
-      const streakAmount = (await getDoc(docRef)).data().streak?.amount
-      const fcmToken = (await getDoc(docRef)).data().fcmToken
+      const totalAmount = friendData.counter
+      const tags = friendData.tags
+      const locations = friendData.geoLocations
+      const currentPics = friendData.currentPics
+      const isExcluded = friendData.excludeMoments?.includes(user.uid)
+      const streakAmount = friendData.streak?.amount
+      const fcmToken = friendData.fcmToken
       let street
 
       locations.sort((a,b) => {
@@ -329,32 +333,6 @@ const Friends = () => {
 
     if (friends.length == 0) {
       return
-    }
-
-    if(typeof friends[friendIndex][3] !== 'undefined') { 
-
-      const mapCoords = friends[friendIndex][3]
-      if (map.current) {
-        map.current.jumpTo({ center: [mapCoords.point._long, mapCoords.point._lat]})
-      }
-  
-  
-      map.current = new maptilersdk.Map({
-        container: mapContainer.current,
-        style: '59d38153-6ea3-464a-b3c9-2e869c449863',
-        //style: mapStyle,
-        center: [mapCoords.point._long, mapCoords.point._lat],
-        zoom: 12,
-        navigationControl: false
-      });
-    }else {
-      map.current = new maptilersdk.Map({
-        container: mapContainer.current,
-        style: '59d38153-6ea3-464a-b3c9-2e869c449863',
-        //style: mapStyle,
-        zoom: 0,
-        navigationControl: false
-      });
     }
 
   }, [friendIndex])
@@ -490,283 +468,7 @@ const Friends = () => {
 
   /* Story Feature */
 
-  function CustomProgressBar({imgIndex, selfIndex, callBack, arrLength, isPaused}) {
-    
-  const [progress, setProgress] = useState(0);
-  const pauseRef = useRef(isPaused);
-  const prevImgIndex = useRef(imgIndex);
 
-  // Keep ref in sync.
-  useEffect(() => {
-    pauseRef.current = isPaused;
-  }, [isPaused]);
-
-  useEffect(() => {
-    if (imgIndex === selfIndex && prevImgIndex.current !== imgIndex) {
-      setProgress(0);
-    }
-    prevImgIndex.current = imgIndex;
-  }, [imgIndex, selfIndex]);
-
-  // Progress logic.
-  useEffect(() => {
-    // Before / after ordering
-    if (imgIndex > selfIndex) {
-      setProgress(100);
-      return;
-    }
-    if (imgIndex < selfIndex) {
-      setProgress(0);
-      return;
-    }
-
-    const timer = setInterval(() => {
-      //if (pauseRef.current) return; // why: avoid stale closure + skip when paused
-
-      setProgress((prev) => {
-        if (prev >= 100) {
-          if (selfIndex === arrLength - 1) {
-            handleStoryClose?.();
-          } else {
-            callBack?.();
-          }
-          return 0;
-        }
-        if (!pauseRef.current) {
-          return prev + 1;
-        }else {
-          return prev
-        };
-      });
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [imgIndex, selfIndex, arrLength, callBack, handleStoryClose]);
-
-  return (
-    <Stack direction={"row"} spacing={1} sx={{ width: "100%" }}>
-      <LinearProgress
-        sx={{ width: "100%", borderRadius: 10 }}
-        variant="determinate"
-        value={progress}
-      />
-    </Stack>
-  );
-  }
-
-  function StoryDialog({currentPics}) {
-    if (openStory == false) {return}
-    const [imgIndex, setImgIndex] = useState(0)
-    const [openInsights, setOpenInsights] = useState(false)
-    
-    const [isPaused, setIsPaused] = useState(false)
-    //currentPics = currentPics.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
-
-    const sortedPics = useMemo(() => {
-      return [...currentPics].sort((a, b) =>
-        a.createdAt.toMillis() - b.createdAt.toMillis()
-      );
-    }, [currentPics]);
-
-    console.log(sortedPics)
-
-    const addToSeen = useCallback(async () => {
-      if (sortedPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
-      if (sortedPics[0].userId === user.uid) return
-
-      const seenBy = sortedPics[imgIndex].seenBy
-
-      let momentId = ''
-      const q = query(collection(db, 'smokeMoments'), where('imagePath', '==', sortedPics[imgIndex].imagePath))
-      const querySnapshot = await getDocs(q)
-
-      querySnapshot.forEach(doc => {
-        momentId = doc.id
-      });
-
-      const momentRef = doc(db, 'smokeMoments', momentId)
-      let updatedSeenBy = []
-      if (seenBy) {
-        updatedSeenBy = [...seenBy, {name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-      }else{
-        updatedSeenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-      }
-
-      await updateDoc(momentRef, {
-        seenBy: updatedSeenBy
-      })
-
-      sortedPics[imgIndex].seenBy = [{name: user.displayName, userId: user.uid, time: Timestamp.now()}]
-    }, [imgIndex])
-
-    useEffect(() => {
-      return () => addToSeen()
-    }, [imgIndex, sortedPics])
-
-    const handleNextImage = () => {
-
-      if (imgIndex >= sortedPics.length - 1) {
-      handleStoryClose()
-      } else {
-        setImgIndex(imgIndex + 1)
-      }
-    }
-
-    const handlePrevImgage = () => {
-      if (imgIndex == 0) { 
-        return
-      }
-      setImgIndex(imgIndex - 1)
-
-
-    }
-
-    const tapTimer = useRef(null);
-    const tapStart = useRef(0);
-
-    const handlePressStart = (e, side) => {
-      e.preventDefault();
-      tapStart.current = Date.now();
-      setIsPaused(true);
-
-      tapTimer.current = setTimeout(() => {
-        // long press → only pause
-      }, 200);
-    };
-
-    const handlePressEnd = (e, side) => {
-      e.preventDefault();
-      setIsPaused(false);
-      clearTimeout(tapTimer.current);
-
-      const tapDuration = Date.now() - tapStart.current;
-
-      if (tapDuration < 200) {
-        // short tap
-        if (side === 'left') {
-          handlePrevImgage();
-        } else {
-          handleNextImage();
-        }
-      }
-    };
-
-    function InsightDialog() {
-      return (
-        <Dialog sx={{backdropFilter: 'blur(2px)'}}  open={openInsights} onClose={handleCloseInsights}>
-          <DialogTitle>
-            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-              Optionen
-              <IconButton sx={{':focus' : {outline: 'none'}}} onClick={handleCloseInsights}><CloseRoundedIcon fontSize='medium'/></IconButton>
-            </Stack>
-          </DialogTitle>
-          <Divider />
-          <DialogTitle>Gesehen von</DialogTitle>
-          <DialogContent>
-            <List sx={{maxHeight: 300}}>
-              {sortedPics[imgIndex].seenBy?.map((user) => (
-                  <Paper key={user.userId} elevation={5} sx={{my: 2, p: 1}}>
-                    <ListItem>
-                      <Stack direction={'row'} justifyContent={'space-between'} sx={{width: '100%'}}>
-                        <Typography>{user.name}</Typography>
-                        <Typography fontWeight={200}>{dayjs(user.time.toDate()).format('HH:mm')}</Typography>
-                      </Stack>
-                    </ListItem>
-                  </Paper>
-              ))}
-            </List>
-          </DialogContent>
-          <Divider />
-          <DialogTitle>Bild Löschen</DialogTitle>
-          <DialogContent>
-            <Stack>
-              <DialogContentText>Willst du dieses Bild wirklich aus deinen Smokementen löschen?</DialogContentText>
-              <DialogContentText>Diese Aktion kann nicht rückgängig gemacht werden!</DialogContentText>
-            </Stack>
-            <DialogActions>
-              <Button variant='contained' sx={{':focus': {outline: 'none'}}} color='error' onClick={() => {cleanUpExpiredMoments(sortedPics[imgIndex].imagePath), handleStoryClose()}}>Löschen</Button>
-            </DialogActions>
-          </DialogContent>
-        </Dialog>
-      )
-    }
-
-    const handleOpenInsights = () => {
-      setIsPaused(true);
-      setOpenInsights(true)
-    }
-
-    const handleCloseInsights = () => {
-      setIsPaused(false);
-      setOpenInsights(false)
-    }
-
-    return (
-      <>
-      <InsightDialog></InsightDialog>
-      <SwipeableDrawer
-        anchor="bottom"
-        ref={dialogRef}
-        className='storyDialog'
-        sx={{
-          backdropFilter: "blur(2px)",
-          height: '100vh',
-        }}
-        open={openStory}
-        onClose={handleStoryClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        swipeAreaWidth={0}
-        fullScreen
-        >
-        <Box sx={{height: '100vh', overflow: 'hidden'}} display={'flex'} alignItems="center" justifyContent="center">
-          <Box sx={{position: 'absolute', zIndex: 10, top: 0, left: 0, width: '100%', height: '95%', boxShadow: 'inset 0px 60px 21px -7px rgba(0,0,0,0.51)', pb: 5}}>
-            <Stack mx={1} pt={1}>
-              <Stack direction={'row'} gap={1} sx={{width: '100%'}}>
-                {sortedPics?.map((e, i) => (
-                  <CustomProgressBar key={i} selfIndex={i} imgIndex={imgIndex} callBack={handleNextImage} isPaused={isPaused} arrLength={sortedPics.length}/>
-                ))}
-              </Stack>
-              <Stack mx={1} mt={0.5} direction={'row'} sx={{position: 'relative'}} alignItems={'center'} justifyContent={'space-between'} gap={2}>
-                <ArrowBackIosNewIcon onClick={handleStoryClose} sx={{':hover': {cursor: 'pointer'}}}/>
-                <Typography fontSize={20} fontWeight={600} sx={{position: 'absolute', left: '50%', transform: 'translate(-50%)'}}>{sortedPics[0].name}</Typography>
-                <Stack direction={'row'} gap={2} justifyContent={'center'} alignItems={'center'}>
-                  <Typography fontSize={10} fontWeight={400}>{dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') > 0 ? dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'hour') + ' Std.' : dayjs().diff(dayjs((sortedPics[imgIndex].createdAt).toDate()), 'minute') + ' Min'}</Typography>
-                  {sortedPics[imgIndex].userId == user.uid ? 
-                    <IconButton sx={{p: 1, ':focus' : {outline: 'none'}}} onClick={handleOpenInsights} ><MoreVertIcon fontSize='small' /></IconButton>
-                  : 
-                  <></>
-                }
-                </Stack>
-
-              </Stack>
-            </Stack>
-            <Stack height={'100%'} direction={'row'} gap={4} justifyContent={'space-between'}>
-              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'left')} onTouchEnd={(e) => handlePressEnd(e, 'left')} onMouseDown={(e) => handlePressStart(e, 'left')} onMouseUp={(e) => handlePressEnd(e, 'left')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
-              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
-            </Stack>
-          </Box>
-          <Box sx={{maxHeight: '100dvh', maxWidth: '546px', position: 'relative'}}>
-            {sortedPics[imgIndex].overlay ? 
-                    <div
-                      style={{ color: "white", fontSize: 24, outline: "none", textAlign: 'center', textWrap: 'balance', wordBreak: 'break-all', maxWidth:'546px', mx: 50, touchAction: 'none', background: 'rgba(0,0,0,0.6)', position: 'absolute', width: '100%', top: `${sortedPics[imgIndex].overlay.positionY}%`,}}
-                    >
-                      {sortedPics[imgIndex].overlay.text}
-                    </div>
-              // <Typography variant='h6' sx={{background: 'rgba(0,0,0,0.6)', position: 'absolute', width: '100%', top: `${sortedPics[imgIndex].overlay.positionY}%`, textAlign:'center', textWrap: 'wrap', maxWidth:'100%'}}>{sortedPics[imgIndex].overlay.text}</Typography>
-              :
-              <></>
-            }
-            <img className='storyImg' 
-              src={sortedPics ? sortedPics[imgIndex].imagePath : 'https://miro.medium.com/v2/resize:fit:1400/1*MXyMqcEJ6Se0SCWcYCKZTQ.jpeg'}
-              alt="mainImg"
-              />
-          </Box>
-        </Box>
-      </SwipeableDrawer>
-      </>
-    )
-  }
 
   const handleStoryOpen = (currentPics) => {
     currentPicsRef.current = currentPics
@@ -816,7 +518,6 @@ const Friends = () => {
   const excludeListId = openExcludeList ? 'excludeList-popover' : undefined;
 
   function ExcludeListPopover() {
-
     const [friendsList, setFriendsList] = useState([])
 
     useEffect(() => {
@@ -887,7 +588,7 @@ const Friends = () => {
     <>
     <FAddDialog></FAddDialog>
     <FDeleteDialog></FDeleteDialog>
-    <StoryDialog currentPics={currentPicsRef.current}></StoryDialog>
+    <StoryDialog handleStoryClose={handleStoryClose} openStory={openStory} dialogRef={dialogRef} currentPics={currentPicsRef.current}></StoryDialog>
     <CameraDialog></CameraDialog>
     <ExcludeListPopover></ExcludeListPopover>
 
@@ -969,231 +670,13 @@ const Friends = () => {
             </Stack>
             <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
           </Stack>
-          {/* <Stack>
-            <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'}>
-              <WhatshotIcon sx={{fontSize: '70pt'}}/>
-              <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '90pt', position: 'relative', lineHeight: '1', textAlign: 'center'}}>NaN</Typography>
-            </Stack>
-            <Typography height={'auto'} noWrap sx={{fontWeight: 'light', fontSize: '20pt', position: 'relative', textAlign: 'center'}}>Streak</Typography>
-          </Stack> */}
-          {friends.length > 0 ?
-            <LineChart
-              series={[
-                  {
-                    id:'main',
-                    label: 'Du',
-                    data: ownStats,
-                    area: true,
-                    showMark: false,
-                    yAxisId: 'main',
-                    color: theme.palette.primary.main
-                  },
-                  {
-                    id: 'friend',
-                    label: friends[friendIndex][1],
-                    data: friends[friendIndex][2] ? friends[friendIndex][2].days : [0,0,0,0,0,0,0],
-                    area: true,
-                    showMark: false,
-                    yAxisId: 'friend',
-                    color: theme.palette.secondary.main
-                  }
-                  ]}
-              margin={{
-                  top: 10,
-                  bottom: 20,
-                  left: -20,
-                  right: 0
-                  }}
-              yAxis={[
-                // {
-                //     // colorMap:
-                //     // {
-                //     //   type: 'continuous',
-                //     //   min: 0,
-                //     //   max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
-                //     //   color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
-                //     // }
-                // },
-                {
-                  id: 'main',
-                  colorMap: {
-                    type: 'continuous',
-                    min: 0,
-                    max: friends[friendIndex][2] ? Math.max(...friends[friendIndex][2].days) > Math.max(...ownStats) ? Math.max(...friends[friendIndex][2].days) : Math.max(...ownStats) : 5,
-                    color: [theme.palette.primary.transparent02, theme.palette.primary.transparent05],
-                  },
-                },
-                {
-                  id: 'friend',
-                  colorMap: {
-                    type: 'continuous',
-                    min: 0,
-                    max: 1,
-                    color:  [theme.palette.secondary.transparent02, theme.palette.secondary.transparent05],
-                  },
-                },
-              ]}
-              xAxis={[
-                  {
-                      dataKey: 'date',
-                      zoom: true,
-                      scaleType: 'point',
-                      data: [
-                          'Mo',
-                          'Di',
-                          'Mi',
-                          'Do',
-                          'Fr',
-                          'Sa',
-                          'So'
-                      ]
-                  },
-              ]}
-              sx={{
 
-                  pointerEvents: 'all',
-                  borderRadius: 4,
-                  py: 0,
-                  width: '100%',
-                  //change left yAxis label styles
-
-
-                  // change all labels fontFamily shown on both xAxis and yAxis
-
-                  // change bottom label styles
-
-                  // bottomAxis Line Styles
-
-                  // leftAxis Line Styles
-
-                  "& .MuiChartsAxis-bottom .MuiChartsAxis-tick":{
-                  stroke:"#ffff",
-                  strokeWidth: 0
-                  },
-                  "& .MuiChartsAxis-left .MuiChartsAxis-tick":{
-                  stroke:"#ffff",
-                  strokeWidth: 0
-                  },
-                  "& .MuiChartsAxis-root .MuiChartsAxis-line": {
-                      stroke: '#222',
-                      strokeWidth: 0
-                  },
-
-                  "& .MuiChartsAxisHighlight-root": {
-                      stroke: '#fff',
-                  },
-                  "& .MuiLineElement-series-main": {
-                      stroke: theme.palette.primary.main,
-                  },
-                  "& .MuiLineElement-series-friend": {
-                      stroke: theme.palette.secondary.main,
-                  },
-                  [`& .${lineElementClasses.series.main}`]: {
-                      stroke: theme.palette.primary.main,
-                      strokeWidth: 2,
-                  },
-              }}
-            />
-          :
-          'Loading'
-        }
+          <FriendChart ownStats={ownStats} friends={friends} friendIndex={friendIndex}/>
         </Stack>
 
       </Box>
-      <Box height={'100%'} maxHeight={'200vh'} width={'inherit'} mb={9} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
-        <Box height={'75%'} width={'100%'} position={'relative'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'} sx={{
-            background: theme.palette.background.gradient,
-            borderRadius: '52px', 
-            boxShadow: '5px 5px 10px 0px rgba(0, 0, 0, 1)',
-            '&::before': {
-              content : '" "',
-              position: 'absolute',
-              top: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '30%',
-              maxWidth: '200px',
-              height: '15px',
-              bgcolor: 'background.default',
-              zIndex: '1',
-              borderRadius: '25px',
-            },
-            '&::after': {
-              content : '" "',
-              position: 'absolute',
-              top: '10px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '20px',
-              maxWidth: '200px',
-              height: '20px',
-              bgcolor: 'background.default',
-              zIndex: '1',
-              borderRadius: '19px',
-            }
-          }}>
-          <Stack spacing={5} paddingY={7} position={'relative'} height={'100%'} width={'inherit'} direction={'column'} textOverflow={'ellipsis'} justifyContent={'center'} alignItems={'center'} sx={{justifyContent: 'space-between'}}>
-            <Stack useFlexGap spacing={2} direction={'row'} width={'90%'} justifyContent={'center'} alignItems={'center'} sx={{ flexWrap: 'wrap', pt: '30px'}}>
-              {friends.length == 0 ? 'loading' : friends[friendIndex][5] ? 
-                <>
-                  <CustomTag value={friends[friendIndex][5].tobacco}></CustomTag>
-                  <CustomTag value={friends[friendIndex][5].cigType}></CustomTag>
-                </> : <></>
-              }
-            </Stack>
-
-            <Stack direction={'column'} justifyContent={'center'} alignItems={'center'} sx={{justifyContent: 'space-between'}}>
-              <Typography textAlign={'center'} fontWeight={800} lineHeight={'80%'} fontSize={'100pt'} sx={{textShadow: '6px 6px 4px rgba(0, 0, 0, 0.25)'}}>{friends.length != 0 ? friends[friendIndex][4] : 'loading'}</Typography>
-              <Typography display={'flex'} textAlign={'center'}>Kippen insgesamt geraucht</Typography>
-              {friends[friendIndex][8] && (
-                <React.Fragment>
-                  <Divider sx={{height: 20}}/>
-                  <Stack direction={'row'} justifyContent={'center'} alignItems={'center'}>
-                    <WhatshotIcon sx={{fontSize: '50pt', filter: 'drop-shadow(6px 6px 4px rgba(0, 0, 0, 0.25))'}}/>
-                    <Typography textAlign={'center'} fontWeight={700} lineHeight={'80%'} fontSize={'50pt'} sx={{textShadow: '6px 6px 4px rgba(0, 0, 0, 0.25)'}}>{friends.length != 0 ? friends[friendIndex][8] : 'loading'}</Typography>
-                  </Stack>
-                  <Typography display={'flex'} textAlign={'center'}>Streak</Typography>
-                </React.Fragment>
-              )}
-            </Stack>
-            
-            <Box height={'10rem'} width= {'90%'} display={'flex'} position={'relative'} borderRadius={'27px'} alignItems="center" justifyContent="center" marginBottom={'20px'} sx={
-              { '&::after': {
-                content : '" "',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                boxShadow: 'inset 0px -60px 10.3px -6px rgba(137, 121, 255, 0.2)',
-                zIndex: '1',
-                borderRadius: '25px',
-              }, '&::before': {
-                content : '" Beliebteste Location "',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: 'auto',
-                zIndex: '1',
-                transform: 'translateY(-50%) translateX(20px)',
-                fontSize: '15pt',
-                textShadow: '4px 4px 4px #000'
-              },
-              boxShadow: '4px 6px 4px rgba(0, 0, 0, 0.52)'
-            }
-              }>
-              <div ref={mapContainer} className='map-wrapper' style={{borderRadius: '27px'}}/>
-              <img src="pin.svg" width={20} alt="pin" style={{position: 'absolute', transform: 'translateY(-50%)'}}/>
-              <Stack direction={'row'} position={'absolute'} width={'90%'} sx={{justifyContent: 'space-between'}} bottom={'12%'} zIndex={2}>
-                <Typography display={'flex'} alignItems={'center'}><PersonPinCircleIcon/>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].street : 'noch kein Ort gespeichert' : 'loading...'}</Typography>
-                <Typography textAlign={'right'}>{friends.length != 0 ? typeof friends[friendIndex][3] !== 'undefined' ? friends[friendIndex][3].amount : '0' : 'loading...'}</Typography>
-              </Stack>
-            </Box>
-
-          </Stack>
-        </Box>
-      </Box> </> :
+      <FriendBadge friends={friends} friendIndex={friendIndex}/>
+      </> :
       <>
         <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>
               Noch hast du keine Freunde, tippe unten rechts auf den Button um welche hinzuzufügen.
