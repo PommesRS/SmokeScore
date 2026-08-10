@@ -2,15 +2,15 @@
     "notes": 
     [
         {
-            "title": "Standort mit Freunden Teilen",
-            "body" : "Es kann von nun an der Standort von Freunden angesehen werden. Dieser Standort bezieht sich auf die Position, an der SmokeScore das letzte Mal von der Person geöffnet wurde. Durch technische Limitationen einer Progressive-Web-App ist ein dauerhaftes Teilen des Standortes nicht möglich. Das Feature ist standardmäßig eingeschaltet, kann jedoch über 'Einstellungen->Postition teilen' ausgeschaltet werden, sodass Freunde den Standort auf der Karte nicht mehr einsehen können.",
+            "title": "Nachrichten mit Freunden",
+            "body" : "SmokeScore geht ab nun unter die 'Chat-Apps'. Man hat ab sofort die Möglichkeit, über SmokeScore eine Nachricht an Freunde zu schicken. Eine neue Nachricht wird mit einem Punkt symbolisiert. Auf der Freundesseite wird der Pfeil markiert, in welche Richtung man wechseln muss, um zur ungelesenen Nachricht zu kommen. Sobald die andere Person die Nachricht gelesen hat, wird sie dementsprechend gekennzeichnet.",
             "imgPath": "./pn1.png"
         },
         {
-            "title": "Update für die Karte",
-            "body": "Oben, unterhalb des Freunde-Switchers, ist nun, ähnlich wie bei Google Maps, eine vertikale Scroll-Leiste. Die Farblegende spielt ab sofort eine Animation während des Ladevorgangs für die jeweiligen Pins.",
-            "imgPath": "./pn2.gif"
+            "title": "Reaktionen auf SmokeMente",
+            "body": "Die Hauptfunktion der Freunde-Chats sind die Reaktionen auf SmokeMente. Im Chat wird eine Reaktion mit 'hat reagiert' gekennzeichnet.",
+            "imgPath": "./pn3.png"
         }
     ],
-    "version": "1.3"
+    "version": "1.4"
 }

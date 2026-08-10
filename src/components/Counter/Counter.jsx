@@ -113,19 +113,6 @@ function Counter({callback}) {
 
   const uID = user.uid;
 
-
-  const initiateCounter = async () => {
-    if(!user) return
-    const docRef = doc(db, "Users", user.uid)
-
-    if (!(await getDoc(docRef)).exists()) {
-      await setDoc(docRef, {
-        counter: 0
-      }, {merge: true})
-    }
-
-  }
-
   const getLatestCigs = async () => {
     const docRef = doc(db, "Users", uID)
     latestCigsLocal = (await getDoc(docRef)).data().latestCigs
@@ -154,11 +141,6 @@ function Counter({callback}) {
   useEffect(() => {
     location()
   }, [coords])
-
-  useEffect(() => {
-    initiateCounter();
-
-  }, [])
 
   const handleAddCig = async () => {
     if (loading) return;

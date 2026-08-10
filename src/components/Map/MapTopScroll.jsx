@@ -11,14 +11,14 @@ const MapTopScroll = ({ownMarkerLoading, friendMarkerLoading, friendName, handle
     
   return (
 
-        <Stack className='hide-scrollbar' px={3/2} gap={2} alignItems={'center'} direction={'row'} position={'absolute'} top={185} maxWidth={'100%'} height={'40px'}>
+        <Stack className='hide-scrollbar' px={3/2} gap={2} alignItems={'center'} direction={'row'} position={'absolute'} top={85} maxWidth={'100%'} height={'40px'}>
 
             <Stack minWidth={'fit-content'} zIndex={'5'} direction={'row'} gap={6} minHeight={'100%'} sx={{background: theme.palette.background.paper, borderRadius: 10, overflow: 'hidden',  maxWidth: '90vw'}} pl={'40px'} pr={2} py={1} >
-                <MapMarkerOwnershipIndicator loading={!ownMarkerLoading} gradProps={'linear-gradient(90deg, rgb(136, 120, 251) 0%, rgb(120, 252, 215) 100%)'}>
+                <MapMarkerOwnershipIndicator loading={ownMarkerLoading} gradProps={'linear-gradient(90deg, rgb(136, 120, 251) 0%, rgb(120, 252, 215) 100%)'}>
                     <Typography component={'span'}>Du</Typography>
                 </MapMarkerOwnershipIndicator>
 
-                <MapMarkerOwnershipIndicator loading={!friendMarkerLoading} gradProps={'linear-gradient(90deg, rgb(133, 3, 37) 0%, rgb(186, 204, 3) 100%)'}>
+                <MapMarkerOwnershipIndicator loading={friendMarkerLoading} gradProps={'linear-gradient(90deg, rgb(133, 3, 37) 0%, rgb(186, 204, 3) 100%)'}>
                     <Typography component={'span'} sx={{whiteSpace:'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{friendName}</Typography>
                 </MapMarkerOwnershipIndicator>
             </Stack>

@@ -4,14 +4,19 @@ import {
   InputAdornment, ListItem, ListItemText, ListItemButton, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox,
   Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
-  getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider
+  getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider, 
+  InputBase
 } from '@mui/material'
+import { db } from '../../firebase';
+import { query, collection,where, getDocs,doc,Timestamp,updateDoc } from 'firebase/firestore';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import dayjs from 'dayjs';
 import { useUserAuth } from '../../context/userAuthConfig';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import { Send } from '@mui/icons-material';
+import StoryMessage from './Story/StoryMessage';
 
 function CustomProgressBar({imgIndex, selfIndex, callBack, arrLength, isPaused, handleStoryClose}) {
     const { user } = useUserAuth();
@@ -77,12 +82,12 @@ function CustomProgressBar({imgIndex, selfIndex, callBack, arrLength, isPaused, 
   );
   }
 
-const StoryDialog = ({currentPics, openStory, dialogRef, handleStoryClose}) => {
+const StoryDialog = ({currentPics, openStory, dialogRef, handleStoryClose, chatId, updateFriend, friends}) => {
 
     if (openStory == false) return
     const [imgIndex, setImgIndex] = useState(0)
     const [openInsights, setOpenInsights] = useState(false)
-    
+    const theme = useTheme()
     const [isPaused, setIsPaused] = useState(false)
     //currentPics = currentPics.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
 
@@ -95,6 +100,7 @@ const StoryDialog = ({currentPics, openStory, dialogRef, handleStoryClose}) => {
     console.log(sortedPics)
 
     const addToSeen = useCallback(async () => {
+      console.log('penis')
       if (sortedPics[imgIndex].seenBy?.some(e => e.userId === user.uid)) return
       if (sortedPics[0].userId === user.uid) return
 
@@ -124,7 +130,7 @@ const StoryDialog = ({currentPics, openStory, dialogRef, handleStoryClose}) => {
     }, [imgIndex])
 
     useEffect(() => {
-      return () => addToSeen()
+      addToSeen()
     }, [imgIndex, sortedPics])
 
     const handleNextImage = () => {
@@ -264,12 +270,16 @@ const StoryDialog = ({currentPics, openStory, dialogRef, handleStoryClose}) => {
                   <></>
                 }
                 </Stack>
-
               </Stack>
+              {sortedPics[imgIndex].userId !== user.uid ? 
+                <StoryMessage updateFriend={updateFriend} friends={friends} friendId={sortedPics[imgIndex].userId}/>
+                :
+                <></>
+            } 
             </Stack>
             <Stack height={'100%'} direction={'row'} gap={4} justifyContent={'space-between'}>
-              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'left')} onTouchEnd={(e) => handlePressEnd(e, 'left')} onMouseDown={(e) => handlePressStart(e, 'left')} onMouseUp={(e) => handlePressEnd(e, 'left')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
-              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} fullWidth sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}} disableRipple></Box></Box>
+              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'left')} onTouchEnd={(e) => handlePressEnd(e, 'left')} onMouseDown={(e) => handlePressStart(e, 'left')} onMouseUp={(e) => handlePressEnd(e, 'left')} sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}}></Box></Box>
+              <Box width={'50%'}><Box onTouchStart={(e) => handlePressStart(e, 'right')} onTouchEnd={(e) => handlePressEnd(e, 'right')} onMouseDown={(e) => handlePressStart(e, 'right')} onMouseUp={(e) => handlePressEnd(e, 'right')} sx={{height: '100%', ":focus": {outline: 'none'}, ':hover': {background: 'inherit'}}}></Box></Box>
             </Stack>
           </Box>
           <Box sx={{maxHeight: '100dvh', maxWidth: '546px', position: 'relative'}}>

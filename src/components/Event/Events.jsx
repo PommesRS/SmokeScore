@@ -126,16 +126,7 @@ export function ChatMessages({messages}) {
                     ))}
                 </React.Fragment>
             ))}
-            {/* {messages.map(message => (
-                <React.Fragment >
-                    <Message message={message} callback={callback}/>
-                </React.Fragment>
 
-                // <Paper key={message.id} sx={message.receiving ? {color:'#fff', p: 2, width: '70%'} : {color:'#fff', p: 2, width: '70%', alignSelf: 'end'}}>
-                //     {message.text}
-                // </Paper>
-                ))
-            } */}
         </Stack >
     )
 }

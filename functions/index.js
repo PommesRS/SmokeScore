@@ -98,8 +98,7 @@ exports.sendPushToToken = functions.https.onRequest((req, res) => {
     try {
       const message = {
         data: { title, body, msgType, eventDate, senderName },
-        //notification: { title, body },
-        token: token,
+        token: token
       };
 
       console.log("📤 Sende Push an: ", token);

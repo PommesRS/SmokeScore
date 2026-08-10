@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
-  InputAdornment, ListItem, ListItemText, ListItemButton, 
+  InputAdornment, ListItem, ListItemText, ListItemButton, Badge,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox,
   Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
   getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider
 } from '@mui/material'
 import '../Map/map.css';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
-import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { db, storage } from '../../firebase.js';
-import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp } from "@firebase/firestore";
+import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp, or } from "@firebase/firestore";
 import { useUserAuth } from '../../context/userAuthConfig.jsx';
 import {
   LinePlot,
@@ -38,6 +36,9 @@ import { deleteObject, ref } from 'firebase/storage';
 import FriendBadge from './FriendBadge.jsx';
 import FriendChart from './FriendChart.jsx';
 import StoryDialog from './StoryDialog.jsx';
+import FriendFab from './FriendFab.jsx';
+import FriendChat from './Chat/FriendChat.jsx';
+import FriendChanger from './FriendChanger.jsx';
 
 export const CustomTag = ({value}) => {
   const theme = useTheme()
@@ -60,6 +61,7 @@ const Friends = () => {
   const [friends, setFriends] = useState([])
   const [openFAdd, setOpenFAdd] = useState(false);
   const [openFDel, setOpenFDel] = useState(false);
+  const [openFChat, setOpenFChat] = useState(false);
   const [openStory, setOpenStory] = useState(false);
   const [openCamera, setOpenCamera] = useState(false);
   const [alertState, setAlertState] = useState(false)
@@ -145,7 +147,7 @@ const Friends = () => {
     <>
     {records.map((result, i) => (
       //console.log(i, result[1].displayName)
-      <>
+      <React.Fragment key={i}>
         <ListItem disableGutters sx={{width: '100%'}} key={result[0]}>
           <Paper elevation={5} sx={{width: '100%', p: 2, whiteSpace: 'nowrap', overflow: 'hidden'}}>
             <ListItemText sx={{"& .MuiListItemText-primary": {color: 'inherit'}, m: 0}}>{result[1]}</ListItemText>
@@ -155,7 +157,7 @@ const Friends = () => {
             </ListItemButton>
           </Paper>
         </ListItem>
-      </>
+      </React.Fragment>
     )) }
     </>
   )
@@ -246,14 +248,22 @@ const Friends = () => {
     initUserList()
   };
 
-    const fDelDialogOpen = () => {
-      setOpenFDel(true);
-    };
+  const fDelDialogOpen = () => {
+    setOpenFDel(true);
+  };
 
   const fDelDialogClose = () => {
     setOpenFDel(false);
   };
 
+  const fChatOpen = () => {
+    setOpenFChat(true);
+  };
+
+  const fChatClose = () => {
+    setOpenFChat(false);
+  };
+  
   async function getOwnStats() {
     var startOfCurrentWeek = startOfWeek(new Date(), {weekStartsOn: 1})
     startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
@@ -311,8 +321,23 @@ const Friends = () => {
         locations[0].street = street.features[0].text
       }
 
+      const q = query(collection(db, "Chats"),
+            where("participants", "array-contains", doc(db, "Users", friend)),
+      );
+      const chatsSnap = await getDocs(q)
+      
+      var chatId
+      if(!chatsSnap.empty){
+        chatId = chatsSnap.docs.find(doc =>
+          doc.data().participants.some(ref => ref.id === user.uid)
+        )?.id
+      }else {
+        chatId = null
+      }
 
-      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount, fcmToken])
+      console.log(chatId)
+
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount, fcmToken, chatId])
     }))
 
     setFriends(cacheFriends)
@@ -337,20 +362,6 @@ const Friends = () => {
 
   }, [friendIndex])
 
-  const handleFriendSwitch = (direction) => {
-    if (direction == 'up') {
-      if (friendIndex < friends.length - 1 ) {
-        setFriendIndex(friendIndex + 1)
-
-      }
-    } else if (direction == 'down') {
-      if (friendIndex > 0) {
-        setFriendIndex(friendIndex - 1)
-
-      }
-    }
-  }
-
   const getMoments = async () => {
     const docRef = doc(db, 'Users', user.uid)
     const blackList = (await getDoc(docRef)).data().excludeMoments
@@ -369,7 +380,7 @@ const Friends = () => {
       let isSmthNew = false 
       querySnapshot.forEach((doc) => {
         friendArr.push(doc.data())
-        console.log(doc.data().seenBy?.find(e => e.userId !== user.uid))
+        //console.log(doc.data().seenBy?.find(e => e.userId !== user.uid))
         if (!doc.data().seenBy?.some((e) => e.userId === user.uid) || !doc.data().seenBy || doc.data().seenBy?.length < 1) {
           isSmthNew = true
         }
@@ -583,25 +594,31 @@ const Friends = () => {
       </Popover>
     )
   }
+
+  const updateFriend = (chatId, friendIndex) => {
+    const nextFriendList = [...friends]
+
+    const friend = nextFriendList.find(el => el[0] === friendIndex)
+    friend[10] = chatId
+    setFriends(nextFriendList)
+  }
     
   return (
     <>
     <FAddDialog></FAddDialog>
     <FDeleteDialog></FDeleteDialog>
-    <StoryDialog handleStoryClose={handleStoryClose} openStory={openStory} dialogRef={dialogRef} currentPics={currentPicsRef.current}></StoryDialog>
     <CameraDialog></CameraDialog>
     <ExcludeListPopover></ExcludeListPopover>
 
-    <Box zIndex={5} position={'fixed'} bottom={80} right={20}>
-      <Stack gap={2}>
-        <IconButton onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.primary.main}} bgcolor='primary' aria-label="addFriend">
-          <PersonAddAlt1Icon fontSize='smalllarge'/>
-        </IconButton>
-        <IconButton onClick={fDelDialogOpen} size='large' sx={{":focus": {outline: 'none'}, backgroundColor: (theme) => theme.palette.error.dark}} bgcolor='primary' aria-label="removeFriend">
-          <DeleteIcon fontSize='smalllarge'/>
-        </IconButton>
-      </Stack>
-    </Box>
+    {friends.length > 0 && (
+      <>
+        <StoryDialog handleStoryClose={handleStoryClose} openStory={openStory} dialogRef={dialogRef} currentPics={currentPicsRef.current} friends={friends} updateFriend={updateFriend} chatId={friends[friendIndex][10]}></StoryDialog>
+        <FriendChat friendIndex={friendIndex} updateFriend={updateFriend} chatID={friends[friendIndex][10]} friend={friends[friendIndex]} open={openFChat} onClose={fChatClose} />
+        <FriendFab friendId={friends[friendIndex][0]}  openAdd={fAddDialogOpen} openDelete={fDelDialogOpen} openChat={fChatOpen}/>
+      </>
+
+    )}
+
     <Snackbar
       anchorOrigin={{vertical: 'top', horizontal:'center'}}
       autoHideDuration={3000}
@@ -637,8 +654,8 @@ const Friends = () => {
                     </Stack>
                   {friendsMoments?.map((friend, i) => (
                     friendsMoments?.length > 0 ?
-                    <Stack alignItems="center" justifyContent="center">
-                      <Button key={i} onClick={() => handleStoryOpen(friend.moments)} sx={friend.shouldShowNew ? {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10} : {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: '#252525', borderRadius: 10}}>
+                    <Stack key={i} alignItems="center" justifyContent="center">
+                      <Button onClick={() => handleStoryOpen(friend.moments)} sx={friend.shouldShowNew ? {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: theme.palette.background.gradient, borderRadius: 10} : {":focus": {outline: 'none'}, padding: 0, minWidth: 'auto', background: '#252525', borderRadius: 10}}>
                         <Box sx={{background: theme.palette.background.default, borderRadius: 10, overflow: 'hidden', width: '67px', height: '67px', m: '3px'}} display={'flex'} alignItems="center" justifyContent="center" >
                           <Box sx={{borderRadius: 10, overflow: 'hidden', width: '60px', height: '60px'}} display={'flex'} alignItems="center" justifyContent="center" >
                             <img src={friend.moments[0].imagePath} alt="thumb" width={'60px'} />
@@ -653,24 +670,8 @@ const Friends = () => {
                 </Stack>
               </Box>
           </Stack>
-          <Stack direction={'row'} width={'inherit'} overflowX={'hidden'} textOverflow={'ellipsis'} gap={2} justifyContent={'center'} alignItems={'center'}>
-            <IconButton onClick={() => {handleFriendSwitch('down')}} color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowBackIosNewIcon/></IconButton>
-            <Stack justifyContent={'center'} alignItems={'center'} position={'relative'}>
-              {friends[friendIndex][4] >= 1000 ? 
-              <React.Fragment>
-                <SmokingRoomsIcon className='glow-animate' fontSize='large' sx={{
-                  position: 'absolute', 
-                  top: -20, 
-                  fontWeight: 'bold'}}/>
-                <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative'}}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
-              </React.Fragment>
-              
-              : <Typography height={'auto'} noWrap sx={{fontWeight: 'Bold', fontSize: '20pt', position: 'relative'}}>{friends.length > 0 && friends[friendIndex][1]}</Typography>
-              }
-            </Stack>
-            <IconButton onClick={() => {handleFriendSwitch('up')}}  color='inherit' sx={{":focus": {outline: 'none'}}}><ArrowForwardIosIcon/></IconButton>
-          </Stack>
 
+          <FriendChanger friends={friends} friendIndex={friendIndex} setFriendIndex={setFriendIndex}/>
           <FriendChart ownStats={ownStats} friends={friends} friendIndex={friendIndex}/>
         </Stack>
 

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, 
   Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support, Badges } from './index.js';
 import Paper from '@mui/material/Paper';
-import BottomNavigation from '@mui/material/BottomNavigation';
-import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import GroupIcon from '@mui/icons-material/Group';
 import HomeIcon from '@mui/icons-material/Home';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -12,22 +10,10 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import MenuIcon from '@mui/icons-material/Menu';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
-import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider } from '@mui/material';
-import DialogTitle from '@mui/material/DialogTitle';
-import Dialog from '@mui/material/Dialog';
-import Drawer from '@mui/material/Drawer';
-import Badge from '@mui/material/Badge';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
+import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider, Dialog, DialogTitle,Drawer, Badge, List, ListItem, ListItemIcon, ListItemButton, ListItemText, Menu, MenuItem, Avatar, BottomNavigation, BottomNavigationAction} from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import ListItemText from '@mui/material/ListItemText';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Avatar from '@mui/material/Avatar';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import PeopleIcon from '@mui/icons-material/People';
 import Logout from '@mui/icons-material/Logout';
@@ -36,12 +22,11 @@ import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { onMessage, getToken } from 'firebase/messaging';
 import { db, messaging } from '../firebase.js';
 import { collection, doc, getDoc, updateDoc, arrayRemove, arrayUnion, setDoc, onSnapshot, GeoPoint, Timestamp } from "@firebase/firestore";
-import { PushNotifications } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
 import { onBackgroundMessage } from 'firebase/messaging/sw';
 import dayjs from 'dayjs';
 import { useGeolocated } from "react-geolocated";
 import WhatsNew from './WhatsNew/WhatsNew.jsx';
+import { useFriendChat } from '../context/friendChat.jsx';
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -84,6 +69,7 @@ function App() {
         },
         userDecisionTimeout: 0,
   });
+  const friendChat = useFriendChat()
 
   const getSubscriptionStatus = async () => {
     // const docRef = doc(db, "Users", user.uid)
@@ -489,7 +475,7 @@ function App() {
             value={value}
             onChange={handleChange}
             display={'flex'} justify-content={'space-between'}>
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'friends'} label={'Freunde'} icon={<GroupIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'friends'} label={'Freunde'} icon={<Badge invisible={value === 'friends'} variant='dot' badgeContent={friendChat.newMessages.length} color='secondary' onClick={() => {console.log(friendChat.newMessages)}}><GroupIcon /></Badge>} />
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'tracker'} label={'Tracker'} icon={<HomeIcon />} />
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'stats'} label={'Stats'} icon={<BarChartIcon />} />
             <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'map'} label={'Karte'} icon={<LocationOnIcon />} />

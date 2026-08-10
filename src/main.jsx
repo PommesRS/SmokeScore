@@ -17,6 +17,7 @@ import { CounterContextProvider } from './context/counterContext';
 import { UserDataContextProvider } from './context/userData';
 import { UserStreakContextProvider } from './context/userStreak';
 import { UserBadgesContextProvider } from './context/userBadges';
+import { FriendChatContextProvider } from './context/friendChat';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -25,16 +26,18 @@ createRoot(document.getElementById('root')).render(
         <UserAuthContextProvider>
           <NotificationContextProvider>
             <UserDataContextProvider>
-              <UserStreakContextProvider>
-                <UserBadgesContextProvider>
-                    <CounterContextProvider>
-                      <AppStateContextProvider>
-                          <CssBaseline/>
-                          <App />
-                      </AppStateContextProvider>
-                    </CounterContextProvider>
-                </UserBadgesContextProvider>
-              </UserStreakContextProvider>
+              <FriendChatContextProvider>
+                <UserStreakContextProvider>
+                  <UserBadgesContextProvider>
+                      <CounterContextProvider>
+                        <AppStateContextProvider>
+                            <CssBaseline/>
+                            <App />
+                        </AppStateContextProvider>
+                      </CounterContextProvider>
+                  </UserBadgesContextProvider>
+                </UserStreakContextProvider>
+              </FriendChatContextProvider>
             </UserDataContextProvider>
           </NotificationContextProvider>
         </UserAuthContextProvider>

@@ -38,7 +38,7 @@ messaging.onBackgroundMessage((payload) => {
         const notificationTitle = `${payload.data.senderName} hat dir eine Einladung geschickt!`;
         const notificationOptions = {
             body: payload.data.body,
-            icon: './logo.png',
+            icon: 'https://smokescore.de/logo192.png',
         };
 
         self.registration.showNotification(notificationTitle, notificationOptions);
@@ -46,7 +46,8 @@ messaging.onBackgroundMessage((payload) => {
         const notificationTitle = payload.data.title;
         const notificationOptions = {
             body: payload.data.body,
-            icon: './logo.png',
+            icon: 'https://smokescore.de/logo192.png',
+            badge: 'https://landing.smokescore.de/badge.png'
         };
 
         self.registration.showNotification(notificationTitle, notificationOptions);

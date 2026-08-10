@@ -11,13 +11,13 @@ const MapMarkerOwnershipIndicator = ({children, gradProps, loading}) => {
                 height: '5px', 
                 content: '" "', 
                 background: `${gradProps}`, 
-                backgroundSize: `${true ? '200% 100%' : '100% 100%'}`, 
+                backgroundSize: `${loading ? '200% 100%' : '100% 100%'}`, 
                 position: 'absolute', 
                 left: '-30px', 
                 top:'50%', 
                 transform: 'translate(0px, -50%)', 
                 borderRadius: '100px',
-                animation:  `${true ? 'gradientLoading 1.5s linear infinite': 'none'}`
+                animation:  `${loading ? 'gradientLoading 1.5s linear infinite': 'none'}`
                 }, 
             "@keyframes gradientLoading" : {
                 '0%': {backgroundPosition: '200% 0'}, 

@@ -30,11 +30,6 @@ export function CounterContextProvider({ children }) {
     const { sendNotification } = useNotification()
 
   const incrementCounter = async (geolocation, isJoint) => {
-    // if (isJoint){
-    //     incrementJoint(geolocation);
-    //     sendNotification(user, true)
-    //     return
-    // }
     const docRef = doc(db, "Users", user.uid)
     console.log(geolocation)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
