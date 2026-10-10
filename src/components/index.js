@@ -22,6 +22,13 @@ import Support from "./Settings/Support";
 import ImageEditor from './Friends/ImageEditor';
 import Badges from "./Badge/Badges";
 import SpendingHistory from "./Counter/SpendingHistory";
+import AdSense from "./Ads/Ad1Component"
+import Collectables from "./Collectables/Collectables";
+import Inventory from "./Collectables/Inventory";
+import ProfilePage from "./Settings/ProfilePage";
+import PetComponent from "./SmokePet/PetCustomization";
+import PetCustomization from "./SmokePet/PetCustomization";
+import Quests from "./Badge/Quests";
 
 export{
     App,
@@ -47,5 +54,12 @@ export{
     Support,
     ImageEditor,
     Badges,
-    SpendingHistory
+    SpendingHistory,
+    AdSense,
+    Collectables,
+    Inventory,
+    ProfilePage,
+    PetComponent,
+    PetCustomization,
+    Quests
 }

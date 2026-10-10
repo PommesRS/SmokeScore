@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, 
-  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support, Badges } from './index.js';
-import Paper from '@mui/material/Paper';
-import GroupIcon from '@mui/icons-material/Group';
-import HomeIcon from '@mui/icons-material/Home';
-import PaletteIcon from '@mui/icons-material/Palette';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import Diversity3Icon from '@mui/icons-material/Diversity3';
-import MenuIcon from '@mui/icons-material/Menu';
-import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
-import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider, Dialog, DialogTitle,Drawer, Badge, List, ListItem, ListItemIcon, ListItemButton, ListItemText, Menu, MenuItem, Avatar, BottomNavigation, BottomNavigationAction} from '@mui/material';
+import { Counter, Stats, Login, SignUp, ProtectedRoute, Friends, Map, Settings, About, Inventory, ProfilePage,
+  Style, Paywall, PaywallStats, PaywallRender, EventPopup, Events, Support, Badges, Collectables, PetCustomization, Quests } from './index.js';
+import {Home, Palette, BarChart, LocationOn, Diversity3, MilitaryTech, SmokingRooms, AccountCircle, PersonAdd, People, Logout, Group, Work} from '@mui/icons-material'
 import SettingsIcon from '@mui/icons-material/Settings';
-import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import PersonAdd from '@mui/icons-material/PersonAdd';
-import PeopleIcon from '@mui/icons-material/People';
-import Logout from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
+import {Container, Box, Button, Typography, Stack, ClickAwayListener, Divider, Dialog, DialogTitle,Drawer, Badge, List, ListItem, ListItemIcon, 
+  ListItemButton, ListItemText, Menu, MenuItem, Avatar, BottomNavigation, BottomNavigationAction, Chip, useTheme} from '@mui/material';
 import {Routes, Route, Navigate, useLocation, useNavigate} from 'react-router-dom';
 import { useUserAuth } from '../context/userAuthConfig.jsx';
 import { onMessage, getToken } from 'firebase/messaging';
@@ -27,6 +16,8 @@ import dayjs from 'dayjs';
 import { useGeolocated } from "react-geolocated";
 import WhatsNew from './WhatsNew/WhatsNew.jsx';
 import { useFriendChat } from '../context/friendChat.jsx';
+import { useUserCollectables } from '../context/userCollectables.jsx';
+import { isSupported } from "firebase/messaging"
 
 export function ListItemCustom ({children, text}) {
   return(
@@ -70,6 +61,8 @@ function App() {
         userDecisionTimeout: 0,
   });
   const friendChat = useFriendChat()
+  const collectables = useUserCollectables()
+  const theme = useTheme()
 
   const getSubscriptionStatus = async () => {
     // const docRef = doc(db, "Users", user.uid)
@@ -80,19 +73,23 @@ function App() {
   }
 
   useEffect(() => {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log(event.data.data.msgType)
-      if (event.data.data.msgType === 'invite') {
-        console.log("Message from SW:", event.data.data);
-        setEventId(event.data.data.title)
-        setEventText(event.data.data.body)
-        setEventDate(event.data.data.eventDate)
-        setEventSenderName(event.data.data.senderName)
-        setOpenEventPopup(true);
-      }else {
-          console.log('notification')
-      }
+    isSupported().then((supported) => {
+      if(!supported) return
+      
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.data.msgType === 'invite') {
+          console.log("Message from SW:", event.data.data);
+          setEventId(event.data.data.title)
+          setEventText(event.data.data.body)
+          setEventDate(event.data.data.eventDate)
+          setEventSenderName(event.data.data.senderName)
+          setOpenEventPopup(true);
+        }else {
+            console.log('notification')
+        }
+      })
     })
+
     
   }, [])
 
@@ -163,29 +160,23 @@ function App() {
   }
 
   const saveFCMToken = async () => {
-    navigator.serviceWorker.getRegistrations().then(r => console.log(r))
 
-    const token = await getToken(messaging, {vapiKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI'})
+    if (!user) return;
 
-    if (!user) {
-    console.warn("Kein eingeloggter Benutzer");
-    return;
-    }
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
 
+    const token = await getToken(messaging, {vapidKey: 'BP5WjUBgUmAI5Ec80vu-1BoaoUzooBFr0IIseivX6DYKdtE1b77hw3-WSAQ9NRP3KD1hG8N8pJ6H2JMfWoO8hKI', serviceWorkerRegistration: registration})
 
-    try {
-      const tokenRef = doc(db, 'Users', user.uid);
-      await updateDoc(tokenRef, {
-        fcmToken: token,
-      });
-    } catch (error) {
-      console.log(error)
-    }
+    const tokenRef = doc(db, 'Users', user.uid);
+    await updateDoc(tokenRef, {
+      fcmToken: token,
+    });
 
   }
 
   useEffect(() => {
     navigate(`/tracker`)
+
     saveFCMToken()
     getSubscriptionStatus()
   }, [user])
@@ -241,7 +232,6 @@ function App() {
 
       fRequestsNames.splice(fRequestsNames.indexOf(friend))
 
-      console.log(fRequestsNames)
 
       setFRequests(fRequests - 1)
       setReload(true)
@@ -304,17 +294,17 @@ function App() {
   const DrawerList = (
     <Box sx={{width: 250, height: '100vh', color: 'white' }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
-        <ListItemButton onClick={() => {navigate(`/friends`); setValue('friends');}}><ListItemCustom text={{text: 'Freunde'}}><GroupIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={() => {navigate(`/tracker`); setValue('tracker');}}><ListItemCustom text={{text: 'Tracker'}}><HomeIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChartIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOnIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color='primary'><PeopleIcon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
-        <ListItemButton onClick={() => {navigate(`/events`); setValue('events');}}><ListItemCustom text={{text: 'Einladungen'}}><Badge badgeContent={newInvites} color='primary'><Diversity3Icon sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/friends`); setValue('friends');}}><ListItemCustom text={{text: 'Freunde'}}><Group sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/tracker`); setValue('tracker');}}><ListItemCustom text={{text: 'Tracker'}}><Home sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/stats`); setValue('stats');}}><ListItemCustom text={{text: 'Statistiken'}}><BarChart sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/map`); setValue('map');}}><ListItemCustom text={{text: 'Karte'}}><LocationOn sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={fRequestDialogOpen}><ListItemCustom text={{text: 'Freundschafts Anfragen'}}><Badge badgeContent={fRequests} color='primary'><People sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/events`); setValue('events');}}><ListItemCustom text={{text: 'Einladungen'}}><Badge badgeContent={newInvites} color='primary'><Diversity3 sx={{color: 'white'}} /></Badge></ListItemCustom></ListItemButton>
         
       </List>
       <Divider sx={{border: '1px solid rgba(255, 255, 255, 0.5)'}}/>
       <List>
-        <ListItemButton onClick={() => {navigate(`/style`); setValue('style');}}><ListItemCustom text={{text: 'Farbstil ändern'}}><PaletteIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
+        <ListItemButton onClick={() => {navigate(`/style`); setValue('style');}}><ListItemCustom text={{text: 'Farbstil ändern'}}><Palette sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
         <ListItemButton onClick={() => {navigate(`/settings`); setValue('settings');}}><ListItemCustom text={{text: 'Einstellungen'}}><SettingsIcon sx={{color: 'white'}} /></ListItemCustom></ListItemButton>
       </List>
     </Box>
@@ -332,6 +322,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await logOut()
+      navigate(`/`)
     } catch (error) {
       console.log(error.message)
     }
@@ -347,12 +338,20 @@ function App() {
 
   const handleOpenEventPopup = () => {
     setOpenEventPopup(true)
-    console.log(openEventPopup)
   }
 
   const callBack = (name) => {
     setValue(name)
   }
+
+  function stringAvatar(name) {
+  return {
+    sx: {
+      bgcolor: '#fff',
+    },
+    children: `${name.split(' ')[0][0]}${name.split(' ')[1][0]}`,
+  };
+}
 
   return (
     <>
@@ -365,16 +364,25 @@ function App() {
       </ClickAwayListener> */}
 
       {/*   */}
-      <Container sx={value != 'map' ? value === 'stats' ? {p: 0 } : {zIndex: '5000000'} : {p: 0}}>  
+      <Container sx={value != 'map' ? value === 'stats' || 'friends' ? {p: 0 } : {zIndex: '5000000'} : {p: 0}}>  
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : value == 'tracker' ? {zIndex: '4'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
-        <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}><Badge badgeContent={fRequests + newInvites} color="primary"><MenuIcon/></Badge></Button>
+      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : value !== 'tracker' ? {zIndex: '4'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+
+        {/* {value === 'tracker' && (
+          <img src={"./smokeTop.png"} style={{padding: 0, margin: 0, opacity: 0.3,left: 0, position: 'absolute', top: 0, width: '100%', pointerEvents: 'none'}}/>
+        )} */}
+        
+        <Button sx={{color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}}} onClick={toggleDrawer(true)}>
+          <Badge badgeContent={fRequests + newInvites} color="primary">
+            <MenuIcon/>
+          </Badge>
+        </Button>
         {/* <Typography variant='h4'>{topText}</Typography> */}
         <Drawer sx={{backdropFilter: "blur(2px)"}} elevation={0} open={open} onClose={toggleDrawer(false)}>
           {DrawerList}
         </Drawer>
-        <Button onClick={handleClick} sx={user ? { zIndex: '10',color:'white', px: 0 ,py: 3, ":focus": {outline: 'none'}, ":hover": {bgcolor: 'inherit'}} : {display: 'none'}}> <AccountCircleIcon/> </Button>
+        <Chip avatar={<Avatar src={typeof user.photoURL === 'undefined' ? './avatarPlaceholder.png' : user.photoURL}/>} variant='outlined' onClick={handleClick} label={user.displayName} sx={{zIndex: '10', m: 3 , maxWidth: 210, textWrap: 'nowrap', ":focus": {outline: 'none'}}} />
         
         <Menu
           anchorEl={anchorEl}
@@ -416,11 +424,25 @@ function App() {
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
 
-          <MenuItem>
-            <Badge badgeContent={subscriptionStatus ? <SmokingRoomsIcon sx={{color: '#FFD700', position: 'absolute', left: '-50%', top:'-25%'}}/> : ''}><Avatar /></Badge> 
-            {user ? user.displayName : 'Profile'}
+          <MenuItem onClick={() => {navigate(`/collectables`); setValue('collectables')}}>
+            <ListItemIcon>
+              <img src="./currencyIcon.svg" width={'24px'} alt="" />
+            </ListItemIcon>
+            SmokeShop
+          </MenuItem>
+          <MenuItem onClick={() => {navigate(`/inventory`); setValue('inventory')}}>
+            <ListItemIcon>
+              <Work sx={{color: 'white'}} fontSize="small" />
+            </ListItemIcon>
+            Smokeventar
           </MenuItem>
           <Divider />
+          <MenuItem onClick={() => {navigate(`/profile`); setValue('profile')}}>
+            <ListItemIcon>
+              <AccountCircle sx={{color: 'white'}} fontSize="small" />
+            </ListItemIcon>
+            Profil
+          </MenuItem>
           <MenuItem onClick={() => {navigate(`/settings`); setValue('settings')}}>
             <ListItemIcon>
               <SettingsIcon sx={{color: 'white'}} fontSize="small" />
@@ -459,6 +481,11 @@ function App() {
           <Route path='/settings' element={<ProtectedRoute><Settings callback={callBack}/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
           <Route path='/support' element={<ProtectedRoute><Support/></ProtectedRoute>}/>
+          <Route path='/collectables' element={<ProtectedRoute><Collectables/></ProtectedRoute>}/>
+          <Route path='/inventory' element={<ProtectedRoute><Inventory/></ProtectedRoute>}/>
+          <Route path='/profile' element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
+          <Route path='/pet' element={<ProtectedRoute><PetCustomization/></ProtectedRoute>}/>
+          <Route path='/quests' element={<ProtectedRoute><Quests/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={
@@ -475,10 +502,10 @@ function App() {
             value={value}
             onChange={handleChange}
             display={'flex'} justify-content={'space-between'}>
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'friends'} label={'Freunde'} icon={<Badge invisible={value === 'friends'} variant='dot' badgeContent={friendChat.newMessages.length} color='secondary' onClick={() => {console.log(friendChat.newMessages)}}><GroupIcon /></Badge>} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'tracker'} label={'Tracker'} icon={<HomeIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'stats'} label={'Stats'} icon={<BarChartIcon />} />
-            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'map'} label={'Karte'} icon={<LocationOnIcon />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'friends'} label={'Freunde'} icon={<Badge invisible={value === 'friends'} variant='dot' badgeContent={friendChat.newMessages.length} color='secondary' onClick={() => {console.log(friendChat.newMessages)}}><Group /></Badge>} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'tracker'} label={'Tracker'} icon={<Home />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'stats'} label={'Stats'} icon={<BarChart />} />
+            <BottomNavigationAction sx={{color: '#767676', ":focus": {outline: 'none'}, borderRadius: 100}} value={'map'} label={'Karte'} icon={<LocationOn />} />
           </BottomNavigation> 
         </Box> :
         <></>}

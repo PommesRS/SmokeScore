@@ -52,7 +52,7 @@ export function Message({callback, message, chatId, friendName}) {
                     {typeof message.isReaction !== 'undefined' && (
                         <Stack direction={'row'} alignItems={'center'}>
                             <SubdirectoryArrowRight fontSize="samll"/>
-                            <Typography fontSize={12} top={-15} textAlign={'right'} >{friendName} hat reagiert</Typography>
+                            <Typography fontSize={12} top={-15} textAlign={'right'} >{message.senderID === user.uid ? 'Du hast' : friendName + ' hat'} reagiert</Typography>
                         </Stack>
                     )}
                     <Typography fontSize={17} pr={5} maxWidth={'100%'}  sx={{wordWrap: 'break-word'}}>{message.text}</Typography>

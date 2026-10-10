@@ -1,10 +1,10 @@
 {
   "name": "smokescore",
   "private": true,
-  "version": "1.4",
+  "version": "1.5",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build --base=./",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -33,6 +33,7 @@
     "firebase": "^11.10.0",
     "leaflet": "^1.9.4",
     "react": "^19.2.3",
+    "react-advanced-cropper": "^0.20.1",
     "react-animated-counter": "^1.8.0",
     "react-confetti-boom": "^1.1.2",
     "react-dom": "^19.2.3",

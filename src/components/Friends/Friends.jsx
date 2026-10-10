@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { 
   Box, IconButton, List, DialogTitle, Dialog, Paper, Input, 
   InputAdornment, ListItem, ListItemText, ListItemButton, Badge,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Checkbox, Fab,
   Typography, Stack, Snackbar, Alert, DialogActions, DialogContent, DialogContentText, Button,
   getFormControlLabelUtilityClasses, useTheme, LinearProgress, SwipeableDrawer, Popover, Divider
 } from '@mui/material'
@@ -15,6 +15,7 @@ import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import { PersonAddAlt1 } from '@mui/icons-material';
 import { db, storage } from '../../firebase.js';
 import { collection, where, getDocs, query, updateDoc, arrayUnion, doc, getDoc, arrayRemove, onSnapshot, deleteDoc, Timestamp, or } from "@firebase/firestore";
 import { useUserAuth } from '../../context/userAuthConfig.jsx';
@@ -39,6 +40,8 @@ import StoryDialog from './StoryDialog.jsx';
 import FriendFab from './FriendFab.jsx';
 import FriendChat from './Chat/FriendChat.jsx';
 import FriendChanger from './FriendChanger.jsx';
+import FriendFile from './FriendFile.jsx';
+import { useUserQuests } from '../../context/userQuests.jsx';
 
 export const CustomTag = ({value}) => {
   const theme = useTheme()
@@ -83,14 +86,13 @@ const Friends = () => {
   const [friendsMoments, setFriendsMoments] = useState([])
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [imgIndexGlobal, setImgIndexGlobal] = useState(0)
-
+  const questSystem = useUserQuests()
 
   async function initUserList() {
     const colRef = collection(db, 'Users')
     //const queryResult = query(colRef, where('displayName', '==', searchInput))
     const querySnapshot = await getDocs(colRef);
     // querySnapshot.forEach((doc) => {
-    //     console.log(doc.id, '=>', doc.data())
     //   })
 
     try {
@@ -146,7 +148,6 @@ const Friends = () => {
   return (
     <>
     {records.map((result, i) => (
-      //console.log(i, result[1].displayName)
       <React.Fragment key={i}>
         <ListItem disableGutters sx={{width: '100%'}} key={result[0]}>
           <Paper elevation={5} sx={{width: '100%', p: 2, whiteSpace: 'nowrap', overflow: 'hidden'}}>
@@ -222,7 +223,6 @@ const Friends = () => {
   const fDelFriend = async () => {
     const uid = user.uid
     const friendToDelete = friends[friendIndex][0]
-    console.log(friendToDelete)
     const userDocRef = doc(db, "Users", uid)
     const friendDocRef = doc(db, "Users", friendToDelete)
     await updateDoc(userDocRef, {
@@ -233,7 +233,6 @@ const Friends = () => {
     })
     setFriendIndex(0)
     setFriends(friends.filter((friend) => friend[0] !== friendToDelete).map((friend) => friend))
-    console.log(friends)
     fDelDialogClose()
     setAlertText('Freund erfolgreich entfernt!')
     setAlertState(true)
@@ -294,7 +293,6 @@ const Friends = () => {
       startOfCurrentWeek = format(startOfCurrentWeek, 'dd.MM.yy')
       var endOfCurrentWeek = endOfWeek(new Date(), {weekStartsOn: 1})
       endOfCurrentWeek = format(endOfCurrentWeek, 'dd.MM.yy')
-      //console.log(startOfCurrentWeek + '-' + endOfCurrentWeek)
       
       const uid = friend
       const docRef = doc(db, "Users", uid)
@@ -310,6 +308,10 @@ const Friends = () => {
       const isExcluded = friendData.excludeMoments?.includes(user.uid)
       const streakAmount = friendData.streak?.amount
       const fcmToken = friendData.fcmToken
+      const pbURL = friendData.pbURL
+      const equipSlots = friendData.equipSlots
+      const pet = friendData.pet
+
       let street
 
       locations.sort((a,b) => {
@@ -335,9 +337,8 @@ const Friends = () => {
         chatId = null
       }
 
-      console.log(chatId)
 
-      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount, fcmToken, chatId])
+      cacheFriends.push([friend, friendName, weekStats, locations[0], totalAmount, tags, currentPics, !isExcluded, streakAmount, fcmToken, chatId, pbURL, equipSlots, pet])
     }))
 
     setFriends(cacheFriends)
@@ -359,6 +360,8 @@ const Friends = () => {
     if (friends.length == 0) {
       return
     }
+    questSystem.checkForSocialQuests(user.uid, 'FRIEND_PROFILE_VISITED', {objectId: friends[friendIndex][0]})
+    console.log(friendIndex)
 
   }, [friendIndex])
 
@@ -380,7 +383,6 @@ const Friends = () => {
       let isSmthNew = false 
       querySnapshot.forEach((doc) => {
         friendArr.push(doc.data())
-        //console.log(doc.data().seenBy?.find(e => e.userId !== user.uid))
         if (!doc.data().seenBy?.some((e) => e.userId === user.uid) || !doc.data().seenBy || doc.data().seenBy?.length < 1) {
           isSmthNew = true
         }
@@ -399,7 +401,6 @@ const Friends = () => {
   };
 
   const cleanUpExpiredMoments = async (imagePath) => {
-
     const now = Timestamp.now()
 
     if (!imagePath) {
@@ -610,14 +611,20 @@ const Friends = () => {
     <CameraDialog></CameraDialog>
     <ExcludeListPopover></ExcludeListPopover>
 
-    {friends.length > 0 && (
+    {friends.length > 0 ? (
       <>
-        <StoryDialog handleStoryClose={handleStoryClose} openStory={openStory} dialogRef={dialogRef} currentPics={currentPicsRef.current} friends={friends} updateFriend={updateFriend} chatId={friends[friendIndex][10]}></StoryDialog>
+        <StoryDialog handleStoryClose={handleStoryClose} openStory={openStory} dialogRef={dialogRef} currentPics={currentPicsRef.current} friends={friends} updateFriend={updateFriend} chatId={friends[friendIndex][10]} cleanUpExpiredMoments={cleanUpExpiredMoments}></StoryDialog>
         <FriendChat friendIndex={friendIndex} updateFriend={updateFriend} chatID={friends[friendIndex][10]} friend={friends[friendIndex]} open={openFChat} onClose={fChatClose} />
         <FriendFab friendId={friends[friendIndex][0]}  openAdd={fAddDialogOpen} openDelete={fDelDialogOpen} openChat={fChatOpen}/>
       </>
-
+    ) : (
+      <Stack zIndex={5} position={'fixed'} bottom={80} right={20}>
+        <Fab onClick={fAddDialogOpen} size='large' sx={{":focus": {outline: 'none'}}} color='primary' aria-label="addFriend">
+          <PersonAddAlt1 sx={{color: '#fff'}}/>
+        </Fab>
+      </Stack>
     )}
+
 
     <Snackbar
       anchorOrigin={{vertical: 'top', horizontal:'center'}}
@@ -633,9 +640,9 @@ const Friends = () => {
       friends.length > 0 ? 
     
       <>
-      <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center" >
-        <Stack height={'80vh'} width={'inherit'} alignItems={'center'} justifyContent={'space-between'} gap={5}>
-          <Stack width={'inherit'} gap={1}>
+      <Box minHeight={'100vh'} height={'100%'} pt={10}>
+        <Stack gap={5} px={2}>
+          <Stack gap={1}>
             <Stack direction={'row'} gap={1} alignItems="center" justifyContent="flex-start">
               <Typography alignSelf={'flex-start'} fontSize={20} fontWeight={500}>Smokemente</Typography>
               <IconButton sx={{":focus": {outline: 'none'}, p:0}} onClick={handleOpenExcludeList}><MoreVertIcon fontSize='medium'/></IconButton>
@@ -652,6 +659,7 @@ const Friends = () => {
                       </Button> 
                       <Typography fontSize={13}>neu</Typography>
                     </Stack>
+                    <Divider orientation='vertical' flexItem/>
                   {friendsMoments?.map((friend, i) => (
                     friendsMoments?.length > 0 ?
                     <Stack key={i} alignItems="center" justifyContent="center">
@@ -670,13 +678,10 @@ const Friends = () => {
                 </Stack>
               </Box>
           </Stack>
-
-          <FriendChanger friends={friends} friendIndex={friendIndex} setFriendIndex={setFriendIndex}/>
-          <FriendChart ownStats={ownStats} friends={friends} friendIndex={friendIndex}/>
-        </Stack>
-
+        </Stack> 
+        <FriendFile ownStats={ownStats} friends={friends} friendIndex={friendIndex} setFriendIndex={setFriendIndex}/>
       </Box>
-      <FriendBadge friends={friends} friendIndex={friendIndex}/>
+
       </> :
       <>
         <Box height={'100vh'} width={'inherit'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent={'center'}>

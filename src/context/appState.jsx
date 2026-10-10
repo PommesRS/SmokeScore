@@ -27,9 +27,6 @@ export function AppStateContextProvider({ children }) {
         setPrevTheme(themeName)
     }, []);
 
-    useEffect(() => {
-        console.log(themeName) 
-    }, [themeName])
 
     function setCounterVariantJoint() {
         setPrevTheme(themeName)

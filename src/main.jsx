@@ -2,10 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { App } from './components'
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
 import { CssBaseline } from '@mui/material';
 import { HashRouter } from 'react-router-dom';
 import { UserAuthContextProvider } from './context/userAuthConfig';
@@ -18,6 +14,10 @@ import { UserDataContextProvider } from './context/userData';
 import { UserStreakContextProvider } from './context/userStreak';
 import { UserBadgesContextProvider } from './context/userBadges';
 import { FriendChatContextProvider } from './context/friendChat';
+import { UserCollectablesContextProvider } from './context/userCollectables';
+import { UserInventoryContextProvider } from './context/userInventory';
+import { FlashMessageContextProvider } from './context/flashMessage';
+import { UserQuestsContextProvider } from './context/userQuests';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -26,18 +26,26 @@ createRoot(document.getElementById('root')).render(
         <UserAuthContextProvider>
           <NotificationContextProvider>
             <UserDataContextProvider>
-              <FriendChatContextProvider>
-                <UserStreakContextProvider>
-                  <UserBadgesContextProvider>
-                      <CounterContextProvider>
-                        <AppStateContextProvider>
-                            <CssBaseline/>
-                            <App />
-                        </AppStateContextProvider>
-                      </CounterContextProvider>
-                  </UserBadgesContextProvider>
-                </UserStreakContextProvider>
-              </FriendChatContextProvider>
+              <UserInventoryContextProvider>
+                <FlashMessageContextProvider>
+                  <UserStreakContextProvider>
+                    <UserCollectablesContextProvider>
+                      <FriendChatContextProvider>
+                        <UserBadgesContextProvider>
+                          <UserQuestsContextProvider>
+                            <CounterContextProvider>
+                              <AppStateContextProvider>
+                                <CssBaseline/>
+                                <App />
+                              </AppStateContextProvider>
+                            </CounterContextProvider>
+                          </UserQuestsContextProvider>
+                        </UserBadgesContextProvider>
+                      </FriendChatContextProvider>
+                    </UserCollectablesContextProvider>
+                  </UserStreakContextProvider>
+                </FlashMessageContextProvider>
+              </UserInventoryContextProvider>
             </UserDataContextProvider>
           </NotificationContextProvider>
         </UserAuthContextProvider>

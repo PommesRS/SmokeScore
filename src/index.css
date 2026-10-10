@@ -27,6 +27,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   /*background-color: var(--bg-color);*/
   color: var(--color);
@@ -196,6 +200,44 @@ button:focus-visible {
   } */
 }
 
+.spin{
+  animation: spin infinite 10s linear;
+}
+
+@keyframes spin{
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+.bounce {
+  animation: bounce infinite 10s ease-in-out;
+}
+
+@keyframes bounce{
+  0% {
+    transform: translateY(0px) rotate(0deg);
+
+  }
+  25% {
+    transform: translateY(7px) rotate(0deg);
+
+  }
+  50% {
+    transform: translateY(0px)rotate(0deg);
+  }
+  75% {
+    transform: translateY(7px)rotate(0deg);
+  }
+  100% {
+    transform: translateY(0px)rotate(0deg);
+  }
+}
+
+
 @media (max-width: 546px) {
   .storyImg{
     width: 100%;
@@ -224,4 +266,137 @@ button:focus-visible {
 
 .sed{
   object-fit:scale-down;
+}
+
+.mysteryBoxAnim{
+  animation: mysteryBoxOpen infinite 2s ease-in-out;
+}
+
+@keyframes mysteryBoxOpen {
+  0%{
+    transform: translateY(0);
+  }
+  50%{
+    transform: translateY(10px);
+  }
+  75% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.mysteryBoxLootAnim{
+  animation: mysteryBoxLoot 1s cubic-bezier(0,.88,.57,.95);
+}
+
+@keyframes mysteryBoxLoot {
+  0%{
+    transform: translateY(100px);
+  }
+  100%{
+    transform: translateY(0px);
+  }
+}
+
+.smoke {
+    position: absolute;
+    bottom: var(--bottom);
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 80%;
+    height: var(--height);
+    filter: hue-rotate(50deg);
+    pointer-events: none;
+}
+
+.smoke-particle {
+    position: absolute;
+    bottom: 0;
+    border-radius: 50%;
+
+    filter: blur(5px);
+
+    animation-name: smoke;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
+}
+
+@keyframes smoke {
+    0% {
+        transform: translate(0, 0) scale(0.3);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: translate(var(--drift), -120px) scale(2.5);
+        opacity: 0;
+    }
+}
+
+.petProgressBar .MuiLinearProgress-bar1{
+  animation: shiftRight infinite 70s linear;
+}
+
+@keyframes shiftRight{
+  0% {
+    background-position: -100%;
+  }
+  100% {
+    background-position: 100%;
+  }
+}
+
+.confetti{
+  position: absolute;
+  width: 10%;
+  transition: all 0.5s;
+}
+
+.bgSmoke{
+  background-image: url("/smoke02.gif");
+}
+
+.assetBg{
+  background-repeat: repeat;
+  background-size: contain;
+  background-blend-mode: darken;
+}
+
+.bgPet{
+  background-image: url("/bgPet.png");
+}
+
+.bgCubes{
+  background-image: url("/bgAsset1.png");
+}
+
+.bgStars{
+  background-image: url("/bgAsset2.png");
+}
+
+.bgSlate{
+  background-image: url("/bgAsset3.png");
+}
+
+.bgCigcrossOrange{
+  background-image: url("/bgAsset4.png");
+}
+
+.bgCigcrossGreen{
+  background-image: url("/bgAsset5.png");
+}
+
+.bgCigcrossBlue{
+  background-image: url("/bgAsset6.png");
+}
+
+.bgCigcrossRed{
+  background-image: url("/bgAsset7.png");
 }

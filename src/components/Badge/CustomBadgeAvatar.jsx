@@ -8,7 +8,7 @@ const CustomBadgeAvatar = ({metaData, src}) => {
           )
     }else if (metaData.type === "COUNTER"){
         return (
-              <Typography sx={{ position: 'absolute', bottom: 5, content: `"${metaData.level}"`, fontSize: '30pt', fontWeight: 800, transform: 'rotate(10deg)'}} display={'flex'} alignItems="center" justifyContent="center">{metaData.level}</Typography>
+              <Typography sx={{ position: 'absolute', bottom: 5, content: `"${metaData.level}"`, fontSize: '30pt', fontWeight: 800, transform: 'rotate(10deg)'}} display={'flex'} justifyContent="center">{metaData.level}</Typography>
           )
     }
 }

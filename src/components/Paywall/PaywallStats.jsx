@@ -75,7 +75,6 @@ const PaywallStats = ({user}) => {
                         },
                         // change all labels fontFamily shown on both xAxis and yAxis
                         "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
-                        fontFamily: "Roboto",
                         },
                         // change bottom label styles
                         "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{
@@ -182,7 +181,6 @@ const PaywallStats = ({user}) => {
                     },
                     // change all labels fontFamily shown on both xAxis and yAxis
                     "& .MuiChartsAxis-tickContainer .MuiChartsAxis-tickLabel":{
-                    fontFamily: "Roboto",
                     },
                     // change bottom label styles
                     "& .MuiChartsAxis-bottom .MuiChartsAxis-tickLabel":{

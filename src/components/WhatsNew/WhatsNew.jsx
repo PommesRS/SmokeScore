@@ -21,8 +21,6 @@ const WhatsNew = () => {
     useEffect(() => {
         if(!userData) return
 
-        console.log(typeof userData?.currentAppVersion === 'undefined')
-
         if(typeof userData?.currentAppVersion === 'undefined'){
             console.log('schwanz')
             setOpen(true)
@@ -67,7 +65,7 @@ const WhatsNew = () => {
                         {Object.hasOwn(element, "imgPath") && (
                             <>  
                                 <Divider sx={{my: 2}}/>
-                                <img src={element.imgPath} alt="exampleScreen" width={'100%'} />
+                                <img src={element.imgPath} alt="exampleScreen" width={'99%'}  style={{overflow: 'hidden', contain: 'layout'}} />
                             </>
                         )}
                     </AccordionDetails>

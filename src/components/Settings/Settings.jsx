@@ -4,7 +4,7 @@ import {
     DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Select, FormControl, InputLabel, TextField,
     Alert, Snackbar, Switch, Stack, Typography, useTheme
 } from '@mui/material'
-import {Image, Work, Restore, DeleteForever, NotificationsActive, Edit, Sell, Palette, Email, Badge, FiberNew, MyLocation} from '@mui/icons-material'
+import {Image, Work, Restore, DeleteForever, NotificationsActive, Edit, Sell, Palette, Email, Badge, FiberNew, MyLocation, ArrowRight} from '@mui/icons-material'
 import { messaging } from '../../firebase.js'
 import { getMessaging, getToken } from "firebase/messaging"
 import { useUserAuth } from '../../context/userAuthConfig.jsx';
@@ -14,7 +14,7 @@ import { db, auth } from '../../firebase.js';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { ThemeToggleButton } from '../index.js'
 import {useNavigate} from 'react-router-dom';
-
+import ProfilePicture from './ProfilePictureCapture.jsx'
 
 const Settings = ({callback}) => {
       const { user } = useUserAuth();
@@ -76,6 +76,7 @@ const Settings = ({callback}) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false)
     const [monthlySum, setMonthlySum] = useState(null)
+    const [image, setImage] = useState(null)
     const theme = useTheme()
 
     const handleClickOpen = () => {
@@ -139,6 +140,11 @@ const Settings = ({callback}) => {
                 },
                 displayName: username
             })
+
+            updateProfile(user, {
+                photoURL: 'https://firebasestorage.googleapis.com/v0/b/smokescore-a4408.firebasestorage.app/o/profilePictures%2FCK47kohbnGYxNzuTWi1PQIvMvNA3.png?alt=media&token=ad9c3774-a17b-4ba5-b1b4-847e710a6d43'
+            })
+
             updateProfile(user, {
                 displayName: username
             }).then((result) => {
@@ -216,6 +222,15 @@ const Settings = ({callback}) => {
         setAlertState(false)
     }
 
+    const handleImage = (event) => {
+        const file = event.target.files[0]
+
+        if (!file) return;
+
+        const imageUrl = URL.createObjectURL(file)
+        setImage(imageUrl)
+    }
+
     const handleCopyToClipboard = () => {
         try {
             navigator.clipboard.writeText(user.uid)
@@ -223,6 +238,15 @@ const Settings = ({callback}) => {
             setAlertState(true)
             
         } catch (error) {
+        }
+    }
+
+    const handlePPictureClose = (isNewPP) => {
+        setImage(null)
+        if(isNewPP) {
+            handleClose()
+            setAlertState(true)
+            setAlertText('Neue Profilbild festgelegt!')
         }
     }
     
@@ -309,10 +333,6 @@ const Settings = ({callback}) => {
             >
                 <DialogTitle id="alert-dialog-title">{'Profil anpassen'}</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Die Informationen werden deinen Freunden auf der "Freunde" Seite angezeigt.
-                    </DialogContentText>
-                    <Divider />
                     <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
                         <InputLabel htmlFor="demo-dialog-native">Zigaretten Typ wählen</InputLabel>
                         <Select
@@ -334,6 +354,14 @@ const Settings = ({callback}) => {
                     <FormControl variant='standard' sx={{ m: 1, minWidth: '70%' }}>
                         <TextField value={username} onChange={handleUsernameInput} id="standard-basic" label="Benutzernamen ändern" variant="standard" />
                     </FormControl>
+
+                    <label htmlFor="profilePictureInput">
+                        <Button component='span' variant='contained' fullWidth sx={{':focus': {outline: 'none'}}}>
+                            Profilbild ändern <ArrowRight />
+                        </Button>
+                    </label>
+                    <input type="file" accept='image/*' id='profilePictureInput' onChange={handleImage} style={{ display: "none" }} />
+                    <ProfilePicture onClose={handlePPictureClose} open={image != null} image={image}/>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => {handleClose()}}>Abbrechen</Button>

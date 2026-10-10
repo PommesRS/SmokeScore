@@ -304,6 +304,18 @@ export const ThemeProviderCustom = ({ children }) => {
       typography: {
         fontFamily: "'Poppins', sans-serif",
       },
+      breakpoints: {
+        xs: 0,
+        sm: 600,
+        md: 900,
+        lg: 1200,
+        xl: 1536,
+        penis: 300,
+        mobile: 0,
+        tablet: 640,
+        laptop: 1024,
+        desktop: 1200,
+      }
     });
   }, [themeName]);
 

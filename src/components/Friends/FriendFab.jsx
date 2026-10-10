@@ -22,26 +22,29 @@ const FriendFab = ({openAdd, openDelete, openChat, friendId}) => {
 
   return (
         <Stack gap={2} alignItems={'center'} zIndex={5} position={'fixed'} bottom={80} right={20}>
-            <Zoom in={open}>
-                <Badge invisible={!open} variant='dot' badgeContent={shouldBadge} color='secondary'>
-                    <Fab onClick={openChat} size='medium' sx={{":focus": {outline: 'none'}}} color='primary' aria-label="addFriend">
-                        <Forum sx={{color: '#fff'}}/>
+            <Stack gap={2} display={open ? '-ms-flexbox' : 'none'}>
+                <Zoom in={open}>
+                    <Badge invisible={!open} variant='dot' badgeContent={shouldBadge} color='secondary'>
+                        <Fab onClick={openChat} size='medium' sx={{":focus": {outline: 'none'}}} color='primary' aria-label="addFriend">
+                            <Forum sx={{color: '#fff'}}/>
+                        </Fab>
+
+                    </Badge>
+                </Zoom>
+
+                <Zoom in={open}>
+                    <Fab onClick={openAdd} size='medium' sx={{":focus": {outline: 'none'}}} color='primary' aria-label="addFriend">
+                        <PersonAddAlt1 sx={{color: '#fff'}}/>
                     </Fab>
+                </Zoom>
 
-                </Badge>
-            </Zoom>
+                <Zoom in={open}>
+                    <Fab onClick={openDelete} size='medium' sx={{":focus": {outline: 'none'}}} color='error' aria-label="removeFriend">
+                        <Delete sx={{color: '#fff'}}/>
+                    </Fab>
+                </Zoom>
 
-            <Zoom in={open}>
-                <Fab onClick={openAdd} size='medium' sx={{":focus": {outline: 'none'}}} color='primary' aria-label="addFriend">
-                    <PersonAddAlt1 sx={{color: '#fff'}}/>
-                </Fab>
-            </Zoom>
-
-            <Zoom in={open}>
-                <Fab onClick={openDelete} size='medium' sx={{":focus": {outline: 'none'}}} color='error' aria-label="removeFriend">
-                    <Delete sx={{color: '#fff'}}/>
-                </Fab>
-            </Zoom>
+            </Stack>
 
             <Badge invisible={open} variant='dot' badgeContent={shouldBadge} color='secondary'>
                 <Fab size='large' color='primary' onClick={() => {setOpen((prev) => !prev)}} sx={{":focus": {outline: 'none'}}} >

@@ -13,6 +13,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import { db, storage } from '../../firebase.js';
 import { useUserAuth } from "../../context/userAuthConfig.jsx";
+import { useUserQuests } from "../../context/userQuests.jsx";
 
 
 export default function CameraCapture({ onClose }) {
@@ -34,6 +35,7 @@ export default function CameraCapture({ onClose }) {
     const theme = useTheme()
     const [text, setText] = useState("");
     const [position, setPosition] = useState({ x: 0, y: 200 });
+    const questSystem = useUserQuests()
 
     const handleDevices = useCallback((mediaDevices) =>
             //console.log(mediaDevices.filter(({ kind }) => kind === "videoinput")),
@@ -246,6 +248,7 @@ export default function CameraCapture({ onClose }) {
             })
         }
 
+        questSystem.checkForSmokementQuests('SMOKEMENT_CAPTURED')
         setUploading(false)
         // setImage(null)
         // setImageB64(null)

@@ -1,16 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-  updateProfile,
-  signInWithRedirect
-} from "firebase/auth";
-import { auth } from "../firebase";
 import { db } from "../firebase";
+import { Button } from "@mui/material";
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
 import { useUserAuth } from './userAuthConfig';
 import { useUserData } from "./userData";
@@ -18,7 +8,10 @@ import { useNotification } from '../context/notificationContext';
 import { startOfWeek, endOfWeek, format, getDay, getYear, getMonth, toDate, set, constructNow } from 'date-fns'
 import { useGeolocated } from "react-geolocated";
 import { point, buffer, bbox } from '@turf/turf';
-
+import { useUserInventory } from "./userInventory";
+import { useFlashMessage } from "./flashMessage";
+import { useNavigate } from "react-router-dom";
+import { useUserQuests } from "./userQuests";
 
 const counterContext = createContext();
 
@@ -28,12 +21,14 @@ export function CounterContextProvider({ children }) {
     const { userData } = useUserData();
     const { user } = useUserAuth();
     const { sendNotification } = useNotification()
+    const { showFlashMessage } = useFlashMessage()
+    const inventory = useUserInventory()
+    const navigate = useNavigate()
+    const questSystem = useUserQuests()
 
   const incrementCounter = async (geolocation, isJoint) => {
     const docRef = doc(db, "Users", user.uid)
-    console.log(geolocation)
     const geopoint = new GeoPoint(geolocation[0], geolocation[1])
-    console.log(geopoint)
     //console.log(Timestamp.fromDate(new Date()))
     const o = point(geolocation)
     var buffer2 = buffer(o, 150, {units: 'meters'});
@@ -66,8 +61,10 @@ export function CounterContextProvider({ children }) {
       }
     }
 
+
     sendNotification(user, isJoint)
-    
+    questSystem.checkForPlaceQuests(o)
+
     function generateUUID() { // Public Domain/MIT
       var d = new Date().getTime();//Timestamp
       var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -160,6 +157,15 @@ export function CounterContextProvider({ children }) {
           jointLocations: jointLocationsSnapshot
         }, {merge: true})
       }
+    }
+
+    if(Math.floor(Math.random() * 20) === 6){
+      inventory.addItemV2('mysteryBox')
+      showFlashMessage(
+          'Du hast eine Mystery Box erhalten!', 
+          'success',
+          <Button variant='contained' sx={{':focus': {outline: 'none'}}} onClick={() => {navigate('/inventory')}}>ansehen</Button>
+      )
     }
 
     if(isJoint) return;

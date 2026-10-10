@@ -75,28 +75,28 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-messaging.onMessage((payload) => {
-    console.log(
-        '[firebase-messaging-sw.js] Received message ',
-        payload
-    );
+// messaging.onMessage((payload) => {
+//     console.log(
+//         '[firebase-messaging-sw.js] Received message ',
+//         payload
+//     );
 
-    if (payload.data.msgType === 'invite') {
-        self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-            clients.forEach(client => {
-            client.postMessage({
-                data: data
-            });
-            });
-        })
-    }else if(payload.data.msgType === 'getPosition'){
-      self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
-            clients.forEach(client => {
-            client.postMessage({
-                data: data
-            });
-            });
-        })
-    }
+//     if (payload.data.msgType === 'invite') {
+//         self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+//             clients.forEach(client => {
+//             client.postMessage({
+//                 data: data
+//             });
+//             });
+//         })
+//     }else if(payload.data.msgType === 'getPosition'){
+//       self.clients.matchAll({ includeUncontrolled: true }).then(clients => {
+//             clients.forEach(client => {
+//             client.postMessage({
+//                 data: data
+//             });
+//             });
+//         })
+//     }
 
-})
+// })

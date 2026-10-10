@@ -2,15 +2,20 @@
     "notes": 
     [
         {
-            "title": "Nachrichten mit Freunden",
-            "body" : "SmokeScore geht ab nun unter die 'Chat-Apps'. Man hat ab sofort die Möglichkeit, über SmokeScore eine Nachricht an Freunde zu schicken. Eine neue Nachricht wird mit einem Punkt symbolisiert. Auf der Freundesseite wird der Pfeil markiert, in welche Richtung man wechseln muss, um zur ungelesenen Nachricht zu kommen. Sobald die andere Person die Nachricht gelesen hat, wird sie dementsprechend gekennzeichnet.",
+            "title": "Startseite",
+            "body" : "Die Startseite wurde grundlegend überarbeitet. Die Hauptfunktionen werden nun in einem übersichtlichen Kachelsystem dargestellt. Dadurch lassen sich neue Funktionen künftig einfacher und flexibler in die Benutzeroberfläche integrieren. Im Zuge der Umgestaltung wurden einige Elemente neu angeordnet. Inhaltlich bleiben jedoch alle bisherigen Funktionen erhalten.",
             "imgPath": "./pn1.png"
         },
         {
-            "title": "Reaktionen auf SmokeMente",
-            "body": "Die Hauptfunktion der Freunde-Chats sind die Reaktionen auf SmokeMente. Im Chat wird eine Reaktion mit 'hat reagiert' gekennzeichnet.",
+            "title": "Level des SmokePets",
+            "body" : "Für jede eingetragene Kippe erhält das Serienhaustier 5 XP. Ein eingetragener Joint bringt 7 XP. Mit jedem erreichten Level wird eine neue Anpassungsmöglichkeit für das Haustier freigeschaltet. Das Haustierlevel ist nach oben hin nicht begrenzt. Allerdings steigt der für einen Levelaufstieg benötigte XP-Wert mit zunehmendem Level an. Dadurch benötigt beispielsweise ein Haustier auf Level 10 deutlich mehr XP für den nächsten Levelaufstieg als ein Haustier auf Level 2.",
             "imgPath": "./pn3.png"
+        },
+        {
+            "title": "Anpassung des SmokePets",
+            "body" : "Zu den bisherigen Anpassungsmöglichkeiten gehören Münder, Augen, Brillen und Ketten. Ab Version 1.6 stehen Haustieren ab Level 4 insgesamt 1.575 verschiedene Kombinationen zur Verfügung. In zukünftigen Versionen können weitere Anpassungsmöglichkeiten hinzukommen.",
+            "imgPath": "./pn2.gif"
         }
     ],
-    "version": "1.4"
+    "version": "1.6"
 }

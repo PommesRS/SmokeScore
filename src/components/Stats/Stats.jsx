@@ -200,7 +200,7 @@ const Stats = () => {
                     <Typography color={grey[500]}>{dataType === 'Wöchentlich' ? 'Wochensumme' : 'Monatssumme'}</Typography>
                     <Stack direction={'row'} gap={1} position={'relative'}>
                         <Typography color={theme.palette.background.default} fontWeight={500}>Kippen</Typography>
-                        <Typography sx={{fontWeight: 500, fontSize: '30pt', position: 'relative', lineHeight: 1}}>{dataType === 'Wöchentlich' ? weeklyTotal : hoveredPoint ? monthlyData[hoveredPoint[0].dataIndex] : monthlyData[dayjs().month()]}</Typography>
+                        <Typography sx={{fontWeight: 500, fontSize: '30pt', position: 'relative', lineHeight: 1}}>{dataType === 'Wöchentlich' ? weeklyTotal || 0 : monthlyData[dayjs().month()]}</Typography>
                         <Typography alignSelf={'flex-end'} color={grey[500]} fontWeight={500}>Kippen</Typography>
                     </Stack>
                 </Stack>

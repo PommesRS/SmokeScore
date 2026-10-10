@@ -1,20 +1,13 @@
-import { useEffect, useState, useRef, useContext } from 'react'
+import React,{ useEffect, useState, useRef, useContext } from 'react'
 import {useNavigate} from 'react-router-dom';
 import {Container, Box, Button, Typography, Table, TableBody, 
-  TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination,
-  List, Dialog, Input, FormControl, IconButton,
-  MenuItem, DialogTitle, DialogContent, DialogContentText, InputLabel, Select, TextField, DialogActions, CircularProgress,
-  useTheme, Stack, Snackbar, Switch
+  TableCell, CircularProgress,
+  useTheme, Stack, Snackbar, Switch, Divider, Collapse
 } from '@mui/material'
+import ModeSwitcher from './ModeSwitcher.jsx';
 import { tableCellClasses } from '@mui/material/TableCell';
-import dayjs from 'dayjs';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateField } from '@mui/x-date-pickers/DateField';
-import UndoIcon from '@mui/icons-material/Undo';
+import { ArrowForwardIos, PersonPinCircle } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PersonPinCircleIcon from '@mui/icons-material/PersonPinCircle';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import { useUserAuth } from '../../context/userAuthConfig';
@@ -36,7 +29,14 @@ import * as maptilersdk from '@maptiler/sdk';
 import { styled } from '@mui/material/styles';
 import { Navigate } from 'react-router-dom';
 import SmokingRoomsIcon from '@mui/icons-material/SmokingRooms';
-import {SpendingHistory} from '../index.js'
+import {SpendingHistory, AdSense} from '../index.js'
+import { useUserCollectables } from '../../context/userCollectables.jsx';
+import SmokeEffect from './smokeEffect.jsx';
+import { useUserInventory } from '../../context/userInventory.jsx';
+import { useUserData } from '../../context/userData.jsx';
+import { items } from '../Collectables/items.jsx';
+import PetComponent from '../SmokePet/PetComponent.jsx';
+import { quests } from '../Badge/questsDetails.jsx';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -74,7 +74,7 @@ function Counter({callback}) {
 
   const [isExploding, setIsExploding] = useState(0)
   const [geolocation, setLocation] = useState([])
-  const [nearbyStreet, setNearbyStreet] = useState([])
+  const [nearbyStreet, setNearbyStreet] = useState(null)
   const [bGetCoords, setBGetCoords] = useState(true)
   const [loading, setLoading] = useState(true)
   const [doesLatestCigExist, setDoesLatestCigExist] = useState(true)
@@ -99,11 +99,15 @@ function Counter({callback}) {
   const [product, setProduct] = useState('Tabak');
   const theme = useTheme()
   const [displayWoo, setDisplayWoo] = useState('none')
-  const [confettiType, setConfettiType] = useState('boom')
+  const [confettiType, setConfettiType] = useState('fall')
   const navigate = useNavigate();
   const streakRef = useRef(null)
   const { counterVariant, setCounterVariantCig, setCounterVariantJoint } = useAppState()
   const { sendNotification } = useNotification()
+  const collectables = useUserCollectables()
+  const [snackOpen, setSnackOpen] = useState(false)
+  const inventory = useUserInventory()
+  const {userData} = useUserData()
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -142,6 +146,10 @@ function Counter({callback}) {
     location()
   }, [coords])
 
+  useEffect(() => {
+    callback('tracker')
+  }, [])
+
   const handleAddCig = async () => {
     if (loading) return;
 
@@ -149,6 +157,7 @@ function Counter({callback}) {
     //await incrementCounter()
     await counterContext.incrementCounter(geolocation, false);
     const isStreakIncrement = await streakContext.calculateStreak();
+    streakContext.increasePetXP(5)
     animateStreak(isStreakIncrement)
     badgesContext.updateStats(geolocation, await isStreakIncrement)
     checkForAnimations(counterContext.counter)
@@ -169,6 +178,7 @@ function Counter({callback}) {
     if (loading) return
     setLoading(true)
     await counterContext.incrementCounter(geolocation, true);
+    streakContext.increasePetXP(7)
     setLoading(false)
   }
 
@@ -177,6 +187,8 @@ function Counter({callback}) {
       if ((count + 1) % 1000 !== 0) {
         setConfettiType('boom')
         setIsExploding(true)
+        collectables.increaseAmount(1)
+        setSnackOpen(true)
         setTimeout(() => {
           setIsExploding(false)
         }, 5000);
@@ -195,6 +207,10 @@ function Counter({callback}) {
 
   }
 
+  const handleSnackClose = () => {
+    setSnackOpen(false)
+  }
+
   return (
     <>
       <Snackbar
@@ -211,40 +227,52 @@ function Counter({callback}) {
         autoHideDuration={5000}
         anchorOrigin={{vertical: 'top', horizontal: 'center'}}
         sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
-        />
-        
+      />
 
-      <Box height={'100vh'} display={'flex'} flexDirection={'column'} alignItems="center" justifyContent="center">
-        <Stack direction={'row'} justifyContent={'center'} alignItems={'center'} zIndex={100}>
-          <SmokingRoomsIcon fontSize='large' />
-          <Switch
-            sx={{ alignSelf: 'center'}}
-            checked={counterVariant !== 1}
-            onChange={() => {counterVariant === 1 ? setCounterVariantJoint() : setCounterVariantCig() }}
-          />
-          <img src="./jointIcon.svg" alt="jointIcon" width={35} height={35} style={{ filter: 'invert(1)'}} />
-
-        </Stack>
-        <Stack height={'70vh'} alignItems={'center'} justifyContent={'space-between'}>
-          
-          <TextGradient>{counterVariant === 1 ? 'SmokeScore' : 'JointScore'}</TextGradient>
-
-          {counterVariant === 1 && ( <Stack direction={'row'} alignItems={'center'} height={6}>
-            <WhatshotIcon ref={streakRef} sx={{fontSize: '50pt', filter: 'drop-shadow(6px 6px 10px rgba(0, 0, 0, 0.7))'}}/>
-            <Typography fontSize={40} sx={{fontFamily: "'Poppins'", fontWeight: '700', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}}>{streakContext.streak ? streakContext.streak.amount : 0}</Typography>
-          </Stack>)}
-          
-          <Stack alignItems={'center'} justifyContent={'center'}>
-              <img src={counterVariant === 1 ? "./smokeTop.png" : "./weedTop.png"} style={{padding: 0, margin: 0, opacity: 0.2, left: 0, position: 'absolute', top: 0, width: '100%'}}/>
-              <AnimatedCounter digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800', textShadow: '6px 6px 10px rgba(0, 0, 0, 0.7)'}} includeDecimals={false} value={counterVariant === 1 ? counterContext.counter : counterContext.jointCount ? counterContext.jointCount : 0} color='inherit' fontSize="100pt"/>
-              <Typography display={'flex'} alignItems={'center'}> <PersonPinCircleIcon/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Keine Straße in der Nähe gefunden'}</Typography>
-                {isExploding ? <Confetti style={{overflow: 'hidden'}} fadeOutHeight={1} mode={confettiType}/> : <></>}
-              <Box position={'absolute'} overflow={'hidden'} width={'100%'} height={'100%'}>
-                <Typography  className='animation-boom' display={displayWoo} variant='h6' fontWeight={1000} fontSize={100} color='primary' sx={{position: 'absolute', translate: '-50%', zIndex: 1000000}} left={'50%'} top={'25%'}>Woooh!</Typography>
-              </Box>
+      <Snackbar 
+        open={snackOpen}
+        onClose={handleSnackClose}
+        message={
+          <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} justifyContent={'space-between'} sx={{width: '100%'}}>
+            <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} sx={{color: theme.palette.text.primary}}>
+              <SmokingRoomsIcon/>  Neue Kippe verdient!
+            </Stack>
+            <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/collectables')}}>ansehen</Button>
           </Stack>
-          <Stack gap={2} direction={'row'} sx={{width: '80vw'}}>
-            <Button disabled={loading}  sx={{ border: 'none', height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {counterVariant === 1 ? handleAddCig() : handleAddJoint()}}>
+        }
+        autoHideDuration={5000}
+        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+        sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
+      />
+
+      <Box px={3} gap={2} display={'flex'} flexDirection={'column'} sx={{transition: 'all 0.25s'}} alignItems="center" justifyContent={'space-evenly'} py={10}>
+        <Stack width={'100%'} justifyContent={'space-between'} gap={1}>
+          <Stack>
+            <Typography fontSize={20}>Bock auf nen {counterVariant === 1 ? 'Kippchen' : 'Joint'},</Typography>
+            <Typography fontWeight={'bold'} fontSize={20}>{user.displayName}?</Typography>
+          </Stack>
+
+          <Typography display={'flex'} alignItems={'center'} fontSize={'small'}> <PersonPinCircle/>{nearbyStreet ? 'Nahe ' + nearbyStreet : 'Loading...'}</Typography>
+        </Stack>
+        
+        {/* Streak / Mode Switcher Kachel */}
+        <Stack direction={'row'} alignItems={'stretch'} justifyContent={'center'} width={'100%'} gap={2}>
+          <Collapse in={counterVariant === 1} orientation='horizontal' timeout={300} unmountOnExit sx={{ display: 'flex', alignItems: 'stretch', "& .MuiCollapse-wrapper": {display:'flex', alignItems: 'flex'}, "& .MuiCollapse-wrapperInner": {display: 'flex', alignItems: 'stretch'}}}>
+            <Stack direction={'row'} alignItems={'center'} px={2} justifyContent={'center'} bgcolor={theme.palette.background.paper} borderRadius={'10px'} border={'0.5px solid rgba(217, 217, 217, 0.2)'} >
+              <WhatshotIcon ref={streakRef} sx={{fontSize: '33pt'}}/>
+              <Typography fontSize={20} sx={{fontFamily: "'Poppins'", fontWeight: '700'}} whiteSpace={'nowrap'}>{streakContext.streak ? streakContext.streak.amount : 0} Tage</Typography>
+            </Stack> 
+          </Collapse>
+          <ModeSwitcher />
+        </Stack>
+
+        {/* Main Counter Kachel */}
+        <Stack direction={'column'} alignItems={'center'} justifyContent={'center'} bgcolor={theme.palette.background.paper} position={'relative'} height={'100%'} width={'100%'} borderRadius={'10px'} border={'0.5px solid rgba(217, 217, 217, 0.2)'} py={3} px={1} gap={2}>
+          <AnimatedCounter containerStyles={{overflowX: 'visible'}} digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800'}} includeDecimals={false} value={counterVariant === 1 ? counterContext.counter : counterContext.jointCount ? counterContext.jointCount : 0} color='inherit' fontSize="70pt"/>
+          {isExploding ? <Confetti fadeOutHeight={1} mode={confettiType}/> : <></>}
+          <Stack gap={2} direction={'row'} width={'100%'} position={'relative'}>
+            <Button disabled={loading} sx={{ border: 'none', zIndex: 2, height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {counterVariant === 1 ? handleAddCig() : handleAddJoint()}}>
+            
               <AddIcon fontSize='large'/>
               {loading && (
                 <CircularProgress 
@@ -256,15 +284,61 @@ function Counter({callback}) {
                   position: 'absolute',
                 }}/>
               )}
-            </Button>            
-            {/*<Button disabled={!doesLatestCigExist} sx={{ border: 'none', height: '6vh', width: '10vw', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {handleUndoCig()}}><UndoIcon fontSize='large'/></Button>*/}
+            </Button> 
           </Stack>
           
+            {typeof userData?.equipSlots?.equippedSmoke !== 'undefined' && (
+              <SmokeEffect color={items.find(el => el.id === userData?.equipSlots?.equippedSmoke)?.assetPath}/>
+            )}
         </Stack>
+            {/* <Box position={'absolute'} overflow={'hidden'} width={'100%'} height={'100%'}>
+              <Typography className='animation-boom' display={displayWoo} variant='h6' fontWeight={1000} fontSize={100} color='primary' sx={{position: 'absolute', translate: '-50%', zIndex: 1000000}} left={'50%'} top={'25%'}>Woooh!</Typography>
+            </Box> */}
+          
+        {/* SmokePet Kachel */}
+        {(streakContext?.streak?.amount >= 3 || typeof userData?.pet !== 'undefined') && (
+          
+            <Stack direction={'row'} borderRadius={'10px'} px={2} overflow={'hidden'} position={'relative'} border={'0.5px solid rgba(217, 217, 217, 0.2)'} width={'100%'} alignItems={'center'} justifyContent={'space-between'} bgcolor={theme.palette.background.paper} onClick={() => {callback('pet'); navigate('/pet')}}>
+              <Stack zIndex={2} maxWidth={'70%'} >
+                <Typography fontWeight={'bold'} textOverflow={'ellipsis'} overflow={'hidden'} whiteSpace={'wrap'}>
+                  {userData?.pet?.name}
+                </Typography>
+                <Typography>
+                  Level {userData?.pet?.level} | {userData?.pet?.xpPoints} XP
+                </Typography>
+              </Stack>
+              <Box>
+                  <Box zIndex={2} width={'auto'} position={'relative'}>
+                    <PetComponent isBox={!streakContext.pet} height={150} base={userData?.pet?.bluePrint.base} chain={userData?.pet?.bluePrint.chain} glasses={userData?.pet?.bluePrint.glasses} eyes={userData?.pet?.bluePrint.eyes} mouth={userData?.pet?.bluePrint.mouth}/>
+                  </Box>
+                  <Box width={'100px'} height={'100px'} borderRadius={10000} zIndex={1} top={'50%'} position={'absolute'} sx={{filter: 'blur(70px)', transform: 'translate(-50%) translateY(-50%)'}} bgcolor={theme.palette.primary.main} />
+              </Box>
+              
+              <ArrowForwardIos sx={{opacity: '50%'}} fontSize={'10px'}/>
+
+            </Stack> 
+               
+        )}
+        {/* Quests Kachel */}
+        <Stack direction={'column'} borderRadius={'10px'} p={2} gap={2} overflow={'hidden'} position={'relative'} border={'0.5px solid rgba(217, 217, 217, 0.2)'} width={'100%'} bgcolor={theme.palette.background.paper} onClick={() => {callback('quests'); navigate('/quests')}}>
+          <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
+            <Stack>
+              <Typography fontSize={20}>Quests</Typography>
+              <Typography fontSize={15}>{0} von {quests.length} abgeschlossen.</Typography>
+            </Stack>
+            <Stack direction={'row'} alignItems={'center'} >
+              <ArrowForwardIos sx={{opacity: '50%'}} fontSize={'10px'}/>
+            </Stack>
+          </Stack>
+        </Stack>
+
       </Box>
 
       {/* Ausgabentracker */}
-      <SpendingHistory></SpendingHistory>
+      <Box mx={2}>
+        <SpendingHistory/>
+
+      </Box>
       
     </>
   )

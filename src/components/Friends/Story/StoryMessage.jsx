@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, Paper, InputBase, IconButton, useTheme, Typography } from '@mui/material'
 import { Send } from '@mui/icons-material'
 import { useUserAuth } from '../../../context/userAuthConfig'
 import { db } from '../../../firebase'
 import { setDoc, collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore'
 
-const StoryMessage = ({friendId, updateFriend, friends}) => {
+const StoryMessage = ({friendId, updateFriend, friends, setIsPaused}) => {
     const [typedMessage, setTypedMessage] = useState('')
     const theme = useTheme()
     const {user} = useUserAuth()
@@ -29,7 +29,6 @@ const StoryMessage = ({friendId, updateFriend, friends}) => {
             handleSendMessage(chatId)
         }
     }
-
 
     const handleSendMessage = async (id) => {
         if (!typedMessage.trim()) return
@@ -80,6 +79,7 @@ const StoryMessage = ({friendId, updateFriend, friends}) => {
                     onChange={(e) => {setTypedMessage(e.target.value)}}
                     value={typedMessage}
                     slotProps={{input: { sx: {py: 0.5}}}}
+                    onFocus={() => {setIsPaused(true)}}
                 />
                 <IconButton type='submit' onClick={handleRequestSend} sx={{pr: 1.5, ':focus': {outline: 'none'}}}>
                     <Send/>

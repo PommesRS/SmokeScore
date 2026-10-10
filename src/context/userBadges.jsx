@@ -31,9 +31,6 @@ export function UserBadgesContextProvider({ children }) {
     }
 
     async function updateStats(geolocation, willStreakIncrement) {
-        console.log(typeof geolocation[1])
-        console.log(geolocation)
-        console.trace()
         const o = point([geolocation[0], geolocation[1]])
         await runTransaction(db, async (tx) => {
             const statRef = doc(db, "Users", user.uid, 'Stats', 'main')
@@ -60,7 +57,6 @@ export function UserBadgesContextProvider({ children }) {
             
             //calc new streak
             const newStreak = willStreakIncrement ? streakContext?.streak.amount + 1 : streakContext?.streak?.amount
-            console.log(newStreak)
 
             //check if city or country is new
             const isNewCity = !stats?.visitedCities?.includes(city)

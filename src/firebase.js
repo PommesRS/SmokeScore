@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore, getFirestore, Firestore } from "@firebase/firestore";
-import { getMessaging, getToken } from "firebase/messaging"
+import { getMessaging, getToken, isSupported } from "firebase/messaging"
 import { getStorage } from "firebase/storage";
 //import firebase from "firebase";
 
@@ -21,6 +21,17 @@ export const auth = getAuth(app);
 //   experimentalForceLongPolling: true
 // })
 export const db = getFirestore(app)
+
+// export const messaging = isSupported().then((supported) => {
+//   if(!supported) {
+//     console.log('not supported')
+//     return null
+//   }
+//   console.log('supported')
+
+//   return getMessaging(app);
+// })
+
 export const messaging = getMessaging(app);
 export const storage = getStorage(app);
 
