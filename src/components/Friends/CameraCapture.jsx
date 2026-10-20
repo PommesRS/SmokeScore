@@ -122,6 +122,7 @@ export default function CameraCapture({ onClose }) {
         const blob = dataURLtoBlob(dataUrl)
 
         //setImageB64(url)
+        questSystem.checkForSmokementQuests('SMOKEMENT_CAPTURED')
         setImageB64(dataUrl)
         setImage(blob)
         setShowImage(true)
@@ -248,7 +249,7 @@ export default function CameraCapture({ onClose }) {
             })
         }
 
-        questSystem.checkForSmokementQuests('SMOKEMENT_CAPTURED')
+        
         setUploading(false)
         // setImage(null)
         // setImageB64(null)

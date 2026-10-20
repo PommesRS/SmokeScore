@@ -8,7 +8,7 @@ import { useUserQuests } from '../../context/userQuests.jsx'
 import { useAppState } from '../../context/appState.jsx'
 import QuestModal from './QuestModal.jsx'
 
-const Quests = () => {
+const Quests = ({callback}) => {
     const theme = useTheme()
     const [p, setP] = useState(false)
     const questSystem = useUserQuests()
@@ -25,6 +25,9 @@ const Quests = () => {
         setSortedList(quests)
     }, [questSystem.loading])
 
+    useEffect(() => {
+        callback('quests')
+    }, [])
 
     const sortList = () => {
         const nextList = [...sortedList]
@@ -51,7 +54,7 @@ const Quests = () => {
         if (activeQuest.id !== 'golden_hour_smokeMent') {
             setDesc(activeQuest.desc)
         } else {
-            getGoldenHour().then(r => setDesc(`Nimm ein Smokement zur Goldenen Stunde auf und teile ihn mit deinen Freunden. Die Goldene Stunde ist zurzeit um ${r[0]}:${r[1]} Uhr.`) );
+            getGoldenHour().then(r => setDesc(`Nimm ein Smokement zur Goldenen Stunde auf und teile ihn mit deinen Freunden. Die Goldene Stunde beginnt zurzeit um ${r[0]}:${r[1]} Uhr. Ab diese Zeitpunkt hast du zwei Stunden um die Quet zu erledigen.`) );
         }
 
 
@@ -87,14 +90,15 @@ const Quests = () => {
                         <Typography fontSize={13} whiteSpace={'nowrap'} textOverflow={'ellipsis'} overflow={'hidden'} maxWidth={'90%'}>{quest.desc}</Typography>
                     </Stack>
 
-                    {!isCompleted && (
-                        <Stack direction={'row'} ml={'auto'} color={isCompleted ? '#72ffb1' : 'inherit'}>
-                            <Typography>
-                                {quest.reward.smokeDollars}
-                            </Typography>
-                            <img src="./currencyIcon.svg" alt="smokedollar"/>
-                        </Stack>
-                    )}
+
+                    <Stack direction={'row'} alignItems={'center'} gap={1/3} ml={'auto'} color={isCompleted ? '#72ffb1' : 'inherit'}>
+                        <Typography>
+                            {quest.reward.smokeDollars}
+                        </Typography>
+                        <img src="./currencyIcon.svg" alt="smokedollar" class={isCompleted ? 'filter_green' : ''}/>
+                        
+                    </Stack>
+
                 </ListItem>
             )}) : Array.from(Array(6)).map((index) => (
                 <Skeleton key={index} sx={{mb: 2}} variant='rounded' width={"100%"} height={'75px'}/>

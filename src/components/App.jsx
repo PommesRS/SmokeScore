@@ -367,7 +367,7 @@ function App() {
       <Container sx={value != 'map' ? value === 'stats' || 'friends' ? {p: 0 } : {zIndex: '5000000'} : {p: 0}}>  
 
       {user ? 
-      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : value !== 'tracker' ? {zIndex: '4'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
+      <Box sx={value == 'map' ? {zIndex: '4', borderBottom: '1px solid gray', bgcolor: 'background.paper'} : {zIndex: '4', backdropFilter: 'blur(15px)'}} position={'fixed'} left={0} right={0} display={'flex'} alignItems={'center'} justifyContent={'space-between'}>
 
         {/* {value === 'tracker' && (
           <img src={"./smokeTop.png"} style={{padding: 0, margin: 0, opacity: 0.3,left: 0, position: 'absolute', top: 0, width: '100%', pointerEvents: 'none'}}/>
@@ -485,7 +485,7 @@ function App() {
           <Route path='/inventory' element={<ProtectedRoute><Inventory/></ProtectedRoute>}/>
           <Route path='/profile' element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
           <Route path='/pet' element={<ProtectedRoute><PetCustomization/></ProtectedRoute>}/>
-          <Route path='/quests' element={<ProtectedRoute><Quests/></ProtectedRoute>}/>
+          <Route path='/quests' element={<ProtectedRoute><Quests callback={callBack}/></ProtectedRoute>}/>
 
           {/* 404 Fallback Route */}
           <Route path="*" element={

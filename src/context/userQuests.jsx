@@ -97,18 +97,22 @@ export function UserQuestsContextProvider({ children }) {
 
             if (quest.id === 'golden_hour_smokeMent') {
                 const response = await fetch(
-                    "https://api.sunrisesunset.io/json?lat=38.907192&lng=-77.036873&elevation=0&time_format=unix"
+                    "https://api.sunrisesunset.io/json?lat=52&lng=13&elevation=0&time_format=24"
                 );
+                const date = new Date(1791732600)
+                const start = new Date(date);
+                const end = new Date(date);
 
                 const data = await response.json();
-                const start = dayjs(1791673200)
-                const end = dayjs(1791676800)
-                if ((start > dayjs() > end)) return
+                const [hours, minutes, seconds] = data.results.golden_hour.split(":").map(Number);
+                start.setHours(hours - 0, minutes, seconds || 0, 0);
+                end.setHours(hours + 2, minutes, seconds || 0, 0);
+                console.log(start, end, date)
+                if (!(date >= start && date <= end)) return
             }
 
             const questProgressRef = doc(db, 'Users', user.uid, 'QuestProgress', quest.id)
             await runTransaction(db, async (transaction) => {
-
                 const progressSnap = await transaction.get(questProgressRef);
                 const progressData = progressSnap.exists() ? progressSnap.data() : {};
 
@@ -137,6 +141,10 @@ export function UserQuestsContextProvider({ children }) {
                 }
             })
         })
+    }
+
+    function checkForCoopQuests(cig) {
+
     }
 
     function checkForPlaceQuests (cig) {

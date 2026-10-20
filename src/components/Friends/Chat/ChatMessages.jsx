@@ -1,11 +1,11 @@
 import React, {useEffect} from "react";
-import { useTheme, Box, Stack, Typography, Paper } from "@mui/material";
+import { useTheme, Box, Stack, Typography, Paper, Button, Icon } from "@mui/material";
 import { useUserAuth } from "../../../context/userAuthConfig";
 import dayjs from "dayjs";
 import { grey } from "@mui/material/colors";
-import { DoneAll, SubdirectoryArrowRight } from "@mui/icons-material";
+import { DoneAll, SubdirectoryArrowRight, Mail, Schedule, Check, CropSquareSharp, Close } from "@mui/icons-material";
 import { db } from "../../../firebase";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, runTransaction } from "firebase/firestore";
 import { useFriendChat } from "../../../context/friendChat";
 
 export function Message({callback, message, chatId, friendName}) {
@@ -40,6 +40,32 @@ export function Message({callback, message, chatId, friendName}) {
         }
     }
 
+    const handleInvite = async (status) => {
+        await runTransaction(db, async (transaction) => {
+            transaction.set(doc(db, 'Chats', chatId, 'Messages', message.id), {
+                coop: {
+                    status: status
+                }
+            }, {merge: true})
+
+            transaction.set(doc(db, 'Users', message.senderID, 'QuestProgress', message.coop.questId), {
+                progress: 0,
+                completed : false,
+                updatedAt: new Date(),
+                partner: user.uid
+            }, {merge: true})
+
+            transaction.set(doc(db, 'Users', user.uid, 'QuestProgress', message.coop.questId), {
+                progress: 0,
+                completed : false,
+                updatedAt: new Date(),
+                partner: message.senderID
+            }, {merge: true})
+
+        })
+
+        
+    }
     
 
     return (
@@ -48,14 +74,52 @@ export function Message({callback, message, chatId, friendName}) {
                 {position: 'relative',color:'#fff', p: 2,  alignSelf: 'start', maxWidth: '70%', ':before': {content: '""', position: 'absolute', width: '10px', height: '10px', left: -6, top: 0, background: `linear-gradient(225deg, ${theme.palette.background.paper} 50%, rgba(0,0,0,0) 50%)`, filter: 'opacity(1)'}} 
                 : 
                 {position: 'relative',color:'#fff', p: 2,  alignSelf: 'end', maxWidth: '70%', ':before': {content: '""', position: 'absolute', width: '10px', height: '10px', right: -6, top: 0, background: `linear-gradient(135deg, ${theme.palette.background.paper} 50%, rgba(0,0,0,0) 50%)`, filter: 'opacity(1)'}}}>
-                <Stack position={'relative'} gap={2} mr={1/2}>
+                <Stack position={'relative'} gap={1} mr={1/2}>
                     {typeof message.isReaction !== 'undefined' && (
                         <Stack direction={'row'} alignItems={'center'}>
                             <SubdirectoryArrowRight fontSize="samll"/>
                             <Typography fontSize={12} top={-15} textAlign={'right'} >{message.senderID === user.uid ? 'Du hast' : friendName + ' hat'} reagiert</Typography>
                         </Stack>
                     )}
+                    {typeof message.coop !== 'undefined' && (
+
+                        <Stack direction={'row'} alignItems={'center'} gap={1/2}>
+                            <Mail fontSize="samll"/>
+                            <Typography fontSize={12} top={-15} textAlign={'right'} >{message.senderID === user.uid ? 'Du hast' : friendName + ' hat dich'} zur Quest eingeladen</Typography>
+                        </Stack>
+
+                    )}
                     <Typography fontSize={17} pr={5} maxWidth={'100%'}  sx={{wordWrap: 'break-word'}}>{message.text}</Typography>
+                    {typeof message.coop !== 'undefined' && (message.senderID !== user.uid ? (
+                        message.coop.status === 'pending' ?
+                        <Stack direction={'row'} alignItems={'center'} mb={1/2} gap={1/2}>
+                            <Button sx={{':focus' : {outline: 'none'}}} onClick={() => {handleInvite('denied')}}>Ablehnen</Button>
+                            <Button sx={{':focus' : {outline: 'none'}}} onClick={() => {handleInvite('accepted')}} variant="contained">Annehmen</Button>
+                        </Stack>
+                        : message.coop.status === 'accepted' ?
+                            <Stack direction='row' gap={1/2} alignItems={'center'}>
+                                <Check fontSize="small" color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}/> 
+                                <Typography color="success">Angenommen</Typography>   
+                            </Stack>
+                            :
+                            <Stack direction='row' gap={1/2} alignItems={'center'}>
+                                <Close fontSize="small" color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}/> 
+                                <Typography color="error">Angenommen</Typography>   
+                            </Stack>
+                    ):(
+                        <Stack direction={'row'} alignItems={'center'} mb={1/2} gap={1/2}>
+                            {message.coop.status === 'pending' ? 
+                                <Schedule fontSize="small" color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}/> 
+                            : message.coop.status === 'accepted' ? 
+                                <Check fontSize="small" color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}/>     
+                            : 
+                                <Close fontSize="small" color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}/> 
+                            }
+                            
+                            <Typography variant="contained" fontSize={15} color={message.coop.status === 'pending' ? 'warning' : message.coop.status === 'accepted' ? 'success' : 'error'}>{message.coop.status === 'pending' ? 'Ausstehend' : message.coop.status === 'accepted' ? 'Angenommen' : 'Abgelehnt'}</Typography>
+                        </Stack>
+                    ))}
+                    {/* {console.log(message.coop)} */}
                     <Stack direction={'row'} alignSelf={'end'} alignItems={'center'} position={'absolute'} bottom={-15} right={-13} gap={1/2} color={grey[100]}>
                         <Typography fontSize={12}>{dayjs(message.time?.toDate()).format('HH:mm')}</Typography>
                         {message.senderID === user.uid && (

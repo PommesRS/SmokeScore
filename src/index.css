@@ -264,6 +264,10 @@ button:focus-visible {
   top: 100%;
 }
 
+.filter_green{
+  filter: brightness(0) saturate(100%) invert(88%) sepia(11%) saturate(1945%) hue-rotate(81deg) brightness(105%) contrast(101%);
+}
+
 .sed{
   object-fit:scale-down;
 }
