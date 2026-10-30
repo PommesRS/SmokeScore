@@ -23,6 +23,7 @@ const Quests = ({callback}) => {
     useEffect(() => {
         if(questSystem.loading) return
         setSortedList(quests)
+        console.log(questSystem.completedQuest.length)
     }, [questSystem.loading])
 
     useEffect(() => {

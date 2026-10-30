@@ -99,7 +99,7 @@ export const quests =
             lng: 13.377722,
         },
         reward: {
-            smokeDollars: 1,
+            smokeDollars: 15,
         }
     },
     {

@@ -37,6 +37,7 @@ import { useUserData } from '../../context/userData.jsx';
 import { items } from '../Collectables/items.jsx';
 import PetComponent from '../SmokePet/PetComponent.jsx';
 import { quests } from '../Badge/questsDetails.jsx';
+import { useUserQuests } from '../../context/userQuests.jsx';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -83,6 +84,7 @@ function Counter({callback}) {
   const badgesContext = useUserBadges();
   const counterContext = useCounter();
   const streakContext = useStreak();
+  const questSystem = useUserQuests();
   //const [latestCigs, setLatestCigs] = useState([])
   const {coords, isGeolocationAvailable, isGeolocationEnabled } =
   useGeolocated({
@@ -303,9 +305,11 @@ function Counter({callback}) {
                 <Typography fontWeight={'bold'} textOverflow={'ellipsis'} overflow={'hidden'} whiteSpace={'wrap'}>
                   {userData?.pet?.name}
                 </Typography>
-                <Typography>
-                  Level {userData?.pet?.level} | {userData?.pet?.xpPoints} XP
-                </Typography>
+                {typeof userData?.pet?.name !== 'undefined' && (
+                  <Typography>
+                    Level {userData?.pet?.level} | {userData?.pet?.xpPoints} XP
+                  </Typography>
+                )}
               </Stack>
               <Box>
                   <Box zIndex={2} width={'auto'} position={'relative'}>
@@ -324,7 +328,7 @@ function Counter({callback}) {
           <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
             <Stack>
               <Typography fontSize={20}>Quests</Typography>
-              <Typography fontSize={15}>{0} von {quests.length} abgeschlossen.</Typography>
+              <Typography fontSize={15}>{questSystem?.completedQuest?.length || 0} von {quests.length} abgeschlossen.</Typography>
             </Stack>
             <Stack direction={'row'} alignItems={'center'} >
               <ArrowForwardIos sx={{opacity: '50%'}} fontSize={'10px'}/>
