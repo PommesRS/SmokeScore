@@ -155,7 +155,6 @@ export function UserBadgesContextProvider({ children }) {
                     const badgeLevel = await (await tx.get(docRef)).data().level
     
                     if (typeof badge !== 'undefined') {
-                        console.log(badge)
                         if (badgeLevel == 0 && level > 0) {
                             setBadgeOpen(true)
                             setBadgeMessage('Neues Abzeichen Freigeschaltet!')

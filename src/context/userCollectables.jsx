@@ -26,6 +26,7 @@ export function UserCollectablesContextProvider({ children }) {
     const increaseAmount = async (amountToIncrease) => {
         if (amount !== null) {
             const docRef = doc(db, 'Users', user.uid)
+            console.log('rewarded: ', amountToIncrease, 'SD')
             await setDoc(docRef, {
                 collectables: amount + amountToIncrease
             }, {merge: true})

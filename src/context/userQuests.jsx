@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useFlashMessage } from "./flashMessage";
+import { Button } from "@mui/material";
 import { auth } from "../firebase";
 import { db } from "../firebase";
 import { quests } from "../components/Badge/questsDetails";
@@ -8,6 +10,7 @@ import { useUserAuth } from "./userAuthConfig";
 import { buffer, bbox } from '@turf/turf';
 import { useUserCollectables } from "./userCollectables";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 const userQuestsContext = createContext();
 
@@ -16,6 +19,8 @@ export function UserQuestsContextProvider({ children }) {
     const [openQuests, setOpenQuests] = useState(null)
     const [loading, setLoading] = useState(true)
     const { user } = useUserAuth();
+    const { showFlashMessage } = useFlashMessage()
+    const navigate = useNavigate()
     const collectables = useUserCollectables()
 
     useEffect(() => {
@@ -107,7 +112,6 @@ export function UserQuestsContextProvider({ children }) {
                 const [hours, minutes, seconds] = data.results.golden_hour.split(":").map(Number);
                 start.setHours(hours - 0, minutes, seconds || 0, 0);
                 end.setHours(hours + 2, minutes, seconds || 0, 0);
-                console.log(start, end, date)
                 if (!(date >= start && date <= end)) return
             }
 
@@ -119,7 +123,6 @@ export function UserQuestsContextProvider({ children }) {
                 if (progressData.completed) return
 
                 let progress = progressData.progress ?? 0;
-                console.log(progress)
                 if (quest.unique && data.objectId) {
 
                 } else {
@@ -144,7 +147,54 @@ export function UserQuestsContextProvider({ children }) {
     }
 
     function checkForCoopQuests(cig) {
+        const questsToCheck = openQuests.filter((quest) => quest.category === 'coop')
+        if (questsToCheck.length < 1) return
 
+        questsToCheck.map((quest) => {
+            if(completedQuest.includes(quest.id)) return
+
+            runTransaction(db, async (transaction) => {
+                const questProgressRef = doc(db, 'Users', user.uid, 'QuestProgress', quest.id)
+                const questProgressSnap = (await transaction.get(questProgressRef))
+                console.log(questProgressSnap.exists())
+                if (!questProgressSnap) return
+                const progressData = questProgressSnap.data()
+
+                let progress = progressData.progress ?? 0;
+                progress += 1
+                const completed = progress >= quest.target;
+
+                transaction.set(
+                    questProgressRef,
+                    {
+                        progress: Math.min(progress, quest.target),
+                        completed,
+                        updatedAt: new Date(),
+                    },{ merge: true }
+                );
+
+                const friendQuestProgressRef = doc(db, 'Users', progressData.partner, 'QuestProgress', quest.id)
+                transaction.set(
+                    friendQuestProgressRef,
+                    {
+                        progress: Math.min(progress, quest.target),
+                        completed,
+                        updatedAt: new Date(),
+                    },{ merge: true }
+                );
+
+                if (completed) {
+                    let rewardAmount = quest.reward.smokeDollars
+                    collectables.increaseAmount(rewardAmount)
+                    showFlashMessage(
+                        'Du hast eine Quest abgeschlossen!', 
+                        'success',
+                        <Button variant='contained' sx={{':focus': {outline: 'none'}}} onClick={() => {navigate('/quests')}}>ansehen</Button>
+                    )
+                }
+
+            })
+        })
     }
 
     function checkForPlaceQuests (cig) {
@@ -157,15 +207,59 @@ export function UserQuestsContextProvider({ children }) {
             if (cigBbox[2] > quest.condition.lat && quest.condition.lat > cigBbox[0] && cigBbox[3] > quest.condition.lng && quest.condition.lng > cigBbox[1]) {
               collectables.increaseAmount(quest.reward.smokeDollars)
             }else {
-                console.log(quest.id, ' -> ', false)
+                //console.log(quest.id, ' -> ', false)
             }
 
         })
     }
 
+    function checkForStreakQuests (streak) {
+        const questsToCheck = openQuests.filter((quest) => quest.type === "STREAK")
+        if (questsToCheck.length < 1) return
+
+        var rewardAmount = 0
+
+        questsToCheck.map(async (quest, index) => {
+            if(completedQuest.includes(quest.id)) return
+            console.log(completedQuest)
+            const questProgressRef = doc(db, 'Users', user.uid, 'QuestProgress', quest.id)
+            await runTransaction(db, async (transaction) => {
+                const progressSnap = await transaction.get(questProgressRef);
+                const progressData = progressSnap.exists() ? progressSnap.data() : {};
+
+                if (progressData.completed) return
+
+                let progress = streak;
+                console.log(quest.id, '->', progress)
+                const completed = progress >= quest.target;
+
+                transaction.set(
+                    questProgressRef,
+                    {
+                        progress: Math.min(progress, quest.target),
+                        completed,
+                        updatedAt: new Date(),
+                    },{ merge: true }
+                );
+
+                if (completed) {
+                    rewardAmount = quest.reward.smokeDollars
+                    collectables.increaseAmount(rewardAmount)
+                    showFlashMessage(
+                        'Du hast eine Quest abgeschlossen!', 
+                        'success',
+                        <Button variant='contained' sx={{':focus': {outline: 'none'}}} onClick={() => {navigate('/quests')}}>ansehen</Button>
+                    )
+                }
+                    
+            })
+        })
+        
+
+    }
 
     return (
-        <userQuestsContext.Provider value={{ checkForPlaceQuests, checkForSocialQuests, checkForSmokementQuests, completedQuest, loading }}>
+        <userQuestsContext.Provider value={{ checkForPlaceQuests, checkForSocialQuests, checkForSmokementQuests, checkForStreakQuests, checkForCoopQuests, completedQuest, loading }}>
             {children}
         </userQuestsContext.Provider>
     );

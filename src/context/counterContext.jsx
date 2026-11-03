@@ -64,6 +64,8 @@ export function CounterContextProvider({ children }) {
 
     sendNotification(user, isJoint)
     questSystem.checkForPlaceQuests(o)
+    questSystem.checkForCoopQuests(o)
+    
 
     function generateUUID() { // Public Domain/MIT
       var d = new Date().getTime();//Timestamp
@@ -127,7 +129,7 @@ export function CounterContextProvider({ children }) {
                         })
         })
   
-        addToHistory(cigUID)
+        //addToHistory(cigUID)
         incrementMonthStat()
       }else{
         await setDoc(docRef, {

@@ -5,6 +5,7 @@ import {Container, Box, Button, Typography, Table, TableBody,
   useTheme, Stack, Snackbar, Switch, Divider, Collapse
 } from '@mui/material'
 import ModeSwitcher from './ModeSwitcher.jsx';
+import CustomConfetti from './CustomConfetti.jsx';
 import { tableCellClasses } from '@mui/material/TableCell';
 import { ArrowForwardIos, PersonPinCircle } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
@@ -16,6 +17,7 @@ import { useCounter } from '../../context/counterContext.jsx';
 import { useUserBadges } from '../../context/userBadges.jsx';
 import { useStreak } from '../../context/userStreak.jsx';
 import { useNotification } from '../../context/notificationContext';
+import { useFlashMessage } from "../../context/flashMessage";
 import { getFirestore, collection, doc, getDoc, updateDoc, setDoc, increment, getDocs, query, onSnapshot, arrayUnion, GeoPoint, Timestamp, runTransaction } from "@firebase/firestore";
 import { db } from '../../firebase';
 import { AnimatedCounter } from  'react-animated-counter';
@@ -47,6 +49,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
     color: 'var(--color)'
   },
 }));
+
 
   
 
@@ -107,9 +110,10 @@ function Counter({callback}) {
   const { counterVariant, setCounterVariantCig, setCounterVariantJoint } = useAppState()
   const { sendNotification } = useNotification()
   const collectables = useUserCollectables()
-  const [snackOpen, setSnackOpen] = useState(false)
   const inventory = useUserInventory()
   const {userData} = useUserData()
+  const { showFlashMessage } = useFlashMessage()
+
 
   maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_apiKey;
 
@@ -190,7 +194,11 @@ function Counter({callback}) {
         setConfettiType('boom')
         setIsExploding(true)
         collectables.increaseAmount(1)
-        setSnackOpen(true)
+        showFlashMessage(
+            'Du hast einen SmokeDollar verdient!', 
+            'success',
+            <Button variant='contained' sx={{':focus': {outline: 'none'}}} onClick={() => {navigate('/collectables')}}>ansehen</Button>
+        )
         setTimeout(() => {
           setIsExploding(false)
         }, 5000);
@@ -209,9 +217,6 @@ function Counter({callback}) {
 
   }
 
-  const handleSnackClose = () => {
-    setSnackOpen(false)
-  }
 
   return (
     <>
@@ -230,22 +235,8 @@ function Counter({callback}) {
         anchorOrigin={{vertical: 'top', horizontal: 'center'}}
         sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
       />
-
-      <Snackbar 
-        open={snackOpen}
-        onClose={handleSnackClose}
-        message={
-          <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} justifyContent={'space-between'} sx={{width: '100%'}}>
-            <Stack gap={1} direction={'row'} display={'flex'} alignItems={'center'} sx={{color: theme.palette.text.primary}}>
-              <SmokingRoomsIcon/>  Neue Kippe verdient!
-            </Stack>
-            <Button variant='contained' sx={{color: theme.palette.text.primary, ':focus': {outline: 'none'}}} onClick={() => {navigate('/collectables')}}>ansehen</Button>
-          </Stack>
-        }
-        autoHideDuration={5000}
-        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-        sx={{color: 'red', '& .MuiPaper-root': {background: theme.palette.background.gradient, width: '100%'}, '& .MuiSnackbarContent-message': {width: '100%'}}}
-      />
+      
+      {isExploding ? <CustomConfetti /> : <></>}
 
       <Box px={3} gap={2} display={'flex'} flexDirection={'column'} sx={{transition: 'all 0.25s'}} alignItems="center" justifyContent={'space-evenly'} py={10}>
         <Stack width={'100%'} justifyContent={'space-between'} gap={1}>
@@ -271,7 +262,8 @@ function Counter({callback}) {
         {/* Main Counter Kachel */}
         <Stack direction={'column'} alignItems={'center'} justifyContent={'center'} bgcolor={theme.palette.background.paper} position={'relative'} height={'100%'} width={'100%'} borderRadius={'10px'} border={'0.5px solid rgba(217, 217, 217, 0.2)'} py={3} px={1} gap={2}>
           <AnimatedCounter containerStyles={{overflowX: 'visible'}} digitStyles={{textAlign: 'center', fontFamily: "'Poppins'", fontWeight: '800'}} includeDecimals={false} value={counterVariant === 1 ? counterContext.counter : counterContext.jointCount ? counterContext.jointCount : 0} color='inherit' fontSize="70pt"/>
-          {isExploding ? <Confetti fadeOutHeight={1} mode={confettiType}/> : <></>}
+          {/* {isExploding ? <Confetti className='confetti' fadeOutHeight={1} mode={confettiType}/> : <></>} */}
+          
           <Stack gap={2} direction={'row'} width={'100%'} position={'relative'}>
             <Button disabled={loading} sx={{ border: 'none', zIndex: 2, height: '6vh', width: '100%', borderRadius: '10px', ":focus": {outline: 'none'}, background: theme.palette.background.gradient}} variant='contained' onClick={() => {counterVariant === 1 ? handleAddCig() : handleAddJoint()}}>
             

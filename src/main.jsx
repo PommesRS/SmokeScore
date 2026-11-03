@@ -28,22 +28,22 @@ createRoot(document.getElementById('root')).render(
             <UserDataContextProvider>
               <UserInventoryContextProvider>
                 <FlashMessageContextProvider>
-                  <UserStreakContextProvider>
-                    <UserCollectablesContextProvider>
-                      <FriendChatContextProvider>
-                        <UserBadgesContextProvider>
-                          <UserQuestsContextProvider>
-                            <CounterContextProvider>
-                              <AppStateContextProvider>
-                                <CssBaseline/>
-                                <App />
-                              </AppStateContextProvider>
-                            </CounterContextProvider>
-                          </UserQuestsContextProvider>
-                        </UserBadgesContextProvider>
-                      </FriendChatContextProvider>
-                    </UserCollectablesContextProvider>
-                  </UserStreakContextProvider>
+                  <UserCollectablesContextProvider>
+                    <UserQuestsContextProvider>
+                      <UserStreakContextProvider>
+                          <FriendChatContextProvider>
+                            <UserBadgesContextProvider>
+                              <CounterContextProvider>
+                                <AppStateContextProvider>
+                                  <CssBaseline/>
+                                  <App />
+                                </AppStateContextProvider>
+                              </CounterContextProvider>
+                            </UserBadgesContextProvider>
+                          </FriendChatContextProvider>
+                      </UserStreakContextProvider>
+                    </UserQuestsContextProvider>
+                  </UserCollectablesContextProvider>
                 </FlashMessageContextProvider>
               </UserInventoryContextProvider>
             </UserDataContextProvider>

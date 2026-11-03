@@ -20,6 +20,7 @@ import { useUserInventory } from "./userInventory";
 import { useFlashMessage } from "./flashMessage";
 import { Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useUserQuests } from "./userQuests";
 
 const userStreakContext = createContext();
 
@@ -32,6 +33,7 @@ export function UserStreakContextProvider({ children }) {
     const inventory = useUserInventory()
     const {showFlashMessage} = useFlashMessage()
     const navigate = useNavigate()
+    const questSystem = useUserQuests()
 
     async function calculateStreak() {
         const docRef = doc(db, "Users", user.uid)
@@ -47,6 +49,7 @@ export function UserStreakContextProvider({ children }) {
                     "streak.amount": increment(1),
                     "streak.lastIncrement": Timestamp.now()
                 })
+                questSystem.checkForStreakQuests(userData.streak.amount + 1)
                 return true
             }else if(date.isSame(today, 'day')) {
                 return false
@@ -57,6 +60,7 @@ export function UserStreakContextProvider({ children }) {
                         lastIncrement: Timestamp.now()
                     }
                 })
+                questSystem.checkForStreakQuests(1)
                 return true
             }
     
@@ -67,6 +71,7 @@ export function UserStreakContextProvider({ children }) {
                 lastIncrement: Timestamp.now()
             }
             })
+            questSystem.checkForStreakQuests(1)
             return true
         }
     }

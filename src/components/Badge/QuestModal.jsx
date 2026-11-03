@@ -22,6 +22,9 @@ const QuestModal = ({onClose, open, quest, desc}) => {
     const [friendInvite, setFriendInvite] = useState(false)
     const [loading, setLoading] = useState(false)
     const [friends, setFriends] = useState(false)
+    const [questInProgress, setQuestInProgress] = useState(false)
+    const [questProgress, setQuestProgress] = useState(null)
+    const [coopPartnerName, setCoopPartnerName] = useState(null)
     const { userData } = useUserData()
     const { user } = useUserAuth()
 
@@ -35,11 +38,33 @@ const QuestModal = ({onClose, open, quest, desc}) => {
                 const friendName = await (await transaction.get(userRef)).data().displayName
                 friendsFull.push({name: friendName, id: friend})  
             })
+
             setFriends(friendsFull)
         })
 
         
     }, [])
+
+    useEffect(() => {
+        if (quest.id === 'loading' || open === false) return
+
+        runTransaction(db, async (transaction) => {
+            const questRef = doc(db, 'Users', user.uid, 'QuestProgress', quest.id)
+            const questExistsInProgress =  (await transaction.get(questRef)).exists()
+            setQuestInProgress(questExistsInProgress)
+
+            if (!questExistsInProgress) return
+            const progress = (await transaction.get(questRef)).data().progress || null
+            setQuestProgress(progress)
+
+            if (!quest.category === 'coop') return
+
+            const partnerId = (await transaction.get(questRef)).data().partner
+            const friendRef = doc(db, 'Users', partnerId)
+            const partnerName = (await transaction.get(friendRef)).data().displayName || undefined
+            setCoopPartnerName(partnerName)
+        })
+    }, [open])
 
     const handleInviteToCoopQuest = async (friendId) => {
         const q = query(collection(db, "Chats"),
@@ -112,7 +137,7 @@ const QuestModal = ({onClose, open, quest, desc}) => {
     <SwipeableDrawer 
         open={open} 
         anchor='bottom' 
-        onClose={onClose} 
+        onClose={() => {onClose(); setQuestProgress(null)}} 
         keepMounted
         slotProps={{
             paper: {
@@ -140,9 +165,16 @@ const QuestModal = ({onClose, open, quest, desc}) => {
                 <Stack pt={4} gap={2} height={'100%'} >
                     <Typography fontSize={20}>{quest.title}</Typography>
                     <Typography fontSize={16} color={grey[500]}>{desc}</Typography>
-                    {quest.category === 'coop' && (
-                        <Button variant='contained' sx={{':focus': {outline: 'none'}}} onClick={() => {setFriendInvite(true)}}>Freund Einladen</Button>
+                    {questProgress && (
+                        <Typography fontSize={16} color={grey[500]}>Fortstritt: {questProgress}/{quest.target}</Typography>
                     )}
+                    {quest.category === 'coop' && 
+                        coopPartnerName ? (
+                            <Typography fontSize={16} color={grey[500]}>Quest Partner: {coopPartnerName}</Typography>
+                        ) : (
+                            <Button variant='contained' sx={{':focus': {outline: 'none'}}} disabled={questInProgress} onClick={() => {setFriendInvite(true)}}>Freund Einladen</Button>
+                        )
+                    }
                     <Typography fontSize={16}>Belohnung: {quest.reward.smokeDollars} SmokeDollar</Typography>
                 </Stack>
             </Box>

@@ -1,10 +1,11 @@
-import { People, Place, Camera, Handshake } from "@mui/icons-material"
+import { People, Place, Camera, Handshake, Whatshot } from "@mui/icons-material"
 
 export const iconTypes = {
     social: <People/>,
     place: <Place/>,
     smokement: <Camera/>,
-    coop: <Handshake/>
+    coop: <Handshake/>,
+    streak: <Whatshot/>
 }
 
 export const placeholderQuest = {
@@ -62,6 +63,66 @@ export const quests =
         type: "SMOKEMENT_CAPTURED",
         reward: {
             smokeDollars: 5,
+        }
+    },
+    {
+        id : "streak_5",
+        title: "Erster Funke",
+        icon: iconTypes.streak,
+        desc: "Erreiche eine Streak von 5 Tagen.",
+        category: "streak",
+        target: 5,
+        type: "STREAK",
+        reward: {
+            smokeDollars: 2,
+        }
+    },
+    {
+        id : "streak_10",
+        title: "Auf Kurs",
+        icon: iconTypes.streak,
+        desc: "Erreiche eine Streak von 10 Tagen.",
+        category: "streak",
+        target: 10,
+        type: "STREAK",
+        reward: {
+            smokeDollars: 4,
+        }
+    },
+    {
+        id : "streak_25",
+        title: "Unaufhaltsam",
+        icon: iconTypes.streak,
+        desc: "Erreiche eine Streak von 25 Tagen.",
+        category: "streak",
+        target: 25,
+        type: "STREAK",
+        reward: {
+            smokeDollars: 6,
+        }
+    },
+    {
+        id : "streak_50",
+        title: "Ausdauerlegende",
+        icon: iconTypes.streak,
+        desc: "Erreiche eine Streak von 50 Tagen.",
+        category: "streak",
+        target: 50,
+        type: "STREAK",
+        reward: {
+            smokeDollars: 8,
+        }
+    },
+    {
+        id : "streak_100",
+        title: "Unsterbliche Streak",
+        icon: iconTypes.streak,
+        desc: "Erreiche eine Streak von 50 Tagen.",
+        category: "streak",
+        target: 100,
+        type: "STREAK",
+        reward: {
+            smokeDollars: 10,
         }
     },
     {
